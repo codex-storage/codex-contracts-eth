@@ -76,11 +76,13 @@ describe("Storage Contract", function () {
   })
 })
 
+// TDOO: add root hash of data
 // TODO: payment on constructor
 // TODO: contract start and timeout
 // TODO: missed proofs
 // TODO: successfull proofs
 // TODO: payout
 // TODO: stake
-// TODO: request timeout
-// TODO: bid timeout
+// TODO: request expiration
+// TODO: bid expiration
+// TODO: multiple hosts in single contract
