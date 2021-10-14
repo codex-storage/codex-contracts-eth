@@ -8,10 +8,14 @@ contract StorageContract {
   uint public immutable size; // storage size in bytes
   uint public immutable price; // price in coins
   address public immutable host; // host that provides storage
+  uint public immutable proofPeriod; // average time between proofs (in blocks)
+  uint public immutable proofTimeout; // proof has to be submitted before this
 
   constructor(uint _duration,
               uint _size,
               uint _price,
+              uint _proofPeriod,
+              uint _proofTimeout,
               address _host,
               bytes memory requestSignature,
               bytes memory bidSignature)
@@ -24,6 +28,8 @@ contract StorageContract {
     size = _size;
     price = _price;
     host = _host;
+    proofPeriod = _proofPeriod;
+    proofTimeout = _proofTimeout;
   }
 
   // creates hash for a storage request that can be used to check its signature

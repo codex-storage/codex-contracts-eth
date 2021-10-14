@@ -4,8 +4,10 @@ const { hashRequest, hashBid, sign } = require("./marketplace")
 
 describe("Storage Contract", function () {
 
-  const duration = 31 * 24 * 60 * 60
-  const size = 1 * 1024 * 1024 * 1024
+  const duration = 31 * 24 * 60 * 60 // 31 days
+  const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
+  const proofPeriod = 64 // 64 blocks ≈ 15 minutes
+  const proofTimeout = 42 // 42 blocks ≈ 10 minutes
   const price = 42
 
   var StorageContract
@@ -27,6 +29,8 @@ describe("Storage Contract", function () {
         duration,
         size,
         price,
+        proofPeriod,
+        proofTimeout,
         await host.getAddress(),
         await sign(client, requestHash),
         await sign(host, bidHash)
@@ -49,6 +53,13 @@ describe("Storage Contract", function () {
       expect(await contract.host()).to.equal(await host.getAddress())
     })
 
+    it("has an average time between proofs (in blocks)", async function (){
+      expect(await contract.proofPeriod()).to.equal(proofPeriod)
+    })
+
+    it("has a proof timeout (in blocks)", async function (){
+      expect(await contract.proofTimeout()).to.equal(proofTimeout)
+    })
   })
 
   it("cannot be created when client signature is invalid", async function () {
@@ -57,6 +68,8 @@ describe("Storage Contract", function () {
       duration,
       size,
       price,
+      proofPeriod,
+      proofTimeout,
       await host.getAddress(),
       invalidSignature,
       await sign(host, bidHash)
@@ -69,6 +82,8 @@ describe("Storage Contract", function () {
       duration,
       size,
       price,
+      proofPeriod,
+      proofTimeout,
       await host.getAddress(),
       await sign(client, requestHash),
       invalidSignature
