@@ -1,9 +1,9 @@
 const { ethers } = require("hardhat")
 
-function hashRequest(duration, size, proofPeriod, proofTimeout) {
+function hashRequest(duration, size, hash, proofPeriod, proofTimeout) {
   return ethers.utils.solidityKeccak256(
-    ["string", "uint", "uint", "uint", "uint"],
-    ["[dagger.request.v1]", duration, size, proofPeriod, proofTimeout]
+    ["string", "uint", "uint", "bytes32", "uint", "uint"],
+    ["[dagger.request.v1]", duration, size, hash, proofPeriod, proofTimeout]
   )
 }
 

@@ -6,6 +6,7 @@ describe("Storage Contract", function () {
 
   const duration = 31 * 24 * 60 * 60 // 31 days
   const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
+  const contentHash = ethers.utils.sha256("0xdeadbeef") // hash of content
   const proofPeriod = 8 // 8 blocks ≈ 2 minutes
   const proofTimeout = 4 // 4 blocks ≈ 1 minute
   const price = 42
@@ -18,7 +19,13 @@ describe("Storage Contract", function () {
   beforeEach(async function () {
     [client, host] = await ethers.getSigners()
     StorageContract = await ethers.getContractFactory("StorageContract")
-    requestHash = hashRequest(duration, size, proofPeriod, proofTimeout)
+    requestHash = hashRequest(
+      duration,
+      size,
+      contentHash,
+      proofPeriod,
+      proofTimeout
+    )
     bidHash = hashBid(requestHash, price)
   })
 
@@ -28,6 +35,7 @@ describe("Storage Contract", function () {
       contract = await StorageContract.deploy(
         duration,
         size,
+        contentHash,
         price,
         proofPeriod,
         proofTimeout,
@@ -43,6 +51,10 @@ describe("Storage Contract", function () {
 
     it("contains the size of the data that is to be stored", async function () {
       expect(await contract.size()).to.equal(size)
+    })
+
+    it("contains the hash of the data that is to be stored", async function () {
+      expect(await contract.contentHash()).to.equal(contentHash)
     })
 
     it("has a price", async function () {
@@ -63,11 +75,18 @@ describe("Storage Contract", function () {
   })
 
   it("cannot be created when client signature is invalid", async function () {
-    let invalidHash = hashRequest(duration + 1, size, proofPeriod, proofTimeout)
+    let invalidHash = hashRequest(
+      duration + 1,
+      size,
+      contentHash,
+      proofPeriod,
+      proofTimeout
+    )
     let invalidSignature = await sign(client, invalidHash)
     await expect(StorageContract.deploy(
       duration,
       size,
+      contentHash,
       price,
       proofPeriod,
       proofTimeout,
@@ -82,6 +101,7 @@ describe("Storage Contract", function () {
     await expect(StorageContract.deploy(
       duration,
       size,
+      contentHash,
       price,
       proofPeriod,
       proofTimeout,
@@ -93,11 +113,18 @@ describe("Storage Contract", function () {
 
   it("cannot be created when proof timeout is too large", async function () {
     let invalidTimeout = 129 // max proof timeout is 128 blocks
-    requestHash = hashRequest(duration, size, proofPeriod, invalidTimeout)
+    requestHash = hashRequest(
+      duration,
+      size,
+      contentHash,
+      proofPeriod,
+      invalidTimeout
+    )
     bidHash = hashBid(requestHash, price)
     await expect(StorageContract.deploy(
       duration,
       size,
+      contentHash,
       price,
       proofPeriod,
       invalidTimeout,
@@ -127,6 +154,7 @@ describe("Storage Contract", function () {
       contract = await StorageContract.deploy(
         duration,
         size,
+        contentHash,
         price,
         proofPeriod,
         proofTimeout,
@@ -161,7 +189,6 @@ describe("Storage Contract", function () {
   })
 })
 
-// TDOO: add root hash of data
 // TODO: payment on constructor
 // TODO: contract start and timeout
 // TODO: missed proofs

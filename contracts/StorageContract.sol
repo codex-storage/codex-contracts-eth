@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract StorageContract {
   uint public immutable duration; // contract duration in seconds
   uint public immutable size; // storage size in bytes
+  bytes32 public immutable contentHash; // hash of data that is to be stored
   uint public immutable price; // price in coins
   address public immutable host; // host that provides storage
   uint public immutable proofPeriod; // average time between proofs (in blocks)
@@ -14,6 +15,7 @@ contract StorageContract {
 
   constructor(uint _duration,
               uint _size,
+              bytes32 _contentHash,
               uint _price,
               uint _proofPeriod,
               uint _proofTimeout,
@@ -21,7 +23,13 @@ contract StorageContract {
               bytes memory requestSignature,
               bytes memory bidSignature)
   {
-    bytes32 requestHash = hashRequest(_duration, _size, _proofPeriod, _proofTimeout);
+    bytes32 requestHash = hashRequest(
+      _duration,
+      _size,
+      _contentHash,
+      _proofPeriod,
+      _proofTimeout
+    );
     bytes32 bidHash = hashBid(requestHash, _price);
     checkSignature(requestSignature, requestHash, msg.sender);
     checkSignature(bidSignature, bidHash, _host);
@@ -29,6 +37,7 @@ contract StorageContract {
     duration = _duration;
     size = _size;
     price = _price;
+    contentHash = _contentHash;
     host = _host;
     proofPeriod = _proofPeriod;
     proofTimeout = _proofTimeout;
@@ -36,7 +45,13 @@ contract StorageContract {
   }
 
   // Creates hash for a storage request that can be used to check its signature.
-  function hashRequest(uint _duration, uint _size, uint _proofPeriod, uint _proofTimeout)
+  function hashRequest(
+    uint _duration,
+    uint _size,
+    bytes32 _hash,
+    uint _proofPeriod,
+    uint _proofTimeout
+  )
     internal pure
     returns (bytes32)
   {
@@ -44,6 +59,7 @@ contract StorageContract {
       "[dagger.request.v1]",
       _duration,
       _size,
+      _hash,
       _proofPeriod,
       _proofTimeout
     ));
