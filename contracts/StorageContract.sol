@@ -21,7 +21,7 @@ contract StorageContract {
               bytes memory requestSignature,
               bytes memory bidSignature)
   {
-    bytes32 requestHash = hashRequest(_duration, _size);
+    bytes32 requestHash = hashRequest(_duration, _size, _proofPeriod, _proofTimeout);
     bytes32 bidHash = hashBid(requestHash, _price);
     checkSignature(requestSignature, requestHash, msg.sender);
     checkSignature(bidSignature, bidHash, _host);
@@ -36,14 +36,16 @@ contract StorageContract {
   }
 
   // Creates hash for a storage request that can be used to check its signature.
-  function hashRequest(uint _duration, uint _size)
+  function hashRequest(uint _duration, uint _size, uint _proofPeriod, uint _proofTimeout)
     internal pure
     returns (bytes32)
   {
     return keccak256(abi.encodePacked(
       "[dagger.request.v1]",
       _duration,
-      _size
+      _size,
+      _proofPeriod,
+      _proofTimeout
     ));
   }
 

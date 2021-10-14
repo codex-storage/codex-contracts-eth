@@ -18,7 +18,7 @@ describe("Storage Contract", function () {
   beforeEach(async function () {
     [client, host] = await ethers.getSigners()
     StorageContract = await ethers.getContractFactory("StorageContract")
-    requestHash = hashRequest(duration, size)
+    requestHash = hashRequest(duration, size, proofPeriod, proofTimeout)
     bidHash = hashBid(requestHash, price)
   })
 
@@ -63,7 +63,8 @@ describe("Storage Contract", function () {
   })
 
   it("cannot be created when client signature is invalid", async function () {
-    let invalidSignature = await sign(client, hashRequest(duration + 1, size))
+    let invalidHash = hashRequest(duration + 1, size, proofPeriod, proofTimeout)
+    let invalidSignature = await sign(client, invalidHash)
     await expect(StorageContract.deploy(
       duration,
       size,
@@ -92,6 +93,8 @@ describe("Storage Contract", function () {
 
   it("cannot be created when proof timeout is too large", async function () {
     let invalidTimeout = 129 // max proof timeout is 128 blocks
+    requestHash = hashRequest(duration, size, proofPeriod, invalidTimeout)
+    bidHash = hashBid(requestHash, price)
     await expect(StorageContract.deploy(
       duration,
       size,
