@@ -142,7 +142,7 @@ describe("Storage Contract", function () {
   })
 
   it("cannot be created when bid has expired", async function () {
-    let expired = Math.round(Date.now() / 1000) - 1 // 1 second ago
+    let expired = Math.round(Date.now() / 1000) - 60 // 1 minute ago
     let bidHash = hashBid(requestHash, expired, price)
     await expect(StorageContract.deploy(
       duration,
