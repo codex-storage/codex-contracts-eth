@@ -186,13 +186,56 @@ describe("Storage Contract", function () {
       expect(await contract.isProofRequired(blocknumber)).to.be.false
     })
 
+    it("submits a correct proof", async function () {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await contract.submitProof(blocknumber, true)
+    })
+
+    it("fails proof submission when proof is incorrect", async function () {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await expect(
+        contract.submitProof(blocknumber, false)
+      ).to.be.revertedWith("Invalid proof")
+    })
+
+    it("fails proof submission when proof was not required", async function () {
+      while (await contract.isProofRequired(await minedBlockNumber())) {
+        await mineBlock()
+      }
+      let blocknumber = await minedBlockNumber()
+      await expect(
+        contract.submitProof(blocknumber, true)
+      ).to.be.revertedWith("No proof required")
+    })
+
+    it("fails proof submission when proof is too late", async function () {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      for (let i=0; i<proofTimeout; i++) {
+        mineBlock()
+      }
+      await expect(
+        contract.submitProof(blocknumber, true)
+      ).to.be.revertedWith("Proof not allowed after timeout")
+    })
+
+    it("fails proof submission when already submitted", async function() {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await contract.submitProof(blocknumber, true)
+      await expect(
+        contract.submitProof(blocknumber, true)
+      ).to.be.revertedWith("Proof already submitted")
+    })
   })
 })
 
+// TODO: implement checking of actual proofs of storage, instead of dummy bool
 // TODO: payment on constructor
 // TODO: contract start and timeout
 // TODO: missed proofs
-// TODO: successfull proofs
 // TODO: only allow proofs after start of contract
 // TODO: payout
 // TODO: stake

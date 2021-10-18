@@ -13,6 +13,8 @@ contract StorageContract {
   uint public immutable proofTimeout; // proof has to be submitted before this
   uint public immutable proofMarker; // indicates when a proof is required
 
+  mapping(uint => bool) proofReceived; // whether proof for a block was received
+
   constructor(uint _duration,
               uint _size,
               bytes32 _contentHash,
@@ -100,5 +102,16 @@ contract StorageContract {
   function isProofRequired(uint blocknumber) public view returns (bool) {
     bytes32 hash = blockhash(blocknumber);
     return hash != 0 && uint(hash) % proofPeriod == proofMarker;
+  }
+
+  function submitProof(uint blocknumber, bool proof) public {
+    require(proof, "Invalid proof"); // TODO: replace bool by actual proof
+    require(isProofRequired(blocknumber), "No proof required for this block");
+    require(
+      block.number < blocknumber + proofTimeout,
+      "Proof not allowed after timeout"
+    );
+    require(!proofReceived[blocknumber], "Proof already submitted");
+    proofReceived[blocknumber] = true;
   }
 }
