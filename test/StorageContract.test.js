@@ -13,6 +13,7 @@ describe("Storage Contract", function () {
 
   var StorageContract
   var client, host
+  var bidExpiry
   var requestHash, bidHash
   var contract
 
@@ -26,7 +27,8 @@ describe("Storage Contract", function () {
       proofPeriod,
       proofTimeout
     )
-    bidHash = hashBid(requestHash, price)
+    bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
+    bidHash = hashBid(requestHash, bidExpiry, price)
   })
 
   describe("when properly instantiated", function () {
@@ -39,6 +41,7 @@ describe("Storage Contract", function () {
         price,
         proofPeriod,
         proofTimeout,
+        bidExpiry,
         await host.getAddress(),
         await sign(client, requestHash),
         await sign(host, bidHash)
@@ -90,6 +93,7 @@ describe("Storage Contract", function () {
       price,
       proofPeriod,
       proofTimeout,
+      bidExpiry,
       await host.getAddress(),
       invalidSignature,
       await sign(host, bidHash)
@@ -97,7 +101,8 @@ describe("Storage Contract", function () {
   })
 
   it("cannot be created when host signature is invalid", async function () {
-    let invalidSignature = await sign(host, hashBid(requestHash, price - 1))
+    let invalidBid = hashBid(requestHash, bidExpiry, price - 1)
+    let invalidSignature = await sign(host, invalidBid)
     await expect(StorageContract.deploy(
       duration,
       size,
@@ -105,6 +110,7 @@ describe("Storage Contract", function () {
       price,
       proofPeriod,
       proofTimeout,
+      bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
       invalidSignature
@@ -120,7 +126,7 @@ describe("Storage Contract", function () {
       proofPeriod,
       invalidTimeout
     )
-    bidHash = hashBid(requestHash, price)
+    bidHash = hashBid(requestHash, bidExpiry, price)
     await expect(StorageContract.deploy(
       duration,
       size,
@@ -128,10 +134,28 @@ describe("Storage Contract", function () {
       price,
       proofPeriod,
       invalidTimeout,
+      bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
       await sign(host, bidHash),
     )).to.be.revertedWith("Invalid proof timeout")
+  })
+
+  it("cannot be created when bid has expired", async function () {
+    let expired = Math.round(Date.now() / 1000) - 1 // 1 second ago
+    let bidHash = hashBid(requestHash, expired, price)
+    await expect(StorageContract.deploy(
+      duration,
+      size,
+      contentHash,
+      price,
+      proofPeriod,
+      proofTimeout,
+      expired,
+      await host.getAddress(),
+      await sign(client, requestHash),
+      await sign(host, bidHash),
+    )).to.be.revertedWith("Bid expired")
   })
 
   describe("proofs", function () {
@@ -158,6 +182,7 @@ describe("Storage Contract", function () {
         price,
         proofPeriod,
         proofTimeout,
+        bidExpiry,
         await host.getAddress(),
         await sign(client, requestHash),
         await sign(host, bidHash)
@@ -239,6 +264,4 @@ describe("Storage Contract", function () {
 // TODO: only allow proofs after start of contract
 // TODO: payout
 // TODO: stake
-// TODO: request expiration
-// TODO: bid expiration
 // TODO: multiple hosts in single contract

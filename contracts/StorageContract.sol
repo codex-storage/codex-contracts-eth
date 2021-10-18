@@ -21,6 +21,7 @@ contract StorageContract {
               uint _price,
               uint _proofPeriod,
               uint _proofTimeout,
+              uint _bidExpiry,
               address _host,
               bytes memory requestSignature,
               bytes memory bidSignature)
@@ -32,10 +33,11 @@ contract StorageContract {
       _proofPeriod,
       _proofTimeout
     );
-    bytes32 bidHash = hashBid(requestHash, _price);
+    bytes32 bidHash = hashBid(requestHash, _bidExpiry, _price);
     checkSignature(requestSignature, requestHash, msg.sender);
     checkSignature(bidSignature, bidHash, _host);
     checkProofTimeout(_proofTimeout);
+    checkBidExpiry(_bidExpiry);
     duration = _duration;
     size = _size;
     price = _price;
@@ -68,13 +70,14 @@ contract StorageContract {
   }
 
   // Creates hash for a storage bid that can be used to check its signature.
-  function hashBid(bytes32 requestHash, uint _price)
+  function hashBid(bytes32 requestHash, uint _expiry, uint _price)
     internal pure
     returns (bytes32)
   {
     return keccak256(abi.encodePacked(
       "[dagger.bid.v1]",
       requestHash,
+      _expiry,
       _price
     ));
   }
@@ -93,6 +96,10 @@ contract StorageContract {
   // after timeout for a validator to signal the absence of a proof.
   function checkProofTimeout(uint timeout) internal pure {
     require(timeout <= 128, "Invalid proof timeout, needs to be <= 128");
+  }
+
+  function checkBidExpiry(uint expiry) internal view {
+    require(expiry > block.timestamp, "Bid expired");
   }
 
   // Check whether a proof is required at the time of the block with the

@@ -7,10 +7,10 @@ function hashRequest(duration, size, hash, proofPeriod, proofTimeout) {
   )
 }
 
-function hashBid(requestHash, price) {
+function hashBid(requestHash, expiry, price) {
   return ethers.utils.solidityKeccak256(
-    ["string", "bytes32", "uint"],
-    ["[dagger.bid.v1]", requestHash, price]
+    ["string", "bytes32", "uint", "uint"],
+    ["[dagger.bid.v1]", requestHash, expiry, price]
   )
 }
 
