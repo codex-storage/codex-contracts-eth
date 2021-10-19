@@ -174,6 +174,12 @@ describe("Storage Contract", function () {
       }
     }
 
+    async function mineUntilProofTimeout() {
+      for (let i=0; i<proofTimeout; i++) {
+        mineBlock()
+      }
+    }
+
     beforeEach(async function () {
       contract = await StorageContract.deploy(
         duration,
@@ -238,9 +244,7 @@ describe("Storage Contract", function () {
     it("fails proof submission when proof is too late", async function () {
       await mineUntilProofIsRequired()
       let blocknumber = await minedBlockNumber()
-      for (let i=0; i<proofTimeout; i++) {
-        mineBlock()
-      }
+      await mineUntilProofTimeout()
       await expect(
         contract.submitProof(blocknumber, true)
       ).to.be.revertedWith("Proof not allowed after timeout")
@@ -254,13 +258,51 @@ describe("Storage Contract", function () {
         contract.submitProof(blocknumber, true)
       ).to.be.revertedWith("Proof already submitted")
     })
+
+    it("marks a proof as missing", async function () {
+      expect(await contract.missingProofs()).to.equal(0)
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await mineUntilProofTimeout()
+      await contract.markProofAsMissing(blocknumber)
+      expect(await contract.missingProofs()).to.equal(1)
+    })
+
+    it("does not mark a proof as missing before timeout", async function () {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await mineBlock()
+      await expect(
+        contract.markProofAsMissing(blocknumber)
+      ).to.be.revertedWith("Proof has not timed out yet")
+    })
+
+    it("does not mark a submitted proof as missing", async function () {
+      await mineUntilProofIsRequired()
+      let blocknumber = await minedBlockNumber()
+      await contract.submitProof(blocknumber, true)
+      await mineUntilProofTimeout()
+      await expect(
+        contract.markProofAsMissing(blocknumber)
+      ).to.be.revertedWith("Proof was submitted, not missing")
+    })
+
+    it("does not mark proof as missing when not required", async function () {
+      while (await contract.isProofRequired(await minedBlockNumber())) {
+        mineBlock()
+      }
+      let blocknumber = await minedBlockNumber()
+      await mineUntilProofTimeout()
+      await expect(
+        contract.markProofAsMissing(blocknumber)
+      ).to.be.revertedWith("Proof was not required")
+    })
   })
 })
 
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
 // TODO: payment on constructor
 // TODO: contract start and timeout
-// TODO: missed proofs
 // TODO: only allow proofs after start of contract
 // TODO: payout
 // TODO: stake

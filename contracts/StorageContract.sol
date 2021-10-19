@@ -14,6 +14,7 @@ contract StorageContract {
   uint public immutable proofMarker; // indicates when a proof is required
 
   mapping(uint => bool) proofReceived; // whether proof for a block was received
+  uint public missingProofs;
 
   constructor(uint _duration,
               uint _size,
@@ -111,14 +112,22 @@ contract StorageContract {
     return hash != 0 && uint(hash) % proofPeriod == proofMarker;
   }
 
+  function isProofTimedOut(uint blocknumber) internal view returns (bool) {
+    return block.number >= blocknumber + proofTimeout;
+  }
+
   function submitProof(uint blocknumber, bool proof) public {
     require(proof, "Invalid proof"); // TODO: replace bool by actual proof
     require(isProofRequired(blocknumber), "No proof required for this block");
-    require(
-      block.number < blocknumber + proofTimeout,
-      "Proof not allowed after timeout"
-    );
+    require(!isProofTimedOut(blocknumber), "Proof not allowed after timeout");
     require(!proofReceived[blocknumber], "Proof already submitted");
     proofReceived[blocknumber] = true;
+  }
+
+  function markProofAsMissing(uint blocknumber) public {
+    require(isProofTimedOut(blocknumber), "Proof has not timed out yet");
+    require(!proofReceived[blocknumber], "Proof was submitted, not missing");
+    require(isProofRequired(blocknumber), "Proof was not required");
+    missingProofs += 1;
   }
 }
