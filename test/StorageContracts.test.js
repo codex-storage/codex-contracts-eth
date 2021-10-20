@@ -2,7 +2,7 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 
-describe("Storage Contract", function () {
+describe("Storage Contracts", function () {
 
   const duration = 31 * 24 * 60 * 60 // 31 days
   const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
@@ -11,7 +11,7 @@ describe("Storage Contract", function () {
   const proofTimeout = 4 // 4 blocks ≈ 1 minute
   const price = 42
 
-  var StorageContract
+  var StorageContracts
   var client, host
   var bidExpiry
   var requestHash, bidHash
@@ -19,7 +19,7 @@ describe("Storage Contract", function () {
 
   beforeEach(async function () {
     [client, host] = await ethers.getSigners()
-    StorageContract = await ethers.getContractFactory("StorageContract")
+    StorageContracts = await ethers.getContractFactory("StorageContracts")
     requestHash = hashRequest(
       duration,
       size,
@@ -34,7 +34,7 @@ describe("Storage Contract", function () {
   describe("when properly instantiated", function () {
 
     beforeEach(async function () {
-      contract = await StorageContract.deploy(
+      contract = await StorageContracts.deploy(
         duration,
         size,
         contentHash,

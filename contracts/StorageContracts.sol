@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract StorageContract {
+contract StorageContracts {
   uint public immutable duration; // contract duration in seconds
   uint public immutable size; // storage size in bytes
   bytes32 public immutable contentHash; // hash of data that is to be stored
