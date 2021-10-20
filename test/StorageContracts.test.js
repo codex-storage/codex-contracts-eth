@@ -10,6 +10,7 @@ describe("Storage Contracts", function () {
   const proofPeriod = 8 // 8 blocks ≈ 2 minutes
   const proofTimeout = 4 // 4 blocks ≈ 1 minute
   const price = 42
+  const nonce = ethers.utils.randomBytes(32)
 
   var contracts
   var client, host
@@ -26,24 +27,25 @@ describe("Storage Contracts", function () {
       size,
       contentHash,
       proofPeriod,
-      proofTimeout
+      proofTimeout,
+      nonce
     )
     bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
     bidHash = hashBid(requestHash, bidExpiry, price)
-    id = Math.round(Math.random() * 99999999) // randomly chosen contract id
+    id = bidHash
   })
 
   describe("when properly instantiated", function () {
 
     beforeEach(async function () {
       await contracts.newContract(
-        id,
         duration,
         size,
         contentHash,
         price,
         proofPeriod,
         proofTimeout,
+        nonce,
         bidExpiry,
         await host.getAddress(),
         await sign(client, requestHash),
@@ -82,26 +84,26 @@ describe("Storage Contracts", function () {
 
   it("cannot be created when contract id already used", async function () {
     await contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       proofTimeout,
+      nonce,
       bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
       await sign(host, bidHash)
     )
     await expect(contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       proofTimeout,
+      nonce,
       bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
@@ -115,17 +117,18 @@ describe("Storage Contracts", function () {
       size,
       contentHash,
       proofPeriod,
-      proofTimeout
+      proofTimeout,
+      nonce
     )
     let invalidSignature = await sign(client, invalidHash)
     await expect(contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       proofTimeout,
+      nonce,
       bidExpiry,
       await host.getAddress(),
       invalidSignature,
@@ -137,13 +140,13 @@ describe("Storage Contracts", function () {
     let invalidBid = hashBid(requestHash, bidExpiry, price - 1)
     let invalidSignature = await sign(host, invalidBid)
     await expect(contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       proofTimeout,
+      nonce,
       bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
@@ -158,17 +161,18 @@ describe("Storage Contracts", function () {
       size,
       contentHash,
       proofPeriod,
-      invalidTimeout
+      invalidTimeout,
+      nonce
     )
     bidHash = hashBid(requestHash, bidExpiry, price)
     await expect(contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       invalidTimeout,
+      nonce,
       bidExpiry,
       await host.getAddress(),
       await sign(client, requestHash),
@@ -180,13 +184,13 @@ describe("Storage Contracts", function () {
     let expired = Math.round(Date.now() / 1000) - 60 // 1 minute ago
     let bidHash = hashBid(requestHash, expired, price)
     await expect(contracts.newContract(
-      id,
       duration,
       size,
       contentHash,
       price,
       proofPeriod,
       proofTimeout,
+      nonce,
       expired,
       await host.getAddress(),
       await sign(client, requestHash),
@@ -218,13 +222,13 @@ describe("Storage Contracts", function () {
 
     beforeEach(async function () {
       await contracts.newContract(
-        id,
         duration,
         size,
         contentHash,
         price,
         proofPeriod,
         proofTimeout,
+        nonce,
         bidExpiry,
         await host.getAddress(),
         await sign(client, requestHash),

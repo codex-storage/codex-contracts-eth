@@ -20,48 +20,48 @@ contract StorageContracts {
   }
 
   uint numberOfContracts;
-  mapping(uint => Contract) contracts;
+  mapping(bytes32 => Contract) contracts;
 
-  function duration(uint contractId) public view returns (uint) {
+  function duration(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].duration;
   }
 
-  function size(uint contractId) public view returns (uint) {
+  function size(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].size;
   }
 
-  function contentHash(uint contractId) public view returns (bytes32) {
+  function contentHash(bytes32 contractId) public view returns (bytes32) {
     return contracts[contractId].contentHash;
   }
 
-  function price(uint contractId) public view returns (uint) {
+  function price(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].price;
   }
 
-  function host(uint contractId) public view returns (address) {
+  function host(bytes32 contractId) public view returns (address) {
     return contracts[contractId].host;
   }
 
-  function proofPeriod(uint contractId) public view returns (uint) {
+  function proofPeriod(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].proofPeriod;
   }
 
-  function proofTimeout(uint contractId) public view returns (uint) {
+  function proofTimeout(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].proofTimeout;
   }
 
-  function missingProofs(uint contractId) public view returns (uint) {
+  function missingProofs(bytes32 contractId) public view returns (uint) {
     return contracts[contractId].missingProofs;
   }
 
   function newContract(
-    uint contractId,
     uint _duration,
     uint _size,
     bytes32 _contentHash,
     uint _price,
     uint _proofPeriod,
     uint _proofTimeout,
+    bytes32 _nonce,
     uint _bidExpiry,
     address _host,
     bytes memory requestSignature,
@@ -74,13 +74,15 @@ contract StorageContracts {
       _size,
       _contentHash,
       _proofPeriod,
-      _proofTimeout
+      _proofTimeout,
+      _nonce
     );
     bytes32 bidHash = hashBid(requestHash, _bidExpiry, _price);
     checkSignature(requestSignature, requestHash, msg.sender);
     checkSignature(bidSignature, bidHash, _host);
     checkProofTimeout(_proofTimeout);
     checkBidExpiry(_bidExpiry);
+    bytes32 contractId = bidHash;
     checkId(contractId);
     Contract storage c = contracts[contractId];
     c.initialized = true;
@@ -100,7 +102,8 @@ contract StorageContracts {
     uint _size,
     bytes32 _hash,
     uint _proofPeriod,
-    uint _proofTimeout
+    uint _proofTimeout,
+    bytes32 _nonce
   )
     internal pure
     returns (bytes32)
@@ -111,7 +114,8 @@ contract StorageContracts {
       _size,
       _hash,
       _proofPeriod,
-      _proofTimeout
+      _proofTimeout,
+      _nonce
     ));
   }
 
@@ -148,7 +152,7 @@ contract StorageContracts {
     require(expiry > block.timestamp, "Bid expired");
   }
 
-  function checkId(uint contractId) internal view {
+  function checkId(bytes32 contractId) internal view {
     require(
       !contracts[contractId].initialized,
       "A contract with this id already exists"
@@ -160,7 +164,7 @@ contract StorageContracts {
   // timeout for it to be valid. Whether a proof is required is determined
   // randomly, but on average it is once every proof period.
   function isProofRequired(
-    uint contractId,
+    bytes32 contractId,
     uint blocknumber
   )
     public view
@@ -172,7 +176,7 @@ contract StorageContracts {
   }
 
   function isProofTimedOut(
-    uint contractId,
+    bytes32 contractId,
     uint blocknumber
   )
     internal view
@@ -183,7 +187,7 @@ contract StorageContracts {
   }
 
   function submitProof(
-    uint contractId,
+    bytes32 contractId,
     uint blocknumber,
     bool proof
   )
@@ -203,7 +207,7 @@ contract StorageContracts {
     c.proofReceived[blocknumber] = true;
   }
 
-  function markProofAsMissing(uint contractId, uint blocknumber) public {
+  function markProofAsMissing(bytes32 contractId, uint blocknumber) public {
     Contract storage c = contracts[contractId];
     require(
       isProofTimedOut(contractId, blocknumber),

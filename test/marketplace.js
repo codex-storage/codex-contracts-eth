@@ -1,16 +1,18 @@
 const { ethers } = require("hardhat")
 
-function hashRequest(duration, size, hash, proofPeriod, proofTimeout) {
+function hashRequest(duration, size, hash, proofPeriod, proofTimeout, nonce) {
+  const type = "[dagger.request.v1]"
   return ethers.utils.solidityKeccak256(
-    ["string", "uint", "uint", "bytes32", "uint", "uint"],
-    ["[dagger.request.v1]", duration, size, hash, proofPeriod, proofTimeout]
+    ["string", "uint", "uint", "bytes32", "uint", "uint", "bytes32"],
+    [type, duration, size, hash, proofPeriod, proofTimeout, nonce]
   )
 }
 
 function hashBid(requestHash, expiry, price) {
+  const type = "[dagger.bid.v1]"
   return ethers.utils.solidityKeccak256(
     ["string", "bytes32", "uint", "uint"],
-    ["[dagger.bid.v1]", requestHash, expiry, price]
+    [type, requestHash, expiry, price]
   )
 }
 
