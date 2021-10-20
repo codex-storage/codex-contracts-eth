@@ -11,15 +11,16 @@ describe("Storage Contracts", function () {
   const proofTimeout = 4 // 4 blocks ≈ 1 minute
   const price = 42
 
-  var StorageContracts
+  var contracts
   var client, host
   var bidExpiry
   var requestHash, bidHash
-  var contract
+  var id
 
   beforeEach(async function () {
     [client, host] = await ethers.getSigners()
-    StorageContracts = await ethers.getContractFactory("StorageContracts")
+    let StorageContracts = await ethers.getContractFactory("StorageContracts")
+    contracts = await StorageContracts.deploy()
     requestHash = hashRequest(
       duration,
       size,
@@ -29,12 +30,14 @@ describe("Storage Contracts", function () {
     )
     bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
     bidHash = hashBid(requestHash, bidExpiry, price)
+    id = Math.round(Math.random() * 99999999) // randomly chosen contract id
   })
 
   describe("when properly instantiated", function () {
 
     beforeEach(async function () {
-      contract = await StorageContracts.deploy(
+      await contracts.newContract(
+        id,
         duration,
         size,
         contentHash,
@@ -49,32 +52,61 @@ describe("Storage Contracts", function () {
     })
 
     it("has a duration", async function () {
-      expect(await contract.duration()).to.equal(duration)
+      expect(await contracts.duration(id)).to.equal(duration)
     })
 
     it("contains the size of the data that is to be stored", async function () {
-      expect(await contract.size()).to.equal(size)
+      expect(await contracts.size(id)).to.equal(size)
     })
 
     it("contains the hash of the data that is to be stored", async function () {
-      expect(await contract.contentHash()).to.equal(contentHash)
+      expect(await contracts.contentHash(id)).to.equal(contentHash)
     })
 
     it("has a price", async function () {
-      expect(await contract.price()).to.equal(price)
+      expect(await contracts.price(id)).to.equal(price)
     })
 
     it("knows the host that provides the storage", async function () {
-      expect(await contract.host()).to.equal(await host.getAddress())
+      expect(await contracts.host(id)).to.equal(await host.getAddress())
     })
 
     it("has an average time between proofs (in blocks)", async function (){
-      expect(await contract.proofPeriod()).to.equal(proofPeriod)
+      expect(await contracts.proofPeriod(id)).to.equal(proofPeriod)
     })
 
     it("has a proof timeout (in blocks)", async function (){
-      expect(await contract.proofTimeout()).to.equal(proofTimeout)
+      expect(await contracts.proofTimeout(id)).to.equal(proofTimeout)
     })
+  })
+
+  it("cannot be created when contract id already used", async function () {
+    await contracts.newContract(
+      id,
+      duration,
+      size,
+      contentHash,
+      price,
+      proofPeriod,
+      proofTimeout,
+      bidExpiry,
+      await host.getAddress(),
+      await sign(client, requestHash),
+      await sign(host, bidHash)
+    )
+    await expect(contracts.newContract(
+      id,
+      duration,
+      size,
+      contentHash,
+      price,
+      proofPeriod,
+      proofTimeout,
+      bidExpiry,
+      await host.getAddress(),
+      await sign(client, requestHash),
+      await sign(host, bidHash)
+    )).to.be.revertedWith("A contract with this id already exists")
   })
 
   it("cannot be created when client signature is invalid", async function () {
@@ -86,7 +118,8 @@ describe("Storage Contracts", function () {
       proofTimeout
     )
     let invalidSignature = await sign(client, invalidHash)
-    await expect(StorageContract.deploy(
+    await expect(contracts.newContract(
+      id,
       duration,
       size,
       contentHash,
@@ -103,7 +136,8 @@ describe("Storage Contracts", function () {
   it("cannot be created when host signature is invalid", async function () {
     let invalidBid = hashBid(requestHash, bidExpiry, price - 1)
     let invalidSignature = await sign(host, invalidBid)
-    await expect(StorageContract.deploy(
+    await expect(contracts.newContract(
+      id,
       duration,
       size,
       contentHash,
@@ -127,7 +161,8 @@ describe("Storage Contracts", function () {
       invalidTimeout
     )
     bidHash = hashBid(requestHash, bidExpiry, price)
-    await expect(StorageContract.deploy(
+    await expect(contracts.newContract(
+      id,
       duration,
       size,
       contentHash,
@@ -144,7 +179,8 @@ describe("Storage Contracts", function () {
   it("cannot be created when bid has expired", async function () {
     let expired = Math.round(Date.now() / 1000) - 60 // 1 minute ago
     let bidHash = hashBid(requestHash, expired, price)
-    await expect(StorageContract.deploy(
+    await expect(contracts.newContract(
+      id,
       duration,
       size,
       contentHash,
@@ -168,8 +204,8 @@ describe("Storage Contracts", function () {
       return await ethers.provider.getBlockNumber() - 1
     }
 
-    async function mineUntilProofIsRequired() {
-      while (!await contract.isProofRequired(await minedBlockNumber())) {
+    async function mineUntilProofIsRequired(id) {
+      while (!await contracts.isProofRequired(id, await minedBlockNumber())) {
         mineBlock()
       }
     }
@@ -181,7 +217,8 @@ describe("Storage Contracts", function () {
     }
 
     beforeEach(async function () {
-      contract = await StorageContract.deploy(
+      await contracts.newContract(
+        id,
         duration,
         size,
         contentHash,
@@ -200,7 +237,7 @@ describe("Storage Contracts", function () {
       let proofs = 0
       for (i=0; i<blocks; i++) {
         await mineBlock()
-        if (await contract.isProofRequired(await minedBlockNumber())) {
+        if (await contracts.isProofRequired(id, await minedBlockNumber())) {
           proofs += 1
         }
       }
@@ -209,92 +246,92 @@ describe("Storage Contracts", function () {
     })
 
     it("requires no proof for blocks that are unavailable", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       for (i=0; i<256; i++) { // only last 256 blocks are available in solidity
         mineBlock()
       }
-      expect(await contract.isProofRequired(blocknumber)).to.be.false
+      expect(await contracts.isProofRequired(id, blocknumber)).to.be.false
     })
 
     it("submits a correct proof", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
-      await contract.submitProof(blocknumber, true)
+      await contracts.submitProof(id, blocknumber, true)
     })
 
     it("fails proof submission when proof is incorrect", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       await expect(
-        contract.submitProof(blocknumber, false)
+        contracts.submitProof(id, blocknumber, false)
       ).to.be.revertedWith("Invalid proof")
     })
 
     it("fails proof submission when proof was not required", async function () {
-      while (await contract.isProofRequired(await minedBlockNumber())) {
+      while (await contracts.isProofRequired(id, await minedBlockNumber())) {
         await mineBlock()
       }
       let blocknumber = await minedBlockNumber()
       await expect(
-        contract.submitProof(blocknumber, true)
+        contracts.submitProof(id, blocknumber, true)
       ).to.be.revertedWith("No proof required")
     })
 
     it("fails proof submission when proof is too late", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       await mineUntilProofTimeout()
       await expect(
-        contract.submitProof(blocknumber, true)
+        contracts.submitProof(id, blocknumber, true)
       ).to.be.revertedWith("Proof not allowed after timeout")
     })
 
     it("fails proof submission when already submitted", async function() {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
-      await contract.submitProof(blocknumber, true)
+      await contracts.submitProof(id, blocknumber, true)
       await expect(
-        contract.submitProof(blocknumber, true)
+        contracts.submitProof(id, blocknumber, true)
       ).to.be.revertedWith("Proof already submitted")
     })
 
     it("marks a proof as missing", async function () {
-      expect(await contract.missingProofs()).to.equal(0)
-      await mineUntilProofIsRequired()
+      expect(await contracts.missingProofs(id)).to.equal(0)
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       await mineUntilProofTimeout()
-      await contract.markProofAsMissing(blocknumber)
-      expect(await contract.missingProofs()).to.equal(1)
+      await contracts.markProofAsMissing(id, blocknumber)
+      expect(await contracts.missingProofs(id)).to.equal(1)
     })
 
     it("does not mark a proof as missing before timeout", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       await mineBlock()
       await expect(
-        contract.markProofAsMissing(blocknumber)
+        contracts.markProofAsMissing(id, blocknumber)
       ).to.be.revertedWith("Proof has not timed out yet")
     })
 
     it("does not mark a submitted proof as missing", async function () {
-      await mineUntilProofIsRequired()
+      await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
-      await contract.submitProof(blocknumber, true)
+      await contracts.submitProof(id, blocknumber, true)
       await mineUntilProofTimeout()
       await expect(
-        contract.markProofAsMissing(blocknumber)
+        contracts.markProofAsMissing(id, blocknumber)
       ).to.be.revertedWith("Proof was submitted, not missing")
     })
 
     it("does not mark proof as missing when not required", async function () {
-      while (await contract.isProofRequired(await minedBlockNumber())) {
+      while (await contracts.isProofRequired(id, await minedBlockNumber())) {
         mineBlock()
       }
       let blocknumber = await minedBlockNumber()
       await mineUntilProofTimeout()
       await expect(
-        contract.markProofAsMissing(blocknumber)
+        contracts.markProofAsMissing(id, blocknumber)
       ).to.be.revertedWith("Proof was not required")
     })
   })
@@ -306,4 +343,3 @@ describe("Storage Contracts", function () {
 // TODO: only allow proofs after start of contract
 // TODO: payout
 // TODO: stake
-// TODO: multiple hosts in single contract

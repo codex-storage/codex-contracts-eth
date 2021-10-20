@@ -4,28 +4,70 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract StorageContracts {
-  uint public immutable duration; // contract duration in seconds
-  uint public immutable size; // storage size in bytes
-  bytes32 public immutable contentHash; // hash of data that is to be stored
-  uint public immutable price; // price in coins
-  address public immutable host; // host that provides storage
-  uint public immutable proofPeriod; // average time between proofs (in blocks)
-  uint public immutable proofTimeout; // proof has to be submitted before this
-  uint public immutable proofMarker; // indicates when a proof is required
 
-  mapping(uint => bool) proofReceived; // whether proof for a block was received
-  uint public missingProofs;
+  struct Contract {
+    bool initialized; // always true, except for empty contracts in mapping
+    uint duration; // contract duration in seconds
+    uint size; // storage size in bytes
+    bytes32 contentHash; // hash of data that is to be stored
+    uint price; // price in coins
+    address host; // host that provides storage
+    uint proofPeriod; // average time between proofs (in blocks)
+    uint proofTimeout; // proof has to be submitted before this
+    uint proofMarker; // indicates when a proof is required
+    mapping(uint => bool) proofReceived; // whether proof for block was received
+    uint missingProofs;
+  }
 
-  constructor(uint _duration,
-              uint _size,
-              bytes32 _contentHash,
-              uint _price,
-              uint _proofPeriod,
-              uint _proofTimeout,
-              uint _bidExpiry,
-              address _host,
-              bytes memory requestSignature,
-              bytes memory bidSignature)
+  uint numberOfContracts;
+  mapping(uint => Contract) contracts;
+
+  function duration(uint contractId) public view returns (uint) {
+    return contracts[contractId].duration;
+  }
+
+  function size(uint contractId) public view returns (uint) {
+    return contracts[contractId].size;
+  }
+
+  function contentHash(uint contractId) public view returns (bytes32) {
+    return contracts[contractId].contentHash;
+  }
+
+  function price(uint contractId) public view returns (uint) {
+    return contracts[contractId].price;
+  }
+
+  function host(uint contractId) public view returns (address) {
+    return contracts[contractId].host;
+  }
+
+  function proofPeriod(uint contractId) public view returns (uint) {
+    return contracts[contractId].proofPeriod;
+  }
+
+  function proofTimeout(uint contractId) public view returns (uint) {
+    return contracts[contractId].proofTimeout;
+  }
+
+  function missingProofs(uint contractId) public view returns (uint) {
+    return contracts[contractId].missingProofs;
+  }
+
+  function newContract(
+    uint contractId,
+    uint _duration,
+    uint _size,
+    bytes32 _contentHash,
+    uint _price,
+    uint _proofPeriod,
+    uint _proofTimeout,
+    uint _bidExpiry,
+    address _host,
+    bytes memory requestSignature,
+    bytes memory bidSignature
+  )
+    public
   {
     bytes32 requestHash = hashRequest(
       _duration,
@@ -39,14 +81,17 @@ contract StorageContracts {
     checkSignature(bidSignature, bidHash, _host);
     checkProofTimeout(_proofTimeout);
     checkBidExpiry(_bidExpiry);
-    duration = _duration;
-    size = _size;
-    price = _price;
-    contentHash = _contentHash;
-    host = _host;
-    proofPeriod = _proofPeriod;
-    proofTimeout = _proofTimeout;
-    proofMarker = uint(blockhash(block.number - 1)) % _proofPeriod;
+    checkId(contractId);
+    Contract storage c = contracts[contractId];
+    c.initialized = true;
+    c.duration = _duration;
+    c.size = _size;
+    c.price = _price;
+    c.contentHash = _contentHash;
+    c.host = _host;
+    c.proofPeriod = _proofPeriod;
+    c.proofTimeout = _proofTimeout;
+    c.proofMarker = uint(blockhash(block.number - 1)) % _proofPeriod;
   }
 
   // Creates hash for a storage request that can be used to check its signature.
@@ -103,31 +148,75 @@ contract StorageContracts {
     require(expiry > block.timestamp, "Bid expired");
   }
 
+  function checkId(uint contractId) internal view {
+    require(
+      !contracts[contractId].initialized,
+      "A contract with this id already exists"
+    );
+  }
+
   // Check whether a proof is required at the time of the block with the
   // specified block number. A proof has to be submitted within the proof
   // timeout for it to be valid. Whether a proof is required is determined
   // randomly, but on average it is once every proof period.
-  function isProofRequired(uint blocknumber) public view returns (bool) {
+  function isProofRequired(
+    uint contractId,
+    uint blocknumber
+  )
+    public view
+    returns (bool)
+  {
+    Contract storage c = contracts[contractId];
     bytes32 hash = blockhash(blocknumber);
-    return hash != 0 && uint(hash) % proofPeriod == proofMarker;
+    return hash != 0 && uint(hash) % c.proofPeriod == c.proofMarker;
   }
 
-  function isProofTimedOut(uint blocknumber) internal view returns (bool) {
-    return block.number >= blocknumber + proofTimeout;
+  function isProofTimedOut(
+    uint contractId,
+    uint blocknumber
+  )
+    internal view
+    returns (bool)
+  {
+    Contract storage c = contracts[contractId];
+    return block.number >= blocknumber + c.proofTimeout;
   }
 
-  function submitProof(uint blocknumber, bool proof) public {
+  function submitProof(
+    uint contractId,
+    uint blocknumber,
+    bool proof
+  )
+    public
+  {
+    Contract storage c = contracts[contractId];
     require(proof, "Invalid proof"); // TODO: replace bool by actual proof
-    require(isProofRequired(blocknumber), "No proof required for this block");
-    require(!isProofTimedOut(blocknumber), "Proof not allowed after timeout");
-    require(!proofReceived[blocknumber], "Proof already submitted");
-    proofReceived[blocknumber] = true;
+    require(
+      isProofRequired(contractId, blocknumber),
+      "No proof required for this block"
+    );
+    require(
+      !isProofTimedOut(contractId, blocknumber),
+      "Proof not allowed after timeout"
+    );
+    require(!c.proofReceived[blocknumber], "Proof already submitted");
+    c.proofReceived[blocknumber] = true;
   }
 
-  function markProofAsMissing(uint blocknumber) public {
-    require(isProofTimedOut(blocknumber), "Proof has not timed out yet");
-    require(!proofReceived[blocknumber], "Proof was submitted, not missing");
-    require(isProofRequired(blocknumber), "Proof was not required");
-    missingProofs += 1;
+  function markProofAsMissing(uint contractId, uint blocknumber) public {
+    Contract storage c = contracts[contractId];
+    require(
+      isProofTimedOut(contractId, blocknumber),
+      "Proof has not timed out yet"
+    );
+    require(
+      !c.proofReceived[blocknumber],
+      "Proof was submitted, not missing"
+    );
+    require(
+      isProofRequired(contractId, blocknumber),
+      "Proof was not required"
+    );
+    c.missingProofs += 1;
   }
 }
