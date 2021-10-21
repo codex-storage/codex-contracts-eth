@@ -338,6 +338,16 @@ describe("Storage Contracts", function () {
         contracts.markProofAsMissing(id, blocknumber)
       ).to.be.revertedWith("Proof was not required")
     })
+
+    it("does not mark proof as missing twice", async function () {
+      await mineUntilProofIsRequired(id)
+      let blocknumber = await minedBlockNumber()
+      await mineUntilProofTimeout()
+      await contracts.markProofAsMissing(id, blocknumber)
+      await expect(
+        contracts.markProofAsMissing(id, blocknumber)
+      ).to.be.revertedWith("Proof already marked as missing")
+    })
   })
 })
 

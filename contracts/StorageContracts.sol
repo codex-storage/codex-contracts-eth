@@ -16,6 +16,7 @@ contract StorageContracts {
     uint proofTimeout; // proof has to be submitted before this
     uint proofMarker; // indicates when a proof is required
     mapping(uint => bool) proofReceived; // whether proof for block was received
+    mapping(uint => bool) proofMissing; // whether proof for block was missing
     uint missingProofs;
   }
 
@@ -221,6 +222,8 @@ contract StorageContracts {
       isProofRequired(contractId, blocknumber),
       "Proof was not required"
     );
+    require(!c.proofMissing[blocknumber], "Proof already marked as missing");
+    c.proofMissing[blocknumber] = true;
     c.missingProofs += 1;
   }
 }
