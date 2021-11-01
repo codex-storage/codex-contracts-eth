@@ -42,12 +42,12 @@ describe("Storage Contracts", function () {
         duration,
         size,
         contentHash,
-        price,
         proofPeriod,
         proofTimeout,
         nonce,
-        bidExpiry,
+        price,
         await host.getAddress(),
+        bidExpiry,
         await sign(client, requestHash),
         await sign(host, bidHash)
       )

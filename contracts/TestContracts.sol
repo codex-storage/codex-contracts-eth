@@ -9,12 +9,12 @@ contract TestContracts is Contracts {
     uint _duration,
     uint _size,
     bytes32 _contentHash,
-    uint _price,
     uint _proofPeriod,
     uint _proofTimeout,
     bytes32 _nonce,
-    uint _bidExpiry,
+    uint _price,
     address _host,
+    uint _bidExpiry,
     bytes memory requestSignature,
     bytes memory bidSignature
   )
@@ -24,12 +24,12 @@ contract TestContracts is Contracts {
       _duration,
       _size,
       _contentHash,
-      _price,
       _proofPeriod,
       _proofTimeout,
       _nonce,
-      _bidExpiry,
+      _price,
       _host,
+      _bidExpiry,
       requestSignature,
       bidSignature);
   }

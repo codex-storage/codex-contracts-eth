@@ -36,12 +36,12 @@ contract Contracts {
     uint duration,
     uint size,
     bytes32 contentHash,
-    uint price,
     uint proofPeriod,
     uint proofTimeout,
     bytes32 nonce,
-    uint bidExpiry,
+    uint price,
     address host,
+    uint bidExpiry,
     bytes memory requestSignature,
     bytes memory bidSignature
   )
