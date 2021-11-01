@@ -53,123 +53,18 @@ describe("Storage Contracts", function () {
       )
     })
 
-    it("has a duration", async function () {
+    it("created a contract", async function () {
       expect(await contracts.duration(id)).to.equal(duration)
-    })
-
-    it("contains the size of the data that is to be stored", async function () {
       expect(await contracts.size(id)).to.equal(size)
-    })
-
-    it("contains the hash of the data that is to be stored", async function () {
       expect(await contracts.contentHash(id)).to.equal(contentHash)
-    })
-
-    it("has a price", async function () {
       expect(await contracts.price(id)).to.equal(price)
-    })
-
-    it("knows the host that provides the storage", async function () {
       expect(await contracts.host(id)).to.equal(await host.getAddress())
     })
 
-    it("has an average time between proofs (in blocks)", async function (){
+    it("requires storage proofs", async function (){
       expect(await contracts.proofPeriod(id)).to.equal(proofPeriod)
-    })
-
-    it("has a proof timeout (in blocks)", async function (){
       expect(await contracts.proofTimeout(id)).to.equal(proofTimeout)
     })
-  })
-
-  it("cannot be created when contract id already used", async function () {
-    await contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      proofTimeout,
-      nonce,
-      bidExpiry,
-      await host.getAddress(),
-      await sign(client, requestHash),
-      await sign(host, bidHash)
-    )
-    await expect(contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      proofTimeout,
-      nonce,
-      bidExpiry,
-      await host.getAddress(),
-      await sign(client, requestHash),
-      await sign(host, bidHash)
-    )).to.be.revertedWith("A contract with this id already exists")
-  })
-
-  it("cannot be created when client signature is invalid", async function () {
-    let invalidHash = hashRequest(
-      duration + 1,
-      size,
-      contentHash,
-      proofPeriod,
-      proofTimeout,
-      nonce
-    )
-    let invalidSignature = await sign(client, invalidHash)
-    await expect(contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      proofTimeout,
-      nonce,
-      bidExpiry,
-      await host.getAddress(),
-      invalidSignature,
-      await sign(host, bidHash)
-    )).to.be.revertedWith("Invalid signature")
-  })
-
-  it("cannot be created when host signature is invalid", async function () {
-    let invalidBid = hashBid(requestHash, bidExpiry, price - 1)
-    let invalidSignature = await sign(host, invalidBid)
-    await expect(contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      proofTimeout,
-      nonce,
-      bidExpiry,
-      await host.getAddress(),
-      await sign(client, requestHash),
-      invalidSignature
-    )).to.be.revertedWith("Invalid signature")
-  })
-
-  it("cannot be created when bid has expired", async function () {
-    let expired = Math.round(Date.now() / 1000) - 60 // 1 minute ago
-    let bidHash = hashBid(requestHash, expired, price)
-    await expect(contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      proofTimeout,
-      nonce,
-      expired,
-      await host.getAddress(),
-      await sign(client, requestHash),
-      await sign(host, bidHash),
-    )).to.be.revertedWith("Bid expired")
   })
 })
 
