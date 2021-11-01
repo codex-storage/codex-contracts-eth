@@ -8,11 +8,23 @@ contract TestStakes is Stakes {
 
   constructor(IERC20 token) Stakes(token) {}
 
-  function lock(address account) public {
-    _lock(account);
+  function stake(address account) public view returns (uint) {
+    return _stake(account);
   }
 
-  function unlock(address account) public {
-    _unlock(account);
+  function increaseStake(uint amount) public {
+    _increaseStake(amount);
+  }
+
+  function withdrawStake() public {
+    _withdrawStake();
+  }
+
+  function lockStake(address account) public {
+    _lockStake(account);
+  }
+
+  function unlockStake(address account) public {
+    _unlockStake(account);
   }
 }

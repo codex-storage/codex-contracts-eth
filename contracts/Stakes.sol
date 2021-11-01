@@ -13,25 +13,25 @@ contract Stakes {
     token = _token;
   }
 
-  function stake(address account) public view returns (uint) {
+  function _stake(address account) internal view returns (uint) {
     return stakes[account];
   }
 
-  function increase(uint amount) public {
+  function _increaseStake(uint amount) internal {
     token.transferFrom(msg.sender, address(this), amount);
     stakes[msg.sender] += amount;
   }
 
-  function withdraw() public {
+  function _withdrawStake() internal {
     require(locks[msg.sender] == 0, "Stake locked");
     token.transfer(msg.sender, stakes[msg.sender]);
   }
 
-  function _lock(address account) internal {
+  function _lockStake(address account) internal {
     locks[account] += 1;
   }
 
-  function _unlock(address account) internal {
+  function _unlockStake(address account) internal {
     require(locks[account] > 0, "Stake already unlocked");
     locks[account] -= 1;
   }
