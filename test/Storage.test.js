@@ -2,42 +2,37 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 
-describe("Storage Contracts", function () {
+describe("Storage", function () {
 
-  const duration = 31 * 24 * 60 * 60 // 31 days
-  const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
-  const contentHash = ethers.utils.sha256("0xdeadbeef") // hash of content
-  const proofPeriod = 8 // 8 blocks ≈ 2 minutes
-  const proofTimeout = 4 // 4 blocks ≈ 1 minute
-  const price = 42
-  const nonce = ethers.utils.randomBytes(32)
+  describe("creating a new storage contract", function () {
 
-  var contracts
-  var client, host
-  var bidExpiry
-  var requestHash, bidHash
-  var id
+    const duration = 31 * 24 * 60 * 60 // 31 days
+    const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
+    const contentHash = ethers.utils.sha256("0xdeadbeef") // hash of content
+    const proofPeriod = 8 // 8 blocks ≈ 2 minutes
+    const proofTimeout = 4 // 4 blocks ≈ 1 minute
+    const price = 42
+    const nonce = ethers.utils.randomBytes(32)
 
-  beforeEach(async function () {
-    [client, host] = await ethers.getSigners()
-    let StorageContracts = await ethers.getContractFactory("StorageContracts")
-    contracts = await StorageContracts.deploy()
-    requestHash = hashRequest(
-      duration,
-      size,
-      contentHash,
-      proofPeriod,
-      proofTimeout,
-      nonce
-    )
-    bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
-    bidHash = hashBid(requestHash, bidExpiry, price)
-    id = bidHash
-  })
-
-  describe("when properly instantiated", function () {
+    let contracts
+    let client, host
+    let id
 
     beforeEach(async function () {
+      [client, host] = await ethers.getSigners()
+      let StorageContracts = await ethers.getContractFactory("Storage")
+      contracts = await StorageContracts.deploy()
+      let requestHash = hashRequest(
+        duration,
+        size,
+        contentHash,
+        proofPeriod,
+        proofTimeout,
+        nonce
+      )
+      let bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
+      let bidHash = hashBid(requestHash, bidExpiry, price)
+      id = bidHash
       await contracts.newContract(
         duration,
         size,
@@ -53,7 +48,7 @@ describe("Storage Contracts", function () {
       )
     })
 
-    it("created a contract", async function () {
+    it("created the contract", async function () {
       expect(await contracts.duration(id)).to.equal(duration)
       expect(await contracts.size(id)).to.equal(size)
       expect(await contracts.contentHash(id)).to.equal(contentHash)

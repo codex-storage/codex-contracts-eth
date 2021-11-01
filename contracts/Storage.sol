@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./Contracts.sol";
 import "./Proofs.sol";
 
-contract StorageContracts is Contracts, Proofs {
+contract Storage is Contracts, Proofs {
 
   function newContract(
     uint _duration,

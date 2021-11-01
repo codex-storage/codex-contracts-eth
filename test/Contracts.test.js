@@ -2,7 +2,7 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 
-describe("Storage Contracts", function () {
+describe("Contracts", function () {
 
   const duration = 31 * 24 * 60 * 60 // 31 days
   const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
