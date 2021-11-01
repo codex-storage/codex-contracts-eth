@@ -76,7 +76,6 @@ contract StorageContracts is Proofs {
     bytes32 bidHash = hashBid(requestHash, _bidExpiry, _price);
     checkSignature(requestSignature, requestHash, msg.sender);
     checkSignature(bidSignature, bidHash, _host);
-    checkProofTimeout(_proofTimeout);
     checkBidExpiry(_bidExpiry);
     bytes32 contractId = bidHash;
     checkId(contractId);
@@ -133,13 +132,6 @@ contract StorageContracts is Proofs {
     bytes32 messageHash = ECDSA.toEthSignedMessageHash(hash);
     address recovered = ECDSA.recover(messageHash, signature);
     require(recovered == signer, "Invalid signature");
-  }
-
-  // Checks that proof timeout is <= 128. Only the latest 256 blocks can be
-  // checked in a smart contract, so that leaves a period of at least 128 blocks
-  // after timeout for a validator to signal the absence of a proof.
-  function checkProofTimeout(uint timeout) internal pure {
-    require(timeout <= 128, "Invalid proof timeout, needs to be <= 128");
   }
 
   function checkBidExpiry(uint expiry) internal view {

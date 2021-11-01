@@ -27,6 +27,13 @@ describe("Proofs", function () {
     ).to.be.revertedWith("Proof id already in use")
   })
 
+  it("does not allow a proof timeout that is too large", async function () {
+    let invalidTimeout = 129 // max proof timeout is 128 blocks
+    await expect(
+      proofs.expectProofs(id, period, invalidTimeout)
+    ).to.be.revertedWith("Invalid proof timeout")
+  })
+
   describe("when proofs are required", async function () {
 
     beforeEach(async function () {

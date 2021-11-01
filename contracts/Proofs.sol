@@ -23,8 +23,16 @@ contract Proofs {
     return missed[id];
   }
 
+  // Checks that proof timeout is <= 128. Only the latest 256 blocks can be
+  // checked in a smart contract, so that leaves a period of at least 128 blocks
+  // after timeout for a validator to signal the absence of a proof.
+  function _checkTimeout(uint timeout) private pure {
+    require(timeout <= 128, "Invalid proof timeout, needs to be <= 128");
+  }
+
   function _expectProofs(bytes32 id, uint period, uint timeout) internal {
     require(!ids[id], "Proof id already in use");
+    _checkTimeout(timeout);
     ids[id] = true;
     periods[id] = period;
     timeouts[id] = timeout;

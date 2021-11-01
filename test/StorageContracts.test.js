@@ -154,32 +154,6 @@ describe("Storage Contracts", function () {
     )).to.be.revertedWith("Invalid signature")
   })
 
-  it("cannot be created when proof timeout is too large", async function () {
-    let invalidTimeout = 129 // max proof timeout is 128 blocks
-    requestHash = hashRequest(
-      duration,
-      size,
-      contentHash,
-      proofPeriod,
-      invalidTimeout,
-      nonce
-    )
-    bidHash = hashBid(requestHash, bidExpiry, price)
-    await expect(contracts.newContract(
-      duration,
-      size,
-      contentHash,
-      price,
-      proofPeriod,
-      invalidTimeout,
-      nonce,
-      bidExpiry,
-      await host.getAddress(),
-      await sign(client, requestHash),
-      await sign(host, bidHash),
-    )).to.be.revertedWith("Invalid proof timeout")
-  })
-
   it("cannot be created when bid has expired", async function () {
     let expired = Math.round(Date.now() / 1000) - 60 // 1 minute ago
     let bidHash = hashBid(requestHash, expired, price)
