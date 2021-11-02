@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./Contracts.sol";
 
+// exposes internal functions of Contracts for testing
 contract TestContracts is Contracts {
 
   function newContract(

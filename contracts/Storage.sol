@@ -69,10 +69,6 @@ contract Storage is Contracts, Proofs {
     return _missed(contractId);
   }
 
-  // Check whether a proof is required at the time of the block with the
-  // specified block number. A proof has to be submitted within the proof
-  // timeout for it to be valid. Whether a proof is required is determined
-  // randomly, but on average it is once every proof period.
   function isProofRequired(
     bytes32 contractId,
     uint blocknumber

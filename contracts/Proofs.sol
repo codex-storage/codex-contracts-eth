@@ -39,6 +39,10 @@ contract Proofs {
     markers[id] = uint(blockhash(block.number - 1)) % period;
   }
 
+  // Check whether a proof is required at the time of the block with the
+  // specified block number. A proof has to be submitted within the proof
+  // timeout for it to be valid. Whether a proof is required is determined
+  // randomly, but on average it is once every proof period.
   function _isProofRequired(
     bytes32 id,
     uint blocknumber
