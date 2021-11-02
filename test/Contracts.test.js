@@ -1,20 +1,23 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
+const { examples } = require("./examples")
 
 describe("Contracts", function () {
 
-  const duration = 31 * 24 * 60 * 60 // 31 days
-  const size = 1 * 1024 * 1024 * 1024 // 1 Gigabyte
-  const contentHash = ethers.utils.sha256("0xdeadbeef")
-  const proofPeriod = 8 // 8 blocks ≈ 2 minutes
-  const proofTimeout = 4 // 4 blocks ≈ 1 minute
-  const price = 42
-  const nonce = ethers.utils.randomBytes(32)
+  const {
+    duration,
+    size,
+    contentHash,
+    proofPeriod,
+    proofTimeout,
+    price,
+    nonce,
+    bidExpiry
+  } = examples()
 
   let client, host
   let contracts
-  let bidExpiry
   let requestHash, bidHash
   let id
 
@@ -30,7 +33,6 @@ describe("Contracts", function () {
       proofTimeout,
       nonce
     )
-    bidExpiry = Math.round(Date.now() / 1000) + 60 * 60 // 1 hour from now
     bidHash = hashBid(requestHash, bidExpiry, price)
     id = bidHash
   })
