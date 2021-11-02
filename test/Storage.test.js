@@ -58,6 +58,12 @@ describe("Storage", function () {
       expect(await storage.proofPeriod(id)).to.equal(request.proofPeriod)
       expect(await storage.proofTimeout(id)).to.equal(request.proofTimeout)
     })
+
+    it("locks up host stake", async function () {
+      await expect(
+        storage.connect(host).withdrawStake()
+      ).to.be.revertedWith("Stake locked")
+    })
   })
 
   it("doesn't create contract when insufficient stake", async function () {
@@ -81,7 +87,6 @@ describe("Storage", function () {
   })
 })
 
-// TODO: lock up stake when new contract
 // TODO: unlock stake at end of contract
 // TODO: payment when new contract
 // TODO: contract start and timeout

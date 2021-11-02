@@ -29,6 +29,7 @@ contract Storage is Contracts, Proofs, Stakes {
     public
   {
     require(_stake(_host) >= stakeAmount, "Insufficient stake");
+    _lockStake(_host);
     bytes32 id = _newContract(
       _duration,
       _size,
@@ -113,5 +114,9 @@ contract Storage is Contracts, Proofs, Stakes {
 
   function increaseStake(uint amount) public {
     _increaseStake(amount);
+  }
+
+  function withdrawStake() public {
+    _withdrawStake();
   }
 }
