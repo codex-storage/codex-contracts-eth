@@ -5,6 +5,7 @@ const { exampleRequest, exampleBid } = require("./examples")
 
 describe("Storage", function () {
 
+  const stakeAmount = 100
   const request = exampleRequest()
   const bid = exampleBid()
 
@@ -17,7 +18,7 @@ describe("Storage", function () {
     let Token = await ethers.getContractFactory("TestToken")
     let StorageContracts = await ethers.getContractFactory("Storage")
     token = await Token.connect(host).deploy()
-    storage = await StorageContracts.deploy(token.address)
+    storage = await StorageContracts.deploy(token.address, stakeAmount)
   })
 
   describe("creating a new storage contract", function () {
@@ -25,8 +26,8 @@ describe("Storage", function () {
     let id
 
     beforeEach(async function () {
-      await token.approve(storage.address, 20)
-      await storage.connect(host).increaseStake(20)
+      await token.approve(storage.address, stakeAmount)
+      await storage.connect(host).increaseStake(stakeAmount)
       let requestHash = hashRequest(request)
       let bidHash = hashBid({...bid, requestHash})
       await storage.newContract(
@@ -60,6 +61,8 @@ describe("Storage", function () {
   })
 
   it("doesn't create contract when insufficient stake", async function () {
+    await token.approve(storage.address, stakeAmount - 1)
+    await storage.connect(host).increaseStake(stakeAmount - 1)
     let requestHash = hashRequest(request)
     let bidHash = hashBid({...bid, requestHash})
     await expect(storage.newContract(
@@ -78,7 +81,6 @@ describe("Storage", function () {
   })
 })
 
-// TODO: configurable amount of stake
 // TODO: lock up stake when new contract
 // TODO: unlock stake at end of contract
 // TODO: payment when new contract

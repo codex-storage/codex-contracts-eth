@@ -7,7 +7,11 @@ import "./Stakes.sol";
 
 contract Storage is Contracts, Proofs, Stakes {
 
-  constructor(IERC20 token) Stakes(token) {}
+  uint private stakeAmount;
+
+  constructor(IERC20 token, uint _stakeAmount) Stakes(token) {
+    stakeAmount = _stakeAmount;
+  }
 
   function newContract(
     uint _duration,
@@ -24,7 +28,7 @@ contract Storage is Contracts, Proofs, Stakes {
   )
     public
   {
-    require(_stake(_host) > 0, "Insufficient stake");
+    require(_stake(_host) >= stakeAmount, "Insufficient stake");
     bytes32 id = _newContract(
       _duration,
       _size,
