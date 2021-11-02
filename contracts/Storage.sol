@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 
 import "./Contracts.sol";
 import "./Proofs.sol";
+import "./Stakes.sol";
 
-contract Storage is Contracts, Proofs {
+contract Storage is Contracts, Proofs, Stakes {
+
+  constructor(IERC20 token) Stakes(token) {}
 
   function newContract(
     uint _duration,
@@ -21,6 +24,7 @@ contract Storage is Contracts, Proofs {
   )
     public
   {
+    require(_stake(_host) > 0, "Insufficient stake");
     bytes32 id = _newContract(
       _duration,
       _size,
@@ -101,5 +105,9 @@ contract Storage is Contracts, Proofs {
 
   function markProofAsMissing(bytes32 contractId, uint blocknumber) public {
     _markProofAsMissing(contractId, blocknumber);
+  }
+
+  function increaseStake(uint amount) public {
+    _increaseStake(amount);
   }
 }
