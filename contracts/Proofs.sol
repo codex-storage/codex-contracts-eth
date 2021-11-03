@@ -50,7 +50,7 @@ contract Proofs {
     internal view
     returns (bool)
   {
-    bytes32 hash = blockhash(blocknumber);
+    bytes32 hash = blockhash(blocknumber - 1);
     return hash != 0 && uint(hash) % periods[id] == markers[id];
   }
 

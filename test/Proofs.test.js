@@ -45,7 +45,7 @@ describe("Proofs", function () {
     }
 
     async function minedBlockNumber() {
-      return await ethers.provider.getBlockNumber() - 1
+      return await ethers.provider.getBlockNumber()
     }
 
     async function mineUntilProofIsRequired(id) {
