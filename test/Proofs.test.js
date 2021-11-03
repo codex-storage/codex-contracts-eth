@@ -64,6 +64,17 @@ describe("Proofs", function () {
     expect(average).to.be.closeTo(period, period / 2)
   })
 
+  it("requires no proof before start time", async function () {
+    for (let i=0; i<4*period; i++) {
+      mineBlock()
+    }
+    await proofs.expectProofs(id, period, timeout, duration)
+    let start = await minedBlockNumber()
+    for (let i=1; i<4*period; i++) {
+      expect(await proofs.isProofRequired(id, start-i)).to.be.false
+    }
+  })
+
   describe("when proofs are required", async function () {
 
     beforeEach(async function () {

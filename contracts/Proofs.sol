@@ -6,6 +6,7 @@ contract Proofs {
   mapping(bytes32=>bool) private ids;
   mapping(bytes32=>uint) private periods;
   mapping(bytes32=>uint) private timeouts;
+  mapping(bytes32=>uint) private starts;
   mapping(bytes32=>uint) private ends;
   mapping(bytes32=>uint) private markers;
   mapping(bytes32=>uint) private missed;
@@ -46,6 +47,7 @@ contract Proofs {
     ids[id] = true;
     periods[id] = period;
     timeouts[id] = timeout;
+    starts[id] = block.number;
     ends[id] = block.number + duration + 2 * timeout;
     markers[id] = uint(blockhash(block.number - 1)) % period;
   }
@@ -61,7 +63,7 @@ contract Proofs {
     internal view
     returns (bool)
   {
-    if (block.number >= ends[id]) {
+    if (blocknumber < starts[id] || blocknumber >= ends[id]) {
       return false;
     }
     bytes32 hash = blockhash(blocknumber - 1);
