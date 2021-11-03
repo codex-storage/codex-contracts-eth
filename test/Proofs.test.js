@@ -51,7 +51,7 @@ describe("Proofs", function () {
   })
 
   it("requires on average a proof every period", async function () {
-    let blocks = 500
+    let blocks = 600
     let amount = 0
     await proofs.expectProofs(id, period, timeout, blocks)
     for (let i=0; i<blocks; i++) {
