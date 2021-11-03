@@ -66,7 +66,7 @@ describe("Storage", function () {
     })
   })
 
-  it("doesn't create contract when insufficient stake", async function () {
+  it("doesn't create contract with insufficient stake", async function () {
     await token.approve(storage.address, stakeAmount - 1)
     await storage.connect(host).increaseStake(stakeAmount - 1)
     let requestHash = hashRequest(request)
