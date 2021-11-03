@@ -6,7 +6,7 @@ describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
   const period = 10
   const timeout = 5
-  const duration = 100
+  const duration = 50
 
   let proofs
 
@@ -50,6 +50,20 @@ describe("Proofs", function () {
     ).to.be.revertedWith("Invalid proof timeout")
   })
 
+  it("requires on average a proof every period", async function () {
+    let blocks = 500
+    let amount = 0
+    await proofs.expectProofs(id, period, timeout, blocks)
+    for (let i=0; i<blocks; i++) {
+      await mineBlock()
+      if (await proofs.isProofRequired(id, await minedBlockNumber())) {
+        amount += 1
+      }
+    }
+    let average = blocks / amount
+    expect(average).to.be.closeTo(period, period / 2)
+  })
+
   describe("when proofs are required", async function () {
 
     beforeEach(async function () {
@@ -68,26 +82,29 @@ describe("Proofs", function () {
       }
     }
 
-    it("requires on average a proof every period", async function () {
-      let blocks = 500
-      let amount = 0
-      for (i=0; i<blocks; i++) {
-        await mineBlock()
-        if (await proofs.isProofRequired(id, await minedBlockNumber())) {
-          amount += 1
-        }
+    async function mineUntilEnd() {
+      const end = await proofs.end(id)
+      while (await minedBlockNumber() < end) {
+        mineBlock()
       }
-      let average = blocks / amount
-      expect(average).to.be.closeTo(period, period / 2)
-    })
+    }
 
     it("requires no proof for blocks that are unavailable", async function () {
       await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
-      for (i=0; i<256; i++) { // only last 256 blocks are available in solidity
+      for (let i=0; i<256; i++) { // only last 256 blocks available in solidity
         mineBlock()
       }
       expect(await proofs.isProofRequired(id, blocknumber)).to.be.false
+    })
+
+    it("requires no proof after end time", async function () {
+      await mineUntilEnd()
+      for (let i=0; i<4*period; i++) {
+        const blocknumber = await minedBlockNumber()
+        expect(await proofs.isProofRequired(id, blocknumber)).to.be.false
+        mineBlock()
+      }
     })
 
     it("submits a correct proof", async function () {

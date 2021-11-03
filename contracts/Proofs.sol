@@ -61,6 +61,9 @@ contract Proofs {
     internal view
     returns (bool)
   {
+    if (block.number >= ends[id]) {
+      return false;
+    }
     bytes32 hash = blockhash(blocknumber - 1);
     return hash != 0 && uint(hash) % periods[id] == markers[id];
   }
