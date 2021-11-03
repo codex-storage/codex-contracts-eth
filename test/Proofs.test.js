@@ -6,6 +6,7 @@ describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
   const period = 10
   const timeout = 5
+  const duration = 100
 
   let proofs
 
@@ -14,39 +15,46 @@ describe("Proofs", function () {
     proofs = await Proofs.deploy()
   })
 
+  async function mineBlock() {
+    await ethers.provider.send("evm_mine")
+  }
+
+  async function minedBlockNumber() {
+    return await ethers.provider.getBlockNumber()
+  }
+
   it("indicates that proofs are required", async function() {
-    await proofs.expectProofs(id, period, timeout)
+    await proofs.expectProofs(id, period, timeout, duration)
     expect(await proofs.period(id)).to.equal(period)
     expect(await proofs.timeout(id)).to.equal(timeout)
   })
 
+  it("calculates an endtime based on duration and timeout", async function() {
+    await proofs.expectProofs(id, period, timeout, duration)
+    let start = await minedBlockNumber()
+    let end = start + duration + 2 * timeout
+    expect(await proofs.end(id)).to.equal(end)
+  })
+
   it("does not allow ids to be reused", async function() {
-    await proofs.expectProofs(id, period, timeout)
+    await proofs.expectProofs(id, period, timeout, duration)
     await expect(
-      proofs.expectProofs(id, period, timeout)
+      proofs.expectProofs(id, period, timeout, duration)
     ).to.be.revertedWith("Proof id already in use")
   })
 
   it("does not allow a proof timeout that is too large", async function () {
     let invalidTimeout = 129 // max proof timeout is 128 blocks
     await expect(
-      proofs.expectProofs(id, period, invalidTimeout)
+      proofs.expectProofs(id, period, invalidTimeout, duration)
     ).to.be.revertedWith("Invalid proof timeout")
   })
 
   describe("when proofs are required", async function () {
 
     beforeEach(async function () {
-      await proofs.expectProofs(id, period, timeout)
+      await proofs.expectProofs(id, period, timeout, duration)
     })
-
-    async function mineBlock() {
-      await ethers.provider.send("evm_mine")
-    }
-
-    async function minedBlockNumber() {
-      return await ethers.provider.getBlockNumber()
-    }
 
     async function mineUntilProofIsRequired(id) {
       while (!await proofs.isProofRequired(id, await minedBlockNumber())) {

@@ -43,7 +43,7 @@ contract Storage is Contracts, Proofs, Stakes {
       requestSignature,
       bidSignature
     );
-    _expectProofs(id, _proofPeriod, _proofTimeout);
+    _expectProofs(id, _proofPeriod, _proofTimeout, _duration);
   }
 
   function duration(bytes32 contractId) public view returns (uint) {

@@ -6,6 +6,7 @@ contract Proofs {
   mapping(bytes32=>bool) private ids;
   mapping(bytes32=>uint) private periods;
   mapping(bytes32=>uint) private timeouts;
+  mapping(bytes32=>uint) private ends;
   mapping(bytes32=>uint) private markers;
   mapping(bytes32=>uint) private missed;
   mapping(bytes32=>mapping(uint=>bool)) private received;
@@ -19,6 +20,10 @@ contract Proofs {
     return timeouts[id];
   }
 
+  function _end(bytes32 id) internal view returns (uint) {
+    return ends[id];
+  }
+
   function _missed(bytes32 id) internal view returns (uint) {
     return missed[id];
   }
@@ -30,12 +35,18 @@ contract Proofs {
     require(timeout <= 128, "Invalid proof timeout, needs to be <= 128");
   }
 
-  function _expectProofs(bytes32 id, uint period, uint timeout) internal {
+  function _expectProofs(
+    bytes32 id,
+    uint period,
+    uint timeout,
+    uint duration
+  ) internal {
     require(!ids[id], "Proof id already in use");
     _checkTimeout(timeout);
     ids[id] = true;
     periods[id] = period;
     timeouts[id] = timeout;
+    ends[id] = block.number + duration + 2 * timeout;
     markers[id] = uint(blockhash(block.number - 1)) % period;
   }
 

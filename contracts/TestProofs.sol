@@ -14,12 +14,21 @@ contract TestProofs is Proofs {
     return _timeout(id);
   }
 
+  function end(bytes32 id) public view returns (uint) {
+    return _end(id);
+  }
+
   function missed(bytes32 id) public view returns (uint) {
     return _missed(id);
   }
 
-  function expectProofs(bytes32 id, uint _period, uint _timeout) public {
-    _expectProofs(id, _period, _timeout);
+  function expectProofs(
+    bytes32 id,
+    uint _period,
+    uint _timeout,
+    uint _duration
+  ) public {
+    _expectProofs(id, _period, _timeout, _duration);
   }
 
   function isProofRequired(
