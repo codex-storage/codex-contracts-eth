@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract Contracts {
 
   mapping(bytes32=>bool) private ids; // contract id, equal to hash of bid
-  mapping(bytes32=>uint) private durations; // contract duration in seconds
+  mapping(bytes32=>uint) private durations; // contract duration in blocks
   mapping(bytes32=>uint) private sizes; // storage size in bytes
   mapping(bytes32=>bytes32) private contentHashes; // hash of data to be stored
   mapping(bytes32=>uint) private prices; // price in coins
