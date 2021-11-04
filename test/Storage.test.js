@@ -199,3 +199,4 @@ describe("Storage", function () {
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
 // TODO: allow other host to take over contract when too many missed proofs
 // TODO: small partial payouts when proofs are being submitted
+// TODO: reward caller of markProofAsMissing
