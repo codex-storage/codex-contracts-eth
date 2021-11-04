@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 
 const exampleRequest = () => ({
-  duration: 200000, // 200,000 blocks ≈ 1 month
+  duration: 150, // 150 blocks ≈ half an hour
   size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
   contentHash: ethers.utils.sha256("0xdeadbeef"),
   proofPeriod: 8, // 8 blocks ≈ 2 minutes

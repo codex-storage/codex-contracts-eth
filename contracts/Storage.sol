@@ -54,6 +54,11 @@ contract Storage is Contracts, Proofs, Stakes {
     _expectProofs(id, proofPeriod(id), proofTimeout(id), duration(id));
   }
 
+  function finishContract(bytes32 id) public {
+    require(block.number > proofEnd(id), "Contract has not ended yet");
+    _unlockStake(host(id));
+  }
+
   function duration(bytes32 contractId) public view returns (uint) {
     return _duration(contractId);
   }

@@ -2,6 +2,7 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 const { exampleRequest, exampleBid } = require("./examples")
+const { mineBlock, minedBlockNumber } = require ("./mining")
 
 describe("Storage", function () {
 
@@ -74,6 +75,28 @@ describe("Storage", function () {
         ).to.be.revertedWith("Only host can call this function")
       })
     })
+
+    describe("finishing the contract", function () {
+
+      beforeEach(async function () {
+        await storage.connect(host).startContract(id)
+      })
+
+      it("unlocks the host stake", async function () {
+        const end = await storage.proofEnd(id)
+        while (await minedBlockNumber() < end) {
+          await mineBlock()
+        }
+        await storage.finishContract(id)
+        await expect(storage.connect(host).withdrawStake()).not.to.be.reverted
+      })
+
+      it("is only allowed when end time has passed", async function () {
+        await expect(
+          storage.finishContract(id)
+        ).to.be.revertedWith("Contract has not ended yet")
+      })
+    })
   })
 
   it("doesn't create contract with insufficient stake", async function () {
@@ -97,11 +120,8 @@ describe("Storage", function () {
   })
 })
 
-// TODO: unlock stake at end of contract
 // TODO: payment when new contract
 // TODO: contract start and timeout
 // TODO: failure to start contract burns host and client
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
-// TODO: only allow proofs after start of contract
-// TODO: proofs no longer required after contract duration
 // TODO: payout
