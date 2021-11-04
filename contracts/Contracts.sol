@@ -9,6 +9,8 @@ contract Contracts {
   mapping(bytes32=>uint) private durations; // contract duration in blocks
   mapping(bytes32=>uint) private sizes; // storage size in bytes
   mapping(bytes32=>bytes32) private contentHashes; // hash of data to be stored
+  mapping(bytes32=>uint) private proofPeriods; // period between proofs
+  mapping(bytes32=>uint) private proofTimeouts; // timeout for proof submission
   mapping(bytes32=>uint) private prices; // price in coins
   mapping(bytes32=>address) private hosts; // host that provides storage
 
@@ -22,6 +24,14 @@ contract Contracts {
 
   function _contentHash(bytes32 id) internal view returns (bytes32) {
     return contentHashes[id];
+  }
+
+  function _proofPeriod(bytes32 id) internal view returns (uint) {
+    return proofPeriods[id];
+  }
+
+  function _proofTimeout(bytes32 id) internal view returns (uint) {
+    return proofTimeouts[id];
   }
 
   function _price(bytes32 id) internal view returns (uint) {
@@ -66,6 +76,8 @@ contract Contracts {
     durations[id] = duration;
     sizes[id] = size;
     contentHashes[id] = contentHash;
+    proofPeriods[id] = proofPeriod;
+    proofTimeouts[id] = proofTimeout;
     prices[id] = price;
     hosts[id] = host;
   }

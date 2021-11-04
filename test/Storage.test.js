@@ -50,19 +50,23 @@ describe("Storage", function () {
       expect(await storage.duration(id)).to.equal(request.duration)
       expect(await storage.size(id)).to.equal(request.size)
       expect(await storage.contentHash(id)).to.equal(request.contentHash)
-      expect(await storage.price(id)).to.equal(bid.price)
-      expect(await storage.host(id)).to.equal(await host.getAddress())
-    })
-
-    it("requires storage proofs", async function (){
       expect(await storage.proofPeriod(id)).to.equal(request.proofPeriod)
       expect(await storage.proofTimeout(id)).to.equal(request.proofTimeout)
-    })
+      expect(await storage.price(id)).to.equal(bid.price)
+      expect(await storage.host(id)).to.equal(await host.getAddress())
+  })
 
     it("locks up host stake", async function () {
       await expect(
         storage.connect(host).withdrawStake()
       ).to.be.revertedWith("Stake locked")
+    })
+
+    describe("starting the contract", function () {
+      it("starts requiring storage proofs", async function (){
+        await storage.connect(host).startContract(id)
+        expect(await storage.proofEnd(id)).to.be.gt(0)
+      })
     })
   })
 

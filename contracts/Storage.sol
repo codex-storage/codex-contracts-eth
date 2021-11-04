@@ -30,7 +30,7 @@ contract Storage is Contracts, Proofs, Stakes {
   {
     require(_stake(_host) >= stakeAmount, "Insufficient stake");
     _lockStake(_host);
-    bytes32 id = _newContract(
+    _newContract(
       _duration,
       _size,
       _contentHash,
@@ -43,7 +43,10 @@ contract Storage is Contracts, Proofs, Stakes {
       requestSignature,
       bidSignature
     );
-    _expectProofs(id, _proofPeriod, _proofTimeout, _duration);
+  }
+
+  function startContract(bytes32 id) public {
+    _expectProofs(id, proofPeriod(id), proofTimeout(id), duration(id));
   }
 
   function duration(bytes32 contractId) public view returns (uint) {
@@ -67,11 +70,15 @@ contract Storage is Contracts, Proofs, Stakes {
   }
 
   function proofPeriod(bytes32 contractId) public view returns (uint) {
-    return _period(contractId);
+    return _proofPeriod(contractId);
   }
 
   function proofTimeout(bytes32 contractId) public view returns (uint) {
-    return _timeout(contractId);
+    return _proofTimeout(contractId);
+  }
+
+  function proofEnd(bytes32 contractId) public view returns (uint) {
+    return _end(contractId);
   }
 
   function missingProofs(bytes32 contractId) public view returns (uint) {
