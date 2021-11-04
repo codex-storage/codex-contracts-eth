@@ -45,7 +45,12 @@ contract Storage is Contracts, Proofs, Stakes {
     );
   }
 
-  function startContract(bytes32 id) public {
+  modifier onlyHost(bytes32 id) {
+    require(msg.sender == host(id), "Only host can call this function");
+    _;
+  }
+
+  function startContract(bytes32 id) public onlyHost(id) {
     _expectProofs(id, proofPeriod(id), proofTimeout(id), duration(id));
   }
 

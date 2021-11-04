@@ -67,6 +67,12 @@ describe("Storage", function () {
         await storage.connect(host).startContract(id)
         expect(await storage.proofEnd(id)).to.be.gt(0)
       })
+
+      it("can only be done by the host", async function () {
+        await expect(
+          storage.connect(client).startContract(id)
+        ).to.be.revertedWith("Only host can call this function")
+      })
     })
   })
 
