@@ -32,6 +32,7 @@ contract Storage is Contracts, Proofs, Stakes {
   {
     require(_stake(_host) >= stakeAmount, "Insufficient stake");
     _lockStake(_host);
+    _token().transferFrom(msg.sender, address(this), _price);
     _newContract(
       _duration,
       _size,

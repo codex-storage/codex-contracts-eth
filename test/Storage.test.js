@@ -27,7 +27,8 @@ describe("Storage", function () {
     let id
 
     beforeEach(async function () {
-      await token.approve(storage.address, stakeAmount)
+      await token.connect(host).approve(storage.address, stakeAmount)
+      await token.connect(client).approve(storage.address, bid.price)
       await storage.connect(host).increaseStake(stakeAmount)
       let requestHash = hashRequest(request)
       let bidHash = hashBid({...bid, requestHash})
@@ -116,7 +117,8 @@ describe("Storage", function () {
   })
 
   it("doesn't create contract with insufficient stake", async function () {
-    await token.approve(storage.address, stakeAmount - 1)
+    await token.connect(host).approve(storage.address, stakeAmount - 1)
+    await token.connect(client).approve(storage.address, bid.price)
     await storage.connect(host).increaseStake(stakeAmount - 1)
     let requestHash = hashRequest(request)
     let bidHash = hashBid({...bid, requestHash})
@@ -134,9 +136,29 @@ describe("Storage", function () {
       await sign(host, bidHash)
     )).to.be.revertedWith("Insufficient stake")
   })
+
+  it("doesn't create contract without payment of price", async function () {
+    await token.connect(host).approve(storage.address, stakeAmount)
+    await token.connect(client).approve(storage.address, bid.price - 1)
+    await storage.connect(host).increaseStake(stakeAmount)
+    let requestHash = hashRequest(request)
+    let bidHash = hashBid({...bid, requestHash})
+    await expect(storage.newContract(
+      request.duration,
+      request.size,
+      request.contentHash,
+      request.proofPeriod,
+      request.proofTimeout,
+      request.nonce,
+      bid.price,
+      await host.getAddress(),
+      bid.bidExpiry,
+      await sign(client, requestHash),
+      await sign(host, bidHash)
+    )).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+  })
 })
 
-// TODO: payment when new contract
 // TODO: contract start and timeout
 // TODO: failure to start contract burns host and client
 // TODO: implement checking of actual proofs of storage, instead of dummy bool

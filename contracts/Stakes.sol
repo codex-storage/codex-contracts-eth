@@ -9,8 +9,12 @@ contract Stakes {
   mapping(address=>uint) private stakes;
   mapping(address=>uint) private locks;
 
-  constructor(IERC20 _token) {
-    token = _token;
+  constructor(IERC20 __token) {
+    token = __token;
+  }
+
+  function _token() internal view returns (IERC20) {
+    return token;
   }
 
   function _stake(address account) internal view returns (uint) {
