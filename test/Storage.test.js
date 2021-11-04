@@ -101,6 +101,17 @@ describe("Storage", function () {
           storage.finishContract(id)
         ).to.be.revertedWith("Contract has not ended yet")
       })
+
+      it("can only be done once", async function () {
+        const end = await storage.proofEnd(id)
+        while (await minedBlockNumber() < end) {
+          await mineBlock()
+        }
+        await storage.finishContract(id)
+        await expect(
+          storage.finishContract(id)
+        ).to.be.revertedWith("Contract already finished")
+      })
     })
   })
 

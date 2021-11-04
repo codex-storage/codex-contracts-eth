@@ -9,6 +9,8 @@ contract Storage is Contracts, Proofs, Stakes {
 
   uint private stakeAmount;
 
+  mapping(bytes32=>bool) private finished;
+
   constructor(IERC20 token, uint _stakeAmount) Stakes(token) {
     stakeAmount = _stakeAmount;
   }
@@ -56,7 +58,9 @@ contract Storage is Contracts, Proofs, Stakes {
 
   function finishContract(bytes32 id) public {
     require(block.number > proofEnd(id), "Contract has not ended yet");
+    require(!finished[id], "Contract already finished");
     _unlockStake(host(id));
+    finished[id] = true;
   }
 
   function duration(bytes32 contractId) public view returns (uint) {
