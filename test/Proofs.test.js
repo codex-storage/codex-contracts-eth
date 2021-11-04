@@ -1,5 +1,6 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
+const { mineBlock, minedBlockNumber } = require ("./mining")
 
 describe("Proofs", function () {
 
@@ -14,14 +15,6 @@ describe("Proofs", function () {
     const Proofs = await ethers.getContractFactory("TestProofs")
     proofs = await Proofs.deploy()
   })
-
-  async function mineBlock() {
-    await ethers.provider.send("evm_mine")
-  }
-
-  async function minedBlockNumber() {
-    return await ethers.provider.getBlockNumber()
-  }
 
   it("indicates that proofs are required", async function() {
     await proofs.expectProofs(id, period, timeout, duration)
