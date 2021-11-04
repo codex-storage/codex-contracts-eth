@@ -11,7 +11,7 @@ describe("Stakes", function () {
     [host] = await ethers.getSigners()
     const Stakes = await ethers.getContractFactory("TestStakes")
     const TestToken = await ethers.getContractFactory("TestToken")
-    token = await TestToken.deploy()
+    token = await TestToken.deploy([host.address])
     stakes = await Stakes.deploy(token.address)
   })
 

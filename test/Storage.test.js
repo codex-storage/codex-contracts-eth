@@ -18,7 +18,7 @@ describe("Storage", function () {
     [client, host] = await ethers.getSigners()
     let Token = await ethers.getContractFactory("TestToken")
     let StorageContracts = await ethers.getContractFactory("Storage")
-    token = await Token.connect(host).deploy()
+    token = await Token.deploy([client.address, host.address])
     storage = await StorageContracts.deploy(token.address, stakeAmount)
   })
 
