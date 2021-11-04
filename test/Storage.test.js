@@ -88,13 +88,25 @@ describe("Storage", function () {
         await storage.connect(host).startContract(id)
       })
 
-      it("unlocks the host stake", async function () {
+      async function mineUntilEnd() {
         const end = await storage.proofEnd(id)
         while (await minedBlockNumber() < end) {
           await mineBlock()
         }
+      }
+
+      it("unlocks the host stake", async function () {
+        await mineUntilEnd()
         await storage.finishContract(id)
         await expect(storage.connect(host).withdrawStake()).not.to.be.reverted
+      })
+
+      it("pays the host", async function () {
+        await mineUntilEnd()
+        const startBalance = await token.balanceOf(host.address)
+        await storage.finishContract(id)
+        const endBalance = await token.balanceOf(host.address)
+        expect(endBalance - startBalance).to.equal(bid.price)
       })
 
       it("is only allowed when end time has passed", async function () {
@@ -104,10 +116,7 @@ describe("Storage", function () {
       })
 
       it("can only be done once", async function () {
-        const end = await storage.proofEnd(id)
-        while (await minedBlockNumber() < end) {
-          await mineBlock()
-        }
+        await mineUntilEnd()
         await storage.finishContract(id)
         await expect(
           storage.finishContract(id)
@@ -162,4 +171,6 @@ describe("Storage", function () {
 // TODO: contract start and timeout
 // TODO: failure to start contract burns host and client
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
-// TODO: payout
+// TODO: slash stake when too many missed proofs
+// TODO: allow other host to take over contract when too many missed proofs
+// TODO: small partial payouts when proofs are being submitted
