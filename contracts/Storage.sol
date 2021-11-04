@@ -8,11 +8,22 @@ import "./Stakes.sol";
 contract Storage is Contracts, Proofs, Stakes {
 
   uint private stakeAmount;
+  uint private slashMisses;
+  uint private slashPercentage;
 
   mapping(bytes32=>bool) private finished;
 
-  constructor(IERC20 token, uint _stakeAmount) Stakes(token) {
+  constructor(
+    IERC20 token,
+    uint _stakeAmount,
+    uint _slashMisses,
+    uint _slashPercentage
+  )
+    Stakes(token)
+  {
     stakeAmount = _stakeAmount;
+    slashMisses = _slashMisses;
+    slashPercentage = _slashPercentage;
   }
 
   function newContract(
@@ -101,6 +112,10 @@ contract Storage is Contracts, Proofs, Stakes {
     return _missed(contractId);
   }
 
+  function stake(address account) public view returns (uint) {
+    return _stake(account);
+  }
+
   function isProofRequired(
     bytes32 contractId,
     uint blocknumber
@@ -133,6 +148,9 @@ contract Storage is Contracts, Proofs, Stakes {
 
   function markProofAsMissing(bytes32 contractId, uint blocknumber) public {
     _markProofAsMissing(contractId, blocknumber);
+    if (_missed(contractId) % slashMisses == 0) {
+      _slash(host(contractId), slashPercentage);
+    }
   }
 
   function increaseStake(uint amount) public {

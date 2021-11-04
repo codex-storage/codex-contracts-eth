@@ -7,6 +7,8 @@ const { mineBlock, minedBlockNumber } = require ("./mining")
 describe("Storage", function () {
 
   const stakeAmount = 100
+  const slashMisses = 3
+  const slashPercentage = 10
   const request = exampleRequest()
   const bid = exampleBid()
 
@@ -19,7 +21,9 @@ describe("Storage", function () {
     let Token = await ethers.getContractFactory("TestToken")
     let StorageContracts = await ethers.getContractFactory("Storage")
     token = await Token.deploy([client.address, host.address])
-    storage = await StorageContracts.deploy(token.address, stakeAmount)
+    storage = await StorageContracts.deploy(
+      token.address, stakeAmount, slashMisses, slashPercentage
+    )
   })
 
   describe("creating a new storage contract", function () {
@@ -123,6 +127,29 @@ describe("Storage", function () {
         ).to.be.revertedWith("Contract already finished")
       })
     })
+
+    describe("slashing when missing proofs", function () {
+
+      async function ensureProofIsMissing() {
+        while (!await storage.isProofRequired(id, await minedBlockNumber())) {
+          mineBlock()
+        }
+        const blocknumber = await minedBlockNumber()
+        for (let i=0; i<request.proofTimeout; i++) {
+          mineBlock()
+        }
+        await storage.markProofAsMissing(id, blocknumber)
+      }
+
+      it("reduces stake when too many proofs are missing", async function () {
+        await storage.connect(host).startContract(id)
+        for (let i=0; i<slashMisses; i++) {
+          await ensureProofIsMissing()
+        }
+        const expectedStake = stakeAmount * (100 - slashPercentage) / 100
+        expect(await storage.stake(host.address)).to.equal(expectedStake)
+    })
+    })
   })
 
   it("doesn't create contract with insufficient stake", async function () {
@@ -168,9 +195,7 @@ describe("Storage", function () {
   })
 })
 
-// TODO: contract start and timeout
 // TODO: failure to start contract burns host and client
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
-// TODO: slash stake when too many missed proofs
 // TODO: allow other host to take over contract when too many missed proofs
 // TODO: small partial payouts when proofs are being submitted
