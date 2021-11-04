@@ -68,4 +68,11 @@ describe("Stakes", function () {
     await stakes.unlockStake(host.address)
     await expect(stakes.withdrawStake()).not.to.be.reverted
   })
+
+  it("slashes stake", async function () {
+    await token.approve(stakes.address, 1000)
+    await stakes.increaseStake(1000)
+    await stakes.slash(host.address, 10)
+    expect(await stakes.stake(host.address)).to.equal(900)
+  })
 })

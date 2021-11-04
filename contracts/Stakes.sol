@@ -39,4 +39,8 @@ contract Stakes {
     require(locks[account] > 0, "Stake already unlocked");
     locks[account] -= 1;
   }
+
+  function _slash(address account, uint percentage) internal {
+    stakes[account] = stakes[account] * (100 - percentage) / 100;
+  }
 }

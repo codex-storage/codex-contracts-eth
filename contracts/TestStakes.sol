@@ -27,4 +27,8 @@ contract TestStakes is Stakes {
   function unlockStake(address account) public {
     _unlockStake(account);
   }
+
+  function slash(address account, uint percentage) public {
+    _slash(account, percentage);
+  }
 }
