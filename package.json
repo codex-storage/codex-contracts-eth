@@ -1,4 +1,6 @@
 {
+  "name": "dagger-contracts",
+  "license": "MIT",
   "scripts": {
     "test": "hardhat test"
   },
