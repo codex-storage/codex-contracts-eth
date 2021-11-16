@@ -1,30 +1,28 @@
 const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const { ethers, deployments } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 const { exampleRequest, exampleBid } = require("./examples")
 const { mineBlock, minedBlockNumber } = require ("./mining")
 
 describe("Storage", function () {
 
-  const stakeAmount = 100
-  const slashMisses = 3
-  const slashPercentage = 10
   const request = exampleRequest()
   const bid = exampleBid()
 
   let storage
   let token
   let client, host
+  let stakeAmount, slashMisses, slashPercentage
 
   beforeEach(async function () {
     [client, host] = await ethers.getSigners()
-    let Token = await ethers.getContractFactory("TestToken")
-    let StorageContracts = await ethers.getContractFactory("Storage")
-    token = await Token.deploy()
-    storage = await StorageContracts.deploy(
-      token.address, stakeAmount, slashMisses, slashPercentage
-    )
+    await deployments.fixture(['TestToken', 'Storage'])
+    token = await ethers.getContract('TestToken')
+    storage = await ethers.getContract('Storage')
     await token.mint([client.address, host.address], 1000)
+    stakeAmount = await storage.stakeAmount()
+    slashMisses = await storage.slashMisses()
+    slashPercentage = await storage.slashPercentage()
   })
 
   describe("creating a new storage contract", function () {
