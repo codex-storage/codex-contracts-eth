@@ -2,7 +2,8 @@
   "name": "dagger-contracts",
   "license": "MIT",
   "scripts": {
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "start": "hardhat node --export 'deployment-localhost.json'"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
