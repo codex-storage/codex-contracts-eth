@@ -7,9 +7,9 @@ import "./Stakes.sol";
 
 contract Storage is Contracts, Proofs, Stakes {
 
-  uint private stakeAmount;
-  uint private slashMisses;
-  uint private slashPercentage;
+  uint public stakeAmount;
+  uint public slashMisses;
+  uint public slashPercentage;
 
   mapping(bytes32=>bool) private finished;
 
