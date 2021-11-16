@@ -14,6 +14,13 @@ To run the tests, execute the following commands:
     npm install
     npm test
 
+To start a local Ethereum node with the contracts deployed, execute:
+
+    npm start
+
+This will create a `deployment-localhost.json` file containing the addresses of
+the deployed contracts.
+
 Overview
 --------
 
