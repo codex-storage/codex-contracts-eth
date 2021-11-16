@@ -20,10 +20,11 @@ describe("Storage", function () {
     [client, host] = await ethers.getSigners()
     let Token = await ethers.getContractFactory("TestToken")
     let StorageContracts = await ethers.getContractFactory("Storage")
-    token = await Token.deploy([client.address, host.address])
+    token = await Token.deploy()
     storage = await StorageContracts.deploy(
       token.address, stakeAmount, slashMisses, slashPercentage
     )
+    await token.mint([client.address, host.address], 1000)
   })
 
   describe("creating a new storage contract", function () {
