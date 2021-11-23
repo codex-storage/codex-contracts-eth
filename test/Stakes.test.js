@@ -13,7 +13,7 @@ describe("Stakes", function () {
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
     stakes = await Stakes.deploy(token.address)
-    await token.mint([host.address], 1000)
+    await token.mint(host.address, 1000)
   })
 
   it("has zero stakes initially", async function () {
