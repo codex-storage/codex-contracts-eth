@@ -94,7 +94,7 @@ contract Contracts {
     private pure
     returns (bytes32)
   {
-    return keccak256(abi.encodePacked(
+    return keccak256(abi.encode(
       "[dagger.request.v1]",
       duration,
       size,
@@ -110,7 +110,7 @@ contract Contracts {
     private pure
     returns (bytes32)
   {
-    return keccak256(abi.encodePacked(
+    return keccak256(abi.encode(
       "[dagger.bid.v1]",
       requestHash,
       expiry,
