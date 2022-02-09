@@ -5,6 +5,7 @@ import "./Stakes.sol";
 
 // exposes internal functions of Stakes for testing
 contract TestStakes is Stakes {
+  // solhint-disable-next-line no-empty-blocks
   constructor(IERC20 token) Stakes(token) {}
 
   function stake(address account) public view returns (uint256) {
