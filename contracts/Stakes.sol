@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Stakes {
-
   IERC20 private token;
-  mapping(address=>uint) private stakes;
-  mapping(address=>uint) private locks;
+  mapping(address => uint256) private stakes;
+  mapping(address => uint256) private locks;
 
   constructor(IERC20 __token) {
     token = __token;
@@ -17,11 +16,11 @@ contract Stakes {
     return token;
   }
 
-  function _stake(address account) internal view returns (uint) {
+  function _stake(address account) internal view returns (uint256) {
     return stakes[account];
   }
 
-  function _increaseStake(uint amount) internal {
+  function _increaseStake(uint256 amount) internal {
     token.transferFrom(msg.sender, address(this), amount);
     stakes[msg.sender] += amount;
   }
@@ -40,7 +39,7 @@ contract Stakes {
     locks[account] -= 1;
   }
 
-  function _slash(address account, uint percentage) internal {
-    stakes[account] = stakes[account] * (100 - percentage) / 100;
+  function _slash(address account, uint256 percentage) internal {
+    stakes[account] = (stakes[account] * (100 - percentage)) / 100;
   }
 }

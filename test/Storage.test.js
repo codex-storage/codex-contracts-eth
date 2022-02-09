@@ -2,10 +2,9 @@ const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { hashRequest, hashBid, sign } = require("./marketplace")
 const { exampleRequest, exampleBid } = require("./examples")
-const { mineBlock, minedBlockNumber } = require ("./mining")
+const { mineBlock, minedBlockNumber } = require("./mining")
 
 describe("Storage", function () {
-
   const request = exampleRequest()
   const bid = exampleBid()
 
@@ -15,10 +14,10 @@ describe("Storage", function () {
   let stakeAmount, slashMisses, slashPercentage
 
   beforeEach(async function () {
-    [client, host] = await ethers.getSigners()
-    await deployments.fixture(['TestToken', 'Storage'])
-    token = await ethers.getContract('TestToken')
-    storage = await ethers.getContract('Storage')
+    ;[client, host] = await ethers.getSigners()
+    await deployments.fixture(["TestToken", "Storage"])
+    token = await ethers.getContract("TestToken")
+    storage = await ethers.getContract("Storage")
     await token.mint(client.address, 1000)
     await token.mint(host.address, 1000)
     stakeAmount = await storage.stakeAmount()
@@ -27,7 +26,6 @@ describe("Storage", function () {
   })
 
   describe("creating a new storage contract", function () {
-
     let id
 
     beforeEach(async function () {
@@ -35,7 +33,7 @@ describe("Storage", function () {
       await token.connect(client).approve(storage.address, bid.price)
       await storage.connect(host).increaseStake(stakeAmount)
       let requestHash = hashRequest(request)
-      let bidHash = hashBid({...bid, requestHash})
+      let bidHash = hashBid({ ...bid, requestHash })
       await storage.newContract(
         request.duration,
         request.size,
@@ -60,16 +58,16 @@ describe("Storage", function () {
       expect(await storage.proofTimeout(id)).to.equal(request.proofTimeout)
       expect(await storage.price(id)).to.equal(bid.price)
       expect(await storage.host(id)).to.equal(await host.getAddress())
-  })
+    })
 
     it("locks up host stake", async function () {
-      await expect(
-        storage.connect(host).withdrawStake()
-      ).to.be.revertedWith("Stake locked")
+      await expect(storage.connect(host).withdrawStake()).to.be.revertedWith(
+        "Stake locked"
+      )
     })
 
     describe("starting the contract", function () {
-      it("starts requiring storage proofs", async function (){
+      it("starts requiring storage proofs", async function () {
         await storage.connect(host).startContract(id)
         expect(await storage.proofEnd(id)).to.be.gt(0)
       })
@@ -87,14 +85,13 @@ describe("Storage", function () {
     })
 
     describe("finishing the contract", function () {
-
       beforeEach(async function () {
         await storage.connect(host).startContract(id)
       })
 
       async function mineUntilEnd() {
         const end = await storage.proofEnd(id)
-        while (await minedBlockNumber() < end) {
+        while ((await minedBlockNumber()) < end) {
           await mineBlock()
         }
       }
@@ -114,28 +111,27 @@ describe("Storage", function () {
       })
 
       it("is only allowed when end time has passed", async function () {
-        await expect(
-          storage.finishContract(id)
-        ).to.be.revertedWith("Contract has not ended yet")
+        await expect(storage.finishContract(id)).to.be.revertedWith(
+          "Contract has not ended yet"
+        )
       })
 
       it("can only be done once", async function () {
         await mineUntilEnd()
         await storage.finishContract(id)
-        await expect(
-          storage.finishContract(id)
-        ).to.be.revertedWith("Contract already finished")
+        await expect(storage.finishContract(id)).to.be.revertedWith(
+          "Contract already finished"
+        )
       })
     })
 
     describe("slashing when missing proofs", function () {
-
       async function ensureProofIsMissing() {
-        while (!await storage.isProofRequired(id, await minedBlockNumber())) {
+        while (!(await storage.isProofRequired(id, await minedBlockNumber()))) {
           mineBlock()
         }
         const blocknumber = await minedBlockNumber()
-        for (let i=0; i<request.proofTimeout; i++) {
+        for (let i = 0; i < request.proofTimeout; i++) {
           mineBlock()
         }
         await storage.markProofAsMissing(id, blocknumber)
@@ -143,12 +139,12 @@ describe("Storage", function () {
 
       it("reduces stake when too many proofs are missing", async function () {
         await storage.connect(host).startContract(id)
-        for (let i=0; i<slashMisses; i++) {
+        for (let i = 0; i < slashMisses; i++) {
           await ensureProofIsMissing()
         }
-        const expectedStake = stakeAmount * (100 - slashPercentage) / 100
+        const expectedStake = (stakeAmount * (100 - slashPercentage)) / 100
         expect(await storage.stake(host.address)).to.equal(expectedStake)
-    })
+      })
     })
   })
 
@@ -157,20 +153,22 @@ describe("Storage", function () {
     await token.connect(client).approve(storage.address, bid.price)
     await storage.connect(host).increaseStake(stakeAmount - 1)
     let requestHash = hashRequest(request)
-    let bidHash = hashBid({...bid, requestHash})
-    await expect(storage.newContract(
-      request.duration,
-      request.size,
-      request.contentHash,
-      request.proofPeriod,
-      request.proofTimeout,
-      request.nonce,
-      bid.price,
-      await host.getAddress(),
-      bid.bidExpiry,
-      await sign(client, requestHash),
-      await sign(host, bidHash)
-    )).to.be.revertedWith("Insufficient stake")
+    let bidHash = hashBid({ ...bid, requestHash })
+    await expect(
+      storage.newContract(
+        request.duration,
+        request.size,
+        request.contentHash,
+        request.proofPeriod,
+        request.proofTimeout,
+        request.nonce,
+        bid.price,
+        await host.getAddress(),
+        bid.bidExpiry,
+        await sign(client, requestHash),
+        await sign(host, bidHash)
+      )
+    ).to.be.revertedWith("Insufficient stake")
   })
 
   it("doesn't create contract without payment of price", async function () {
@@ -178,20 +176,22 @@ describe("Storage", function () {
     await token.connect(client).approve(storage.address, bid.price - 1)
     await storage.connect(host).increaseStake(stakeAmount)
     let requestHash = hashRequest(request)
-    let bidHash = hashBid({...bid, requestHash})
-    await expect(storage.newContract(
-      request.duration,
-      request.size,
-      request.contentHash,
-      request.proofPeriod,
-      request.proofTimeout,
-      request.nonce,
-      bid.price,
-      await host.getAddress(),
-      bid.bidExpiry,
-      await sign(client, requestHash),
-      await sign(host, bidHash)
-    )).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+    let bidHash = hashBid({ ...bid, requestHash })
+    await expect(
+      storage.newContract(
+        request.duration,
+        request.size,
+        request.contentHash,
+        request.proofPeriod,
+        request.proofTimeout,
+        request.nonce,
+        bid.price,
+        await host.getAddress(),
+        bid.bidExpiry,
+        await sign(client, requestHash),
+        await sign(host, bidHash)
+      )
+    ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
   })
 })
 

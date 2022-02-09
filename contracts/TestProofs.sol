@@ -5,37 +5,34 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
-
-  function period(bytes32 id) public view returns (uint) {
+  function period(bytes32 id) public view returns (uint256) {
     return _period(id);
   }
 
-  function timeout(bytes32 id) public view returns (uint) {
+  function timeout(bytes32 id) public view returns (uint256) {
     return _timeout(id);
   }
 
-  function end(bytes32 id) public view returns (uint) {
+  function end(bytes32 id) public view returns (uint256) {
     return _end(id);
   }
 
-  function missed(bytes32 id) public view returns (uint) {
+  function missed(bytes32 id) public view returns (uint256) {
     return _missed(id);
   }
 
   function expectProofs(
     bytes32 id,
-    uint _period,
-    uint _timeout,
-    uint _duration
+    uint256 _period,
+    uint256 _timeout,
+    uint256 _duration
   ) public {
     _expectProofs(id, _period, _timeout, _duration);
   }
 
-  function isProofRequired(
-    bytes32 id,
-    uint blocknumber
-  )
-    public view
+  function isProofRequired(bytes32 id, uint256 blocknumber)
+    public
+    view
     returns (bool)
   {
     return _isProofRequired(id, blocknumber);
@@ -43,15 +40,13 @@ contract TestProofs is Proofs {
 
   function submitProof(
     bytes32 id,
-    uint blocknumber,
+    uint256 blocknumber,
     bool proof
-  )
-    public
-  {
+  ) public {
     _submitProof(id, blocknumber, proof);
   }
 
-  function markProofAsMissing(bytes32 id, uint blocknumber) public {
-      _markProofAsMissing(id, blocknumber);
+  function markProofAsMissing(bytes32 id, uint256 blocknumber) public {
+    _markProofAsMissing(id, blocknumber);
   }
 }

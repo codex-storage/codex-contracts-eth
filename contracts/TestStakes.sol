@@ -5,14 +5,13 @@ import "./Stakes.sol";
 
 // exposes internal functions of Stakes for testing
 contract TestStakes is Stakes {
-
   constructor(IERC20 token) Stakes(token) {}
 
-  function stake(address account) public view returns (uint) {
+  function stake(address account) public view returns (uint256) {
     return _stake(account);
   }
 
-  function increaseStake(uint amount) public {
+  function increaseStake(uint256 amount) public {
     _increaseStake(amount);
   }
 
@@ -28,7 +27,7 @@ contract TestStakes is Stakes {
     _unlockStake(account);
   }
 
-  function slash(address account, uint percentage) public {
+  function slash(address account, uint256 percentage) public {
     _slash(account, percentage);
   }
 }

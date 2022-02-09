@@ -3,7 +3,8 @@
   "license": "MIT",
   "scripts": {
     "test": "hardhat test",
-    "start": "hardhat node --export 'deployment-localhost.json'"
+    "start": "hardhat node --export 'deployment-localhost.json'",
+    "format": "prettier --write contracts/**/*.sol test/**/*.js"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -14,6 +15,8 @@
     "ethers": "^5.4.7",
     "hardhat": "^2.6.5",
     "hardhat-deploy": "^0.9.8",
-    "hardhat-deploy-ethers": "^0.3.0-beta.11"
+    "hardhat-deploy-ethers": "^0.3.0-beta.11",
+    "prettier": "^2.5.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.19"
   }
 }

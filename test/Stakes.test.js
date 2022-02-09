@@ -2,13 +2,12 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 
 describe("Stakes", function () {
-
   var stakes
   var token
   var host
 
-  beforeEach(async function() {
-    [host] = await ethers.getSigners()
+  beforeEach(async function () {
+    ;[host] = await ethers.getSigners()
     const Stakes = await ethers.getContractFactory("TestStakes")
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
@@ -30,9 +29,9 @@ describe("Stakes", function () {
   })
 
   it("does not increase stake when token transfer fails", async function () {
-    await expect(
-      stakes.increaseStake(20)
-    ).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+    await expect(stakes.increaseStake(20)).to.be.revertedWith(
+      "ERC20: transfer amount exceeds allowance"
+    )
   })
 
   it("allows withdrawal of stake", async function () {
@@ -54,9 +53,9 @@ describe("Stakes", function () {
   })
 
   it("fails to unlock when already unlocked", async function () {
-    await expect(
-      stakes.unlockStake(host.address)
-    ).to.be.revertedWith("Stake already unlocked")
+    await expect(stakes.unlockStake(host.address)).to.be.revertedWith(
+      "Stake already unlocked"
+    )
   })
 
   it("requires an equal amount of locks and unlocks", async function () {
