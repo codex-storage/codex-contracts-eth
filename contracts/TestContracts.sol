@@ -5,22 +5,19 @@ import "./Contracts.sol";
 
 // exposes internal functions of Contracts for testing
 contract TestContracts is Contracts {
-
   function newContract(
-    uint _duration,
-    uint _size,
+    uint256 _duration,
+    uint256 _size,
     bytes32 _contentHash,
-    uint _proofPeriod,
-    uint _proofTimeout,
+    uint256 _proofPeriod,
+    uint256 _proofTimeout,
     bytes32 _nonce,
-    uint _price,
+    uint256 _price,
     address _host,
-    uint _bidExpiry,
+    uint256 _bidExpiry,
     bytes memory requestSignature,
     bytes memory bidSignature
-  )
-    public
-  {
+  ) public {
     _newContract(
       _duration,
       _size,
@@ -32,14 +29,15 @@ contract TestContracts is Contracts {
       _host,
       _bidExpiry,
       requestSignature,
-      bidSignature);
+      bidSignature
+    );
   }
 
-  function duration(bytes32 id) public view returns (uint) {
+  function duration(bytes32 id) public view returns (uint256) {
     return _duration(id);
   }
 
-  function size(bytes32 id) public view returns (uint) {
+  function size(bytes32 id) public view returns (uint256) {
     return _size(id);
   }
 
@@ -47,7 +45,7 @@ contract TestContracts is Contracts {
     return _contentHash(id);
   }
 
-  function price(bytes32 id) public view returns (uint) {
+  function price(bytes32 id) public view returns (uint256) {
     return _price(id);
   }
 

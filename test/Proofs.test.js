@@ -1,9 +1,8 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const { mineBlock, minedBlockNumber } = require ("./mining")
+const { mineBlock, minedBlockNumber } = require("./mining")
 
 describe("Proofs", function () {
-
   const id = ethers.utils.randomBytes(32)
   const period = 10
   const timeout = 5
@@ -16,20 +15,20 @@ describe("Proofs", function () {
     proofs = await Proofs.deploy()
   })
 
-  it("indicates that proofs are required", async function() {
+  it("indicates that proofs are required", async function () {
     await proofs.expectProofs(id, period, timeout, duration)
     expect(await proofs.period(id)).to.equal(period)
     expect(await proofs.timeout(id)).to.equal(timeout)
   })
 
-  it("calculates an endtime based on duration and timeout", async function() {
+  it("calculates an endtime based on duration and timeout", async function () {
     await proofs.expectProofs(id, period, timeout, duration)
     let start = await minedBlockNumber()
     let end = start + duration + 2 * timeout
     expect(await proofs.end(id)).to.equal(end)
   })
 
-  it("does not allow ids to be reused", async function() {
+  it("does not allow ids to be reused", async function () {
     await proofs.expectProofs(id, period, timeout, duration)
     await expect(
       proofs.expectProofs(id, period, timeout, duration)
@@ -47,7 +46,7 @@ describe("Proofs", function () {
     let blocks = 600
     let amount = 0
     await proofs.expectProofs(id, period, timeout, blocks)
-    for (let i=0; i<blocks; i++) {
+    for (let i = 0; i < blocks; i++) {
       await mineBlock()
       if (await proofs.isProofRequired(id, await minedBlockNumber())) {
         amount += 1
@@ -58,37 +57,36 @@ describe("Proofs", function () {
   })
 
   it("requires no proof before start time", async function () {
-    for (let i=0; i<4*period; i++) {
+    for (let i = 0; i < 4 * period; i++) {
       mineBlock()
     }
     await proofs.expectProofs(id, period, timeout, duration)
     let start = await minedBlockNumber()
-    for (let i=1; i<4*period; i++) {
-      expect(await proofs.isProofRequired(id, start-i)).to.be.false
+    for (let i = 1; i < 4 * period; i++) {
+      expect(await proofs.isProofRequired(id, start - i)).to.be.false
     }
   })
 
   describe("when proofs are required", async function () {
-
     beforeEach(async function () {
       await proofs.expectProofs(id, period, timeout, duration)
     })
 
     async function mineUntilProofIsRequired(id) {
-      while (!await proofs.isProofRequired(id, await minedBlockNumber())) {
+      while (!(await proofs.isProofRequired(id, await minedBlockNumber()))) {
         mineBlock()
       }
     }
 
     async function mineUntilProofTimeout() {
-      for (let i=0; i<timeout; i++) {
+      for (let i = 0; i < timeout; i++) {
         mineBlock()
       }
     }
 
     async function mineUntilEnd() {
       const end = await proofs.end(id)
-      while (await minedBlockNumber() < end) {
+      while ((await minedBlockNumber()) < end) {
         mineBlock()
       }
     }
@@ -96,7 +94,8 @@ describe("Proofs", function () {
     it("requires no proof for blocks that are unavailable", async function () {
       await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
-      for (let i=0; i<256; i++) { // only last 256 blocks available in solidity
+      for (let i = 0; i < 256; i++) {
+        // only last 256 blocks available in solidity
         mineBlock()
       }
       expect(await proofs.isProofRequired(id, blocknumber)).to.be.false
@@ -104,7 +103,7 @@ describe("Proofs", function () {
 
     it("requires no proof after end time", async function () {
       await mineUntilEnd()
-      for (let i=0; i<4*period; i++) {
+      for (let i = 0; i < 4 * period; i++) {
         const blocknumber = await minedBlockNumber()
         expect(await proofs.isProofRequired(id, blocknumber)).to.be.false
         mineBlock()
@@ -144,7 +143,7 @@ describe("Proofs", function () {
       ).to.be.revertedWith("Proof not allowed after timeout")
     })
 
-    it("fails proof submission when already submitted", async function() {
+    it("fails proof submission when already submitted", async function () {
       await mineUntilProofIsRequired(id)
       let blocknumber = await minedBlockNumber()
       await proofs.submitProof(id, blocknumber, true)

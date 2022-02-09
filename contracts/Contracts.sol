@@ -4,21 +4,20 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract Contracts {
+  mapping(bytes32 => bool) private ids; // contract id, equal to hash of bid
+  mapping(bytes32 => uint256) private durations; // contract duration in blocks
+  mapping(bytes32 => uint256) private sizes; // storage size in bytes
+  mapping(bytes32 => bytes32) private contentHashes; // hash of data to be stored
+  mapping(bytes32 => uint256) private proofPeriods; // period between proofs
+  mapping(bytes32 => uint256) private proofTimeouts; // timeout for proof submission
+  mapping(bytes32 => uint256) private prices; // price in coins
+  mapping(bytes32 => address) private hosts; // host that provides storage
 
-  mapping(bytes32=>bool) private ids; // contract id, equal to hash of bid
-  mapping(bytes32=>uint) private durations; // contract duration in blocks
-  mapping(bytes32=>uint) private sizes; // storage size in bytes
-  mapping(bytes32=>bytes32) private contentHashes; // hash of data to be stored
-  mapping(bytes32=>uint) private proofPeriods; // period between proofs
-  mapping(bytes32=>uint) private proofTimeouts; // timeout for proof submission
-  mapping(bytes32=>uint) private prices; // price in coins
-  mapping(bytes32=>address) private hosts; // host that provides storage
-
-  function _duration(bytes32 id) internal view returns (uint) {
+  function _duration(bytes32 id) internal view returns (uint256) {
     return durations[id];
   }
 
-  function _size(bytes32 id) internal view returns (uint) {
+  function _size(bytes32 id) internal view returns (uint256) {
     return sizes[id];
   }
 
@@ -26,15 +25,15 @@ contract Contracts {
     return contentHashes[id];
   }
 
-  function _proofPeriod(bytes32 id) internal view returns (uint) {
+  function _proofPeriod(bytes32 id) internal view returns (uint256) {
     return proofPeriods[id];
   }
 
-  function _proofTimeout(bytes32 id) internal view returns (uint) {
+  function _proofTimeout(bytes32 id) internal view returns (uint256) {
     return proofTimeouts[id];
   }
 
-  function _price(bytes32 id) internal view returns (uint) {
+  function _price(bytes32 id) internal view returns (uint256) {
     return prices[id];
   }
 
@@ -43,21 +42,18 @@ contract Contracts {
   }
 
   function _newContract(
-    uint duration,
-    uint size,
+    uint256 duration,
+    uint256 size,
     bytes32 contentHash,
-    uint proofPeriod,
-    uint proofTimeout,
+    uint256 proofPeriod,
+    uint256 proofTimeout,
     bytes32 nonce,
-    uint price,
+    uint256 price,
     address host,
-    uint bidExpiry,
+    uint256 bidExpiry,
     bytes memory requestSignature,
     bytes memory bidSignature
-  )
-    internal
-    returns (bytes32 id)
-  {
+  ) internal returns (bytes32 id) {
     bytes32 requestHash = _hashRequest(
       duration,
       size,
@@ -84,57 +80,52 @@ contract Contracts {
 
   // Creates hash for a storage request that can be used to check its signature.
   function _hashRequest(
-    uint duration,
-    uint size,
+    uint256 duration,
+    uint256 size,
     bytes32 hash,
-    uint proofPeriod,
-    uint proofTimeout,
+    uint256 proofPeriod,
+    uint256 proofTimeout,
     bytes32 nonce
-  )
-    private pure
-    returns (bytes32)
-  {
-    return keccak256(abi.encode(
-      "[dagger.request.v1]",
-      duration,
-      size,
-      hash,
-      proofPeriod,
-      proofTimeout,
-      nonce
-    ));
+  ) private pure returns (bytes32) {
+    return
+      keccak256(
+        abi.encode(
+          "[dagger.request.v1]",
+          duration,
+          size,
+          hash,
+          proofPeriod,
+          proofTimeout,
+          nonce
+        )
+      );
   }
 
   // Creates hash for a storage bid that can be used to check its signature.
-  function _hashBid(bytes32 requestHash, uint expiry, uint price)
-    private pure
-    returns (bytes32)
-  {
-    return keccak256(abi.encode(
-      "[dagger.bid.v1]",
-      requestHash,
-      expiry,
-      price
-    ));
+  function _hashBid(
+    bytes32 requestHash,
+    uint256 expiry,
+    uint256 price
+  ) private pure returns (bytes32) {
+    return keccak256(abi.encode("[dagger.bid.v1]", requestHash, expiry, price));
   }
 
   // Checks a signature for a storage request or bid, given its hash.
-  function _checkSignature(bytes memory signature, bytes32 hash, address signer)
-    private pure
-  {
+  function _checkSignature(
+    bytes memory signature,
+    bytes32 hash,
+    address signer
+  ) private pure {
     bytes32 messageHash = ECDSA.toEthSignedMessageHash(hash);
     address recovered = ECDSA.recover(messageHash, signature);
     require(recovered == signer, "Invalid signature");
   }
 
-  function _checkBidExpiry(uint expiry) private view {
+  function _checkBidExpiry(uint256 expiry) private view {
     require(expiry > block.timestamp, "Bid expired");
   }
 
   function _checkId(bytes32 id) private view {
-    require(
-      !ids[id],
-      "A contract with this id already exists"
-    );
+    require(!ids[id], "A contract with this id already exists");
   }
 }

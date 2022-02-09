@@ -6,41 +6,36 @@ import "./Proofs.sol";
 import "./Stakes.sol";
 
 contract Storage is Contracts, Proofs, Stakes {
+  uint256 public stakeAmount;
+  uint256 public slashMisses;
+  uint256 public slashPercentage;
 
-  uint public stakeAmount;
-  uint public slashMisses;
-  uint public slashPercentage;
-
-  mapping(bytes32=>bool) private finished;
+  mapping(bytes32 => bool) private finished;
 
   constructor(
     IERC20 token,
-    uint _stakeAmount,
-    uint _slashMisses,
-    uint _slashPercentage
-  )
-    Stakes(token)
-  {
+    uint256 _stakeAmount,
+    uint256 _slashMisses,
+    uint256 _slashPercentage
+  ) Stakes(token) {
     stakeAmount = _stakeAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
   }
 
   function newContract(
-    uint _duration,
-    uint _size,
+    uint256 _duration,
+    uint256 _size,
     bytes32 _contentHash,
-    uint _proofPeriod,
-    uint _proofTimeout,
+    uint256 _proofPeriod,
+    uint256 _proofTimeout,
     bytes32 _nonce,
-    uint _price,
+    uint256 _price,
     address _host,
-    uint _bidExpiry,
+    uint256 _bidExpiry,
     bytes memory requestSignature,
     bytes memory bidSignature
-  )
-    public
-  {
+  ) public {
     require(_stake(_host) >= stakeAmount, "Insufficient stake");
     _lockStake(_host);
     _token().transferFrom(msg.sender, address(this), _price);
@@ -76,11 +71,11 @@ contract Storage is Contracts, Proofs, Stakes {
     finished[id] = true;
   }
 
-  function duration(bytes32 contractId) public view returns (uint) {
+  function duration(bytes32 contractId) public view returns (uint256) {
     return _duration(contractId);
   }
 
-  function size(bytes32 contractId) public view returns (uint) {
+  function size(bytes32 contractId) public view returns (uint256) {
     return _size(contractId);
   }
 
@@ -88,7 +83,7 @@ contract Storage is Contracts, Proofs, Stakes {
     return _contentHash(contractId);
   }
 
-  function price(bytes32 contractId) public view returns (uint) {
+  function price(bytes32 contractId) public view returns (uint256) {
     return _price(contractId);
   }
 
@@ -96,41 +91,37 @@ contract Storage is Contracts, Proofs, Stakes {
     return _host(contractId);
   }
 
-  function proofPeriod(bytes32 contractId) public view returns (uint) {
+  function proofPeriod(bytes32 contractId) public view returns (uint256) {
     return _proofPeriod(contractId);
   }
 
-  function proofTimeout(bytes32 contractId) public view returns (uint) {
+  function proofTimeout(bytes32 contractId) public view returns (uint256) {
     return _proofTimeout(contractId);
   }
 
-  function proofEnd(bytes32 contractId) public view returns (uint) {
+  function proofEnd(bytes32 contractId) public view returns (uint256) {
     return _end(contractId);
   }
 
-  function missingProofs(bytes32 contractId) public view returns (uint) {
+  function missingProofs(bytes32 contractId) public view returns (uint256) {
     return _missed(contractId);
   }
 
-  function stake(address account) public view returns (uint) {
+  function stake(address account) public view returns (uint256) {
     return _stake(account);
   }
 
-  function isProofRequired(
-    bytes32 contractId,
-    uint blocknumber
-  )
-    public view
+  function isProofRequired(bytes32 contractId, uint256 blocknumber)
+    public
+    view
     returns (bool)
   {
     return _isProofRequired(contractId, blocknumber);
   }
 
-  function isProofTimedOut(
-    bytes32 contractId,
-    uint blocknumber
-  )
-    public view
+  function isProofTimedOut(bytes32 contractId, uint256 blocknumber)
+    public
+    view
     returns (bool)
   {
     return _isProofTimedOut(contractId, blocknumber);
@@ -138,22 +129,20 @@ contract Storage is Contracts, Proofs, Stakes {
 
   function submitProof(
     bytes32 contractId,
-    uint blocknumber,
+    uint256 blocknumber,
     bool proof
-  )
-    public
-  {
+  ) public {
     _submitProof(contractId, blocknumber, proof);
   }
 
-  function markProofAsMissing(bytes32 contractId, uint blocknumber) public {
+  function markProofAsMissing(bytes32 contractId, uint256 blocknumber) public {
     _markProofAsMissing(contractId, blocknumber);
     if (_missed(contractId) % slashMisses == 0) {
       _slash(host(contractId), slashPercentage);
     }
   }
 
-  function increaseStake(uint amount) public {
+  function increaseStake(uint256 amount) public {
     _increaseStake(amount);
   }
 
