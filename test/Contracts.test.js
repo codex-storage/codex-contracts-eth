@@ -70,7 +70,7 @@ describe("Contracts", function () {
         await sign(client, requestHash),
         await sign(host, bidHash)
       )
-    ).to.be.revertedWith("A contract with this id already exists")
+    ).to.be.revertedWith("Contract already exists")
   })
 
   it("cannot be created when client signature is invalid", async function () {

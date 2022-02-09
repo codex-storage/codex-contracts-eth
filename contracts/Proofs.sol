@@ -32,7 +32,7 @@ contract Proofs {
   // checked in a smart contract, so that leaves a period of at least 128 blocks
   // after timeout for a validator to signal the absence of a proof.
   function _checkTimeout(uint256 timeout) private pure {
-    require(timeout <= 128, "Invalid proof timeout, needs to be <= 128");
+    require(timeout <= 128, "Invalid proof timeout > 128");
   }
 
   function _expectProofs(

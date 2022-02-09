@@ -122,10 +122,11 @@ contract Contracts {
   }
 
   function _checkBidExpiry(uint256 expiry) private view {
+    // solhint-disable-next-line not-rely-on-time
     require(expiry > block.timestamp, "Bid expired");
   }
 
   function _checkId(bytes32 id) private view {
-    require(!ids[id], "A contract with this id already exists");
+    require(!ids[id], "Contract already exists");
   }
 }

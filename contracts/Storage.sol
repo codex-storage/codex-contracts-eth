@@ -66,9 +66,9 @@ contract Storage is Contracts, Proofs, Stakes {
   function finishContract(bytes32 id) public {
     require(block.number > proofEnd(id), "Contract has not ended yet");
     require(!finished[id], "Contract already finished");
-    require(_token().transfer(host(id), price(id)), "Payment failed");
     _unlockStake(host(id));
     finished[id] = true;
+    require(_token().transfer(host(id), price(id)), "Payment failed");
   }
 
   function duration(bytes32 contractId) public view returns (uint256) {
