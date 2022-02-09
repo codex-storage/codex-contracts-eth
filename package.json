@@ -2,7 +2,7 @@
   "name": "dagger-contracts",
   "license": "MIT",
   "scripts": {
-    "test": "hardhat test",
+    "test": "npm run lint && hardhat test",
     "start": "hardhat node --export 'deployment-localhost.json'",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
     "lint": "solhint contracts/**.sol"
