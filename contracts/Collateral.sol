@@ -7,7 +7,10 @@ contract Collateral {
   IERC20 private immutable token;
   mapping(address => uint256) private balances;
 
-  constructor(IERC20 _token) {
+  uint256 private totalDeposited;
+  uint256 private totalBalance;
+
+  constructor(IERC20 _token) invariant {
     token = _token;
   }
 
@@ -15,8 +18,15 @@ contract Collateral {
     return balances[account];
   }
 
-  function deposit(uint256 amount) public {
+  function deposit(uint256 amount) public invariant {
     token.transferFrom(msg.sender, address(this), amount);
+    totalDeposited += amount;
     balances[msg.sender] += amount;
+    totalBalance += amount;
+  }
+
+  modifier invariant() {
+    _;
+    assert(totalDeposited == totalBalance);
   }
 }
