@@ -16,18 +16,26 @@ contract Collateral {
     return balances[account];
   }
 
-  function deposit(uint256 amount) public invariant {
-    token.transferFrom(msg.sender, address(this), amount);
-    totals.deposited += amount;
-    balances[msg.sender] += amount;
+  function add(address account, uint256 amount) private {
+    balances[account] += amount;
     totals.balance += amount;
   }
 
-  function withdraw() public invariant {
-    uint256 amount = balances[msg.sender];
-    balances[msg.sender] = 0;
+  function subtract(address account, uint256 amount) private {
+    balances[account] -= amount;
     totals.balance -= amount;
+  }
+
+  function deposit(uint256 amount) public invariant {
+    token.transferFrom(msg.sender, address(this), amount);
+    totals.deposited += amount;
+    add(msg.sender, amount);
+  }
+
+  function withdraw() public invariant {
+    uint256 amount = balanceOf(msg.sender);
     totals.withdrawn += amount;
+    subtract(msg.sender, amount);
     assert(token.transfer(msg.sender, amount));
   }
 
