@@ -5,7 +5,7 @@ describe("Collateral", function () {
   let account0, account1
 
   beforeEach(async function () {
-    let Collateral = await ethers.getContractFactory("Collateral")
+    let Collateral = await ethers.getContractFactory("TestCollateral")
     let TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
     collateral = await Collateral.deploy(token.address)
@@ -71,6 +71,22 @@ describe("Collateral", function () {
       await collateral.withdraw()
       let after = await token.balanceOf(account0.address)
       expect(after - before).to.equal(balance)
+    })
+  })
+
+  describe("slashing", function () {
+    beforeEach(async function () {
+      await token.connect(account0).approve(collateral.address, 1000)
+      await token.connect(account1).approve(collateral.address, 1000)
+      await collateral.connect(account0).deposit(1000)
+      await collateral.connect(account1).deposit(1000)
+    })
+
+    it("reduces the amount of collateral by a percentage", async function () {
+      await collateral.slash(account0.address, 10)
+      await collateral.slash(account1.address, 5)
+      expect(await collateral.balanceOf(account0.address)).to.equal(900)
+      expect(await collateral.balanceOf(account1.address)).to.equal(950)
     })
   })
 })
