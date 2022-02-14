@@ -47,4 +47,30 @@ describe("Collateral", function () {
       )
     })
   })
+
+  describe("withdrawing", function () {
+    beforeEach(async function () {
+      await token.connect(account0).approve(collateral.address, 100)
+      await token.connect(account1).approve(collateral.address, 100)
+      await collateral.connect(account0).deposit(40)
+      await collateral.connect(account1).deposit(2)
+    })
+
+    it("updates the amount of collateral", async function () {
+      await collateral.connect(account0).withdraw()
+      expect(await collateral.balanceOf(account0.address)).to.equal(0)
+      expect(await collateral.balanceOf(account1.address)).to.equal(2)
+      await collateral.connect(account1).withdraw()
+      expect(await collateral.balanceOf(account0.address)).to.equal(0)
+      expect(await collateral.balanceOf(account1.address)).to.equal(0)
+    })
+
+    it("transfers balance to owner", async function () {
+      let balance = await collateral.balanceOf(account0.address)
+      let before = await token.balanceOf(account0.address)
+      await collateral.withdraw()
+      let after = await token.balanceOf(account0.address)
+      expect(after - before).to.equal(balance)
+    })
+  })
 })

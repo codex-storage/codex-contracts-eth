@@ -5,10 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Collateral {
   IERC20 private immutable token;
+  Totals private totals;
   mapping(address => uint256) private balances;
-
-  uint256 private totalDeposited;
-  uint256 private totalBalance;
 
   constructor(IERC20 _token) invariant {
     token = _token;
@@ -20,13 +18,30 @@ contract Collateral {
 
   function deposit(uint256 amount) public invariant {
     token.transferFrom(msg.sender, address(this), amount);
-    totalDeposited += amount;
+    totals.deposited += amount;
     balances[msg.sender] += amount;
-    totalBalance += amount;
+    totals.balance += amount;
+  }
+
+  function withdraw() public invariant {
+    uint256 amount = balances[msg.sender];
+    balances[msg.sender] = 0;
+    totals.balance -= amount;
+    totals.withdrawn += amount;
+    assert(token.transfer(msg.sender, amount));
   }
 
   modifier invariant() {
+    Totals memory oldTotals = totals;
     _;
-    assert(totalDeposited == totalBalance);
+    assert(totals.deposited >= oldTotals.deposited);
+    assert(totals.withdrawn >= oldTotals.withdrawn);
+    assert(totals.deposited == totals.balance + totals.withdrawn);
+  }
+
+  struct Totals {
+    uint256 balance;
+    uint256 deposited;
+    uint256 withdrawn;
   }
 }
