@@ -26,8 +26,13 @@ contract Collateral {
     totals.balance -= amount;
   }
 
+  function transferFrom(address sender, uint256 amount) private {
+    address receiver = address(this);
+    require(token.transferFrom(sender, receiver, amount), "Transfer failed");
+  }
+
   function deposit(uint256 amount) public invariant {
-    token.transferFrom(msg.sender, address(this), amount);
+    transferFrom(msg.sender, amount);
     totals.deposited += amount;
     add(msg.sender, amount);
   }
