@@ -44,17 +44,27 @@ contract Collateral {
     assert(token.transfer(msg.sender, amount));
   }
 
+  function _slash(address account, uint256 percentage) internal invariant {
+    uint256 amount = (balanceOf(account) * percentage) / 100;
+    totals.slashed += amount;
+    subtract(account, amount);
+  }
+
   modifier invariant() {
     Totals memory oldTotals = totals;
     _;
     assert(totals.deposited >= oldTotals.deposited);
     assert(totals.withdrawn >= oldTotals.withdrawn);
-    assert(totals.deposited == totals.balance + totals.withdrawn);
+    assert(totals.slashed >= oldTotals.slashed);
+    assert(
+      totals.deposited == totals.balance + totals.withdrawn + totals.slashed
+    );
   }
 
   struct Totals {
     uint256 balance;
     uint256 deposited;
     uint256 withdrawn;
+    uint256 slashed;
   }
 }
