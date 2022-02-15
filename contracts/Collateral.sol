@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./AccountLocks.sol";
 
 contract Collateral is AccountLocks {
-  IERC20 private immutable token;
+  IERC20 public immutable token;
   Totals private totals;
   mapping(address => uint256) private balances;
 

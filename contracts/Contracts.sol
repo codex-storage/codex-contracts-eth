@@ -86,7 +86,7 @@ contract Contracts {
     uint256 proofPeriod,
     uint256 proofTimeout,
     bytes32 nonce
-  ) private pure returns (bytes32) {
+  ) internal pure returns (bytes32) {
     return
       keccak256(
         abi.encode(
@@ -106,7 +106,7 @@ contract Contracts {
     bytes32 requestHash,
     uint256 expiry,
     uint256 price
-  ) private pure returns (bytes32) {
+  ) internal pure returns (bytes32) {
     return keccak256(abi.encode("[dagger.bid.v1]", requestHash, expiry, price));
   }
 

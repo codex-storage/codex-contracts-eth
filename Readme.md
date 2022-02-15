@@ -3,7 +3,7 @@ Dagger Contracts
 
 An experimental implementation of the contracts that underly the Dagger storage
 network. Its goal is to experiment with the rules around the bidding process,
-the storage contracts, the storage proofs and the host stakes. Neither
+the storage contracts, the storage proofs and the host collateral. Neither
 completeness nor correctness are guaranteed at this moment in time.
 
 Running
@@ -76,14 +76,14 @@ When a new storage contract is created the client immediately pays the entire
 price of the contract. The payment is only released to the host upon successful
 completion of the contract.
 
-Stakes
+Collateral
 ------
 
-To motivate a host to remain honest, it must put up some collateral (stake)
-before it is allowed to participate in storage contracts. The stake may not be
-withdrawn as long as a host is participating in an active storage contract.
+To motivate a host to remain honest, it must put up some collateral before it is
+allowed to participate in storage contracts. The collateral may not be withdrawn
+as long as a host is participating in an active storage contract.
 
-Should a host be misbehaving, then its stake may be reduced by a certain
+Should a host be misbehaving, then its collateral may be reduced by a certain
 percentage (slashed).
 
 Proofs
@@ -104,7 +104,7 @@ by the client and host during the request/bid exchange.
 Hosts have a small period of time in which they are expected to submit a proof.
 When that time has expired without seeing a proof, validators are able to point
 out the lack of proof. If a host misses too many proofs, it results into a
-slashing of its stake.
+slashing of its collateral.
 
 To Do
 -----
