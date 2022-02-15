@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./AccountLocks.sol";
 
-contract Collateral {
+contract Collateral is AccountLocks {
   IERC20 private immutable token;
   Totals private totals;
   mapping(address => uint256) private balances;
@@ -38,6 +39,7 @@ contract Collateral {
   }
 
   function withdraw() public invariant {
+    _unlockAccount();
     uint256 amount = balanceOf(msg.sender);
     totals.withdrawn += amount;
     subtract(msg.sender, amount);

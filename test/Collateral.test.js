@@ -1,4 +1,5 @@
 const { expect } = require("chai")
+const { exampleLock } = require("./examples")
 
 describe("Collateral", function () {
   let collateral, token
@@ -87,6 +88,27 @@ describe("Collateral", function () {
       await collateral.slash(account1.address, 5)
       expect(await collateral.balanceOf(account0.address)).to.equal(900)
       expect(await collateral.balanceOf(account1.address)).to.equal(950)
+    })
+  })
+
+  describe("locking", function () {
+    let lock
+
+    beforeEach(async function () {
+      await token.approve(collateral.address, 42)
+      await collateral.deposit(42)
+      lock = exampleLock()
+      await collateral.createLock(lock.id, lock.expiry)
+      await collateral.lock(account0.address, lock.id)
+    })
+
+    it("withdrawal fails when account is locked", async function () {
+      await expect(collateral.withdraw()).to.be.revertedWith("Account locked")
+    })
+
+    it("withdrawal succeeds when account is unlocked", async function () {
+      await collateral.unlock(lock.id)
+      await expect(collateral.withdraw()).not.to.be.reverted
     })
   })
 })
