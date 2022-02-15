@@ -11,4 +11,16 @@ contract TestCollateral is Collateral {
   function slash(address account, uint256 percentage) public {
     _slash(account, percentage);
   }
+
+  function createLock(bytes32 id, uint256 expiry) public {
+    _createLock(id, expiry);
+  }
+
+  function lock(address account, bytes32 id) public {
+    _lock(account, id);
+  }
+
+  function unlock(bytes32 id) public {
+    _unlock(id);
+  }
 }
