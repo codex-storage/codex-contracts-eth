@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat")
+const { now, hours } = require("./time")
 
 const exampleRequest = () => ({
   duration: 150, // 150 blocks ≈ half an hour
@@ -11,7 +12,12 @@ const exampleRequest = () => ({
 
 const exampleBid = () => ({
   price: 42,
-  bidExpiry: Math.round(Date.now() / 1000) + 60 * 60, // 1 hour from now
+  bidExpiry: now() + hours(1),
 })
 
-module.exports = { exampleRequest, exampleBid }
+const exampleLock = () => ({
+  id: ethers.utils.randomBytes(32),
+  expiry: now() + hours(1),
+})
+
+module.exports = { exampleRequest, exampleBid, exampleLock }
