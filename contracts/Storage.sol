@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "./Contracts.sol";
 import "./Proofs.sol";
-import "./Stakes.sol";
+import "./Collateral.sol";
 
-contract Storage is Contracts, Proofs, Stakes {
-  uint256 public stakeAmount;
+contract Storage is Contracts, Proofs, Collateral {
+  uint256 public collateralAmount;
   uint256 public slashMisses;
   uint256 public slashPercentage;
 
@@ -14,11 +14,11 @@ contract Storage is Contracts, Proofs, Stakes {
 
   constructor(
     IERC20 token,
-    uint256 _stakeAmount,
+    uint256 _collateralAmount,
     uint256 _slashMisses,
     uint256 _slashPercentage
-  ) Stakes(token) {
-    stakeAmount = _stakeAmount;
+  ) Collateral(token) {
+    collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
   }
@@ -36,9 +36,19 @@ contract Storage is Contracts, Proofs, Stakes {
     bytes memory requestSignature,
     bytes memory bidSignature
   ) public {
-    require(_stake(_host) >= stakeAmount, "Insufficient stake");
-    _lockStake(_host);
-    _token().transferFrom(msg.sender, address(this), _price);
+    require(balanceOf(_host) >= collateralAmount, "Insufficient collateral");
+    bytes32 requestHash = _hashRequest(
+      _duration,
+      _size,
+      _contentHash,
+      _proofPeriod,
+      _proofTimeout,
+      _nonce
+    );
+    bytes32 bidHash = _hashBid(requestHash, _bidExpiry, _price);
+    _createLock(bidHash, _bidExpiry);
+    _lock(_host, bidHash);
+    token.transferFrom(msg.sender, address(this), _price);
     _newContract(
       _duration,
       _size,
@@ -66,9 +76,9 @@ contract Storage is Contracts, Proofs, Stakes {
   function finishContract(bytes32 id) public {
     require(block.number > proofEnd(id), "Contract has not ended yet");
     require(!finished[id], "Contract already finished");
-    _unlockStake(host(id));
+    _unlock(id);
     finished[id] = true;
-    require(_token().transfer(host(id), price(id)), "Payment failed");
+    require(token.transfer(host(id), price(id)), "Payment failed");
   }
 
   function duration(bytes32 contractId) public view returns (uint256) {
@@ -107,10 +117,6 @@ contract Storage is Contracts, Proofs, Stakes {
     return _missed(contractId);
   }
 
-  function stake(address account) public view returns (uint256) {
-    return _stake(account);
-  }
-
   function isProofRequired(bytes32 contractId, uint256 blocknumber)
     public
     view
@@ -140,13 +146,5 @@ contract Storage is Contracts, Proofs, Stakes {
     if (_missed(contractId) % slashMisses == 0) {
       _slash(host(contractId), slashPercentage);
     }
-  }
-
-  function increaseStake(uint256 amount) public {
-    _increaseStake(amount);
-  }
-
-  function withdrawStake() public {
-    _withdrawStake();
   }
 }

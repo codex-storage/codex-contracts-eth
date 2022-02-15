@@ -11,7 +11,7 @@ describe("Storage", function () {
   let storage
   let token
   let client, host
-  let stakeAmount, slashMisses, slashPercentage
+  let collateralAmount, slashMisses, slashPercentage
 
   beforeEach(async function () {
     ;[client, host] = await ethers.getSigners()
@@ -20,7 +20,7 @@ describe("Storage", function () {
     storage = await ethers.getContract("Storage")
     await token.mint(client.address, 1000)
     await token.mint(host.address, 1000)
-    stakeAmount = await storage.stakeAmount()
+    collateralAmount = await storage.collateralAmount()
     slashMisses = await storage.slashMisses()
     slashPercentage = await storage.slashPercentage()
   })
@@ -29,9 +29,9 @@ describe("Storage", function () {
     let id
 
     beforeEach(async function () {
-      await token.connect(host).approve(storage.address, stakeAmount)
+      await token.connect(host).approve(storage.address, collateralAmount)
       await token.connect(client).approve(storage.address, bid.price)
-      await storage.connect(host).increaseStake(stakeAmount)
+      await storage.connect(host).deposit(collateralAmount)
       let requestHash = hashRequest(request)
       let bidHash = hashBid({ ...bid, requestHash })
       await storage.newContract(
@@ -60,9 +60,9 @@ describe("Storage", function () {
       expect(await storage.host(id)).to.equal(await host.getAddress())
     })
 
-    it("locks up host stake", async function () {
-      await expect(storage.connect(host).withdrawStake()).to.be.revertedWith(
-        "Stake locked"
+    it("locks up host collateral", async function () {
+      await expect(storage.connect(host).withdraw()).to.be.revertedWith(
+        "Account locked"
       )
     })
 
@@ -96,10 +96,10 @@ describe("Storage", function () {
         }
       }
 
-      it("unlocks the host stake", async function () {
+      it("unlocks the host collateral", async function () {
         await mineUntilEnd()
         await storage.finishContract(id)
-        await expect(storage.connect(host).withdrawStake()).not.to.be.reverted
+        await expect(storage.connect(host).withdraw()).not.to.be.reverted
       })
 
       it("pays the host", async function () {
@@ -137,21 +137,22 @@ describe("Storage", function () {
         await storage.markProofAsMissing(id, blocknumber)
       }
 
-      it("reduces stake when too many proofs are missing", async function () {
+      it("reduces collateral when too many proofs are missing", async function () {
         await storage.connect(host).startContract(id)
         for (let i = 0; i < slashMisses; i++) {
           await ensureProofIsMissing()
         }
-        const expectedStake = (stakeAmount * (100 - slashPercentage)) / 100
-        expect(await storage.stake(host.address)).to.equal(expectedStake)
+        const expectedBalance =
+          (collateralAmount * (100 - slashPercentage)) / 100
+        expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
       })
     })
   })
 
-  it("doesn't create contract with insufficient stake", async function () {
-    await token.connect(host).approve(storage.address, stakeAmount - 1)
+  it("doesn't create contract with insufficient collateral", async function () {
+    await token.connect(host).approve(storage.address, collateralAmount - 1)
     await token.connect(client).approve(storage.address, bid.price)
-    await storage.connect(host).increaseStake(stakeAmount - 1)
+    await storage.connect(host).deposit(collateralAmount - 1)
     let requestHash = hashRequest(request)
     let bidHash = hashBid({ ...bid, requestHash })
     await expect(
@@ -168,13 +169,13 @@ describe("Storage", function () {
         await sign(client, requestHash),
         await sign(host, bidHash)
       )
-    ).to.be.revertedWith("Insufficient stake")
+    ).to.be.revertedWith("Insufficient collateral")
   })
 
   it("doesn't create contract without payment of price", async function () {
-    await token.connect(host).approve(storage.address, stakeAmount)
+    await token.connect(host).approve(storage.address, collateralAmount)
     await token.connect(client).approve(storage.address, bid.price - 1)
-    await storage.connect(host).increaseStake(stakeAmount)
+    await storage.connect(host).deposit(collateralAmount)
     let requestHash = hashRequest(request)
     let bidHash = hashBid({ ...bid, requestHash })
     await expect(
