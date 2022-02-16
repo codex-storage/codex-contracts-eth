@@ -6,10 +6,11 @@ import "./AccountLocks.sol";
 
 contract Collateral is AccountLocks {
   IERC20 public immutable token;
-  Totals private totals;
+  CollateralFunds private funds;
+
   mapping(address => uint256) private balances;
 
-  constructor(IERC20 _token) invariant {
+  constructor(IERC20 _token) collateralInvariant {
     token = _token;
   }
 
@@ -19,51 +20,52 @@ contract Collateral is AccountLocks {
 
   function add(address account, uint256 amount) private {
     balances[account] += amount;
-    totals.balance += amount;
+    funds.balance += amount;
   }
 
   function subtract(address account, uint256 amount) private {
     balances[account] -= amount;
-    totals.balance -= amount;
+    funds.balance -= amount;
   }
 
-  function transferFrom(address sender, uint256 amount) private {
+  function transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
     require(token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
-  function deposit(uint256 amount) public invariant {
+  function deposit(uint256 amount) public collateralInvariant {
     transferFrom(msg.sender, amount);
-    totals.deposited += amount;
+    funds.deposited += amount;
     add(msg.sender, amount);
   }
 
-  function withdraw() public invariant {
+  function withdraw() public collateralInvariant {
     _unlockAccount();
     uint256 amount = balanceOf(msg.sender);
-    totals.withdrawn += amount;
+    funds.withdrawn += amount;
     subtract(msg.sender, amount);
     assert(token.transfer(msg.sender, amount));
   }
 
-  function _slash(address account, uint256 percentage) internal invariant {
+  function _slash(address account, uint256 percentage)
+    internal
+    collateralInvariant
+  {
     uint256 amount = (balanceOf(account) * percentage) / 100;
-    totals.slashed += amount;
+    funds.slashed += amount;
     subtract(account, amount);
   }
 
-  modifier invariant() {
-    Totals memory oldTotals = totals;
+  modifier collateralInvariant() {
+    CollateralFunds memory oldFunds = funds;
     _;
-    assert(totals.deposited >= oldTotals.deposited);
-    assert(totals.withdrawn >= oldTotals.withdrawn);
-    assert(totals.slashed >= oldTotals.slashed);
-    assert(
-      totals.deposited == totals.balance + totals.withdrawn + totals.slashed
-    );
+    assert(funds.deposited >= oldFunds.deposited);
+    assert(funds.withdrawn >= oldFunds.withdrawn);
+    assert(funds.slashed >= oldFunds.slashed);
+    assert(funds.deposited == funds.balance + funds.withdrawn + funds.slashed);
   }
 
-  struct Totals {
+  struct CollateralFunds {
     uint256 balance;
     uint256 deposited;
     uint256 withdrawn;
