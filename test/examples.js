@@ -1,13 +1,15 @@
 const { ethers } = require("hardhat")
 const { now, hours } = require("./time")
+const { sha256, hexlify, randomBytes } = ethers.utils
 
 const exampleRequest = () => ({
   duration: 150, // 150 blocks ≈ half an hour
   size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
-  contentHash: ethers.utils.sha256("0xdeadbeef"),
+  contentHash: sha256("0xdeadbeef"),
   proofPeriod: 8, // 8 blocks ≈ 2 minutes
   proofTimeout: 4, // 4 blocks ≈ 1 minute
-  nonce: ethers.utils.randomBytes(32),
+  maxPrice: 42,
+  nonce: hexlify(randomBytes(32)),
 })
 
 const exampleBid = () => ({
@@ -16,7 +18,7 @@ const exampleBid = () => ({
 })
 
 const exampleLock = () => ({
-  id: ethers.utils.randomBytes(32),
+  id: hexlify(randomBytes(32)),
   expiry: now() + hours(1),
 })
 
