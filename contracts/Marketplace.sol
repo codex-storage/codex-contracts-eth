@@ -2,19 +2,19 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Collateral.sol";
 
-contract Marketplace {
-  IERC20 public immutable token;
+contract Marketplace is Collateral {
+  uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
+  mapping(bytes32 => Offer) private offers;
 
-  constructor(IERC20 _token) marketplaceInvariant {
-    token = _token;
-  }
-
-  function transferFrom(address sender, uint256 amount) private {
-    address receiver = address(this);
-    require(token.transferFrom(sender, receiver, amount), "Transfer failed");
+  constructor(IERC20 _token, uint256 _collateral)
+    Collateral(_token)
+    marketplaceInvariant
+  {
+    collateral = _collateral;
   }
 
   function requestStorage(Request calldata request)
@@ -31,6 +31,19 @@ contract Marketplace {
     emit StorageRequested(id, request);
   }
 
+  function offerStorage(Offer calldata offer) public marketplaceInvariant {
+    bytes32 id = keccak256(abi.encode(offer));
+    Request storage request = requests[offer.requestId];
+    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
+    require(request.size != 0, "Unknown request");
+    require(offers[id].expiry == 0, "Offer already exists");
+    // solhint-disable-next-line not-rely-on-time
+    require(offer.expiry > block.timestamp, "Offer expired");
+    require(offer.price <= request.maxPrice, "Price too high");
+    offers[id] = offer;
+    emit StorageOffered(id, offer);
+  }
+
   struct Request {
     uint256 duration;
     uint256 size;
@@ -41,7 +54,14 @@ contract Marketplace {
     bytes32 nonce;
   }
 
+  struct Offer {
+    bytes32 requestId;
+    uint256 price;
+    uint256 expiry;
+  }
+
   event StorageRequested(bytes32 id, Request request);
+  event StorageOffered(bytes32 id, Offer offer);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;

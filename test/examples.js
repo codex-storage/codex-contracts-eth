@@ -17,9 +17,14 @@ const exampleBid = () => ({
   bidExpiry: now() + hours(1),
 })
 
+const exampleOffer = () => ({
+  price: 42,
+  expiry: now() + hours(1),
+})
+
 const exampleLock = () => ({
   id: hexlify(randomBytes(32)),
   expiry: now() + hours(1),
 })
 
-module.exports = { exampleRequest, exampleBid, exampleLock }
+module.exports = { exampleRequest, exampleOffer, exampleBid, exampleLock }
