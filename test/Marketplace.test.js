@@ -5,29 +5,55 @@ const { now, hours } = require("./time")
 const { keccak256, defaultAbiCoder } = ethers.utils
 
 describe("Marketplace", function () {
-  const request = exampleRequest()
-  const offer = { ...exampleOffer(), requestId: requestId(request) }
   const collateral = 100
 
   let marketplace
   let token
-  let accounts
+  let client, host
+  let request, offer
 
   beforeEach(async function () {
+    ;[client, host] = await ethers.getSigners()
+
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
+    await token.mint(client.address, 1000)
+    await token.mint(host.address, 1000)
+
     const Marketplace = await ethers.getContractFactory("Marketplace")
     marketplace = await Marketplace.deploy(token.address, collateral)
-    accounts = await ethers.getSigners()
-    await token.mint(accounts[0].address, 1000)
+
+    request = exampleRequest()
+    request.client = client.address
+
+    offer = exampleOffer()
+    offer.host = host.address
+    offer.requestId = requestId(request)
   })
 
+  function switchAccount(account) {
+    token = token.connect(account)
+    marketplace = marketplace.connect(account)
+  }
+
   describe("requesting storage", function () {
+    beforeEach(function () {
+      switchAccount(client)
+    })
+
     it("emits event when storage is requested", async function () {
       await token.approve(marketplace.address, request.maxPrice)
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
         .withArgs(requestId(request), requestToArray(request))
+    })
+
+    it("rejects request with invalid client address", async function () {
+      let invalid = { ...request, client: host.address }
+      await token.approve(marketplace.address, invalid.maxPrice)
+      await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
+        "Invalid client address"
+      )
     })
 
     it("rejects request with insufficient payment", async function () {
@@ -57,8 +83,10 @@ describe("Marketplace", function () {
 
   describe("offering storage", function () {
     beforeEach(async function () {
+      switchAccount(client)
       await token.approve(marketplace.address, request.maxPrice)
       await marketplace.requestStorage(request)
+      switchAccount(host)
       await token.approve(marketplace.address, collateral)
       await marketplace.deposit(collateral)
     })
@@ -114,6 +142,7 @@ function requestId(request) {
   return keccak256(
     defaultAbiCoder.encode(
       [
+        "address",
         "uint256",
         "uint256",
         "bytes32",
@@ -138,6 +167,7 @@ function offerId(offer) {
 
 function requestToArray(request) {
   return [
+    request.client,
     request.duration,
     request.size,
     request.contentHash,

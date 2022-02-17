@@ -3,6 +3,7 @@ const { now, hours } = require("./time")
 const { sha256, hexlify, randomBytes } = ethers.utils
 
 const exampleRequest = () => ({
+  client: hexlify(randomBytes(20)),
   duration: 150, // 150 blocks ≈ half an hour
   size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
   contentHash: sha256("0xdeadbeef"),
