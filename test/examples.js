@@ -10,6 +10,7 @@ const exampleRequest = () => ({
   proofPeriod: 8, // 8 blocks ≈ 2 minutes
   proofTimeout: 4, // 4 blocks ≈ 1 minute
   maxPrice: 42,
+  expiry: now() + hours(1),
   nonce: hexlify(randomBytes(32)),
 })
 
