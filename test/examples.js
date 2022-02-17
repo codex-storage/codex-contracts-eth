@@ -19,6 +19,7 @@ const exampleBid = () => ({
 })
 
 const exampleOffer = () => ({
+  host: hexlify(randomBytes(20)),
   price: 42,
   expiry: now() + hours(1),
 })

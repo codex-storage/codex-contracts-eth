@@ -37,6 +37,7 @@ contract Marketplace is Collateral {
     Request storage request = requests[offer.requestId];
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
     require(request.size != 0, "Unknown request");
+    require(offer.host == msg.sender, "Invalid host address");
     require(offers[id].expiry == 0, "Offer already exists");
     // solhint-disable-next-line not-rely-on-time
     require(offer.expiry > block.timestamp, "Offer expired");
@@ -57,6 +58,7 @@ contract Marketplace is Collateral {
   }
 
   struct Offer {
+    address host;
     bytes32 requestId;
     uint256 price;
     uint256 expiry;
