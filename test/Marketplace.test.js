@@ -64,14 +64,6 @@ describe("Marketplace", function () {
       )
     })
 
-    it("rejects requests of size 0", async function () {
-      let invalid = { ...request, size: 0 }
-      await token.approve(marketplace.address, invalid.maxPrice)
-      await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
-        "Invalid size"
-      )
-    })
-
     it("rejects resubmission of request", async function () {
       await token.approve(marketplace.address, request.maxPrice * 2)
       await marketplace.requestStorage(request)
@@ -109,13 +101,6 @@ describe("Marketplace", function () {
       let invalid = { ...offer, requestId: requestId(unknown) }
       await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(
         "Unknown request"
-      )
-    })
-
-    it("rejects an expired offer", async function () {
-      let expired = { ...offer, expiry: now() - hours(1) }
-      await expect(marketplace.offerStorage(expired)).to.be.revertedWith(
-        "Offer expired"
       )
     })
 

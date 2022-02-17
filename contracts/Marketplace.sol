@@ -23,8 +23,7 @@ contract Marketplace is Collateral {
   {
     bytes32 id = keccak256(abi.encode(request));
     require(request.client == msg.sender, "Invalid client address");
-    require(request.size > 0, "Invalid size");
-    require(requests[id].size == 0, "Request already exists");
+    require(requests[id].client == address(0), "Request already exists");
     requests[id] = request;
     transferFrom(msg.sender, request.maxPrice);
     funds.received += request.maxPrice;
@@ -36,11 +35,9 @@ contract Marketplace is Collateral {
     bytes32 id = keccak256(abi.encode(offer));
     Request storage request = requests[offer.requestId];
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
-    require(request.size != 0, "Unknown request");
+    require(request.client != address(0), "Unknown request");
     require(offer.host == msg.sender, "Invalid host address");
-    require(offers[id].expiry == 0, "Offer already exists");
-    // solhint-disable-next-line not-rely-on-time
-    require(offer.expiry > block.timestamp, "Offer expired");
+    require(offers[id].host == address(0), "Offer already exists");
     require(offer.price <= request.maxPrice, "Price too high");
     offers[id] = offer;
     emit StorageOffered(id, offer);
