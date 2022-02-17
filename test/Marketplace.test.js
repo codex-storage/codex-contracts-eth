@@ -141,6 +141,7 @@ function requestId(request) {
         "uint256",
         "uint256",
         "uint256",
+        "uint256",
         "bytes32",
       ],
       requestToArray(request)
@@ -166,6 +167,7 @@ function requestToArray(request) {
     request.proofPeriod,
     request.proofTimeout,
     request.maxPrice,
+    request.expiry,
     request.nonce,
   ]
 }
