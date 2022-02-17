@@ -97,6 +97,13 @@ describe("Marketplace", function () {
         .withArgs(offerId(offer), offerToArray(offer))
     })
 
+    it("rejects offer with invalid host address", async function () {
+      let invalid = { ...offer, host: client.address }
+      await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(
+        "Invalid host address"
+      )
+    })
+
     it("rejects offer for unknown request", async function () {
       let unknown = exampleRequest()
       let invalid = { ...offer, requestId: requestId(unknown) }
@@ -159,7 +166,7 @@ function requestId(request) {
 function offerId(offer) {
   return keccak256(
     defaultAbiCoder.encode(
-      ["bytes32", "uint256", "uint256"],
+      ["address", "bytes32", "uint256", "uint256"],
       offerToArray(offer)
     )
   )
@@ -179,5 +186,5 @@ function requestToArray(request) {
 }
 
 function offerToArray(offer) {
-  return [offer.requestId, offer.price, offer.expiry]
+  return [offer.host, offer.requestId, offer.price, offer.expiry]
 }
