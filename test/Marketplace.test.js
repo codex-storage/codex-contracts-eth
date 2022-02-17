@@ -89,6 +89,11 @@ describe("Marketplace", function () {
         .withArgs(offerId(offer), offerToArray(offer))
     })
 
+    it("locks collateral of host", async function () {
+      await marketplace.offerStorage(offer)
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+    })
+
     it("rejects offer with invalid host address", async function () {
       let invalid = { ...offer, host: client.address }
       await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(

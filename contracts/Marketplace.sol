@@ -25,6 +25,7 @@ contract Marketplace is Collateral {
     require(request.client == msg.sender, "Invalid client address");
     require(requests[id].client == address(0), "Request already exists");
     requests[id] = request;
+    _createLock(id, request.expiry);
     transferFrom(msg.sender, request.maxPrice);
     funds.received += request.maxPrice;
     funds.balance += request.maxPrice;
@@ -40,6 +41,7 @@ contract Marketplace is Collateral {
     require(offers[id].host == address(0), "Offer already exists");
     require(offer.price <= request.maxPrice, "Price too high");
     offers[id] = offer;
+    _lock(msg.sender, offer.requestId);
     emit StorageOffered(id, offer);
   }
 
