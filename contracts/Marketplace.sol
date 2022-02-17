@@ -22,6 +22,7 @@ contract Marketplace is Collateral {
     marketplaceInvariant
   {
     bytes32 id = keccak256(abi.encode(request));
+    require(request.client == msg.sender, "Invalid client address");
     require(request.size > 0, "Invalid size");
     require(requests[id].size == 0, "Request already exists");
     requests[id] = request;
@@ -45,6 +46,7 @@ contract Marketplace is Collateral {
   }
 
   struct Request {
+    address client;
     uint256 duration;
     uint256 size;
     bytes32 contentHash;
