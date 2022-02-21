@@ -9,16 +9,18 @@ describe("Marketplace", function () {
 
   let marketplace
   let token
-  let client, host
+  let client, host, host1, host2, host3
   let request, offer
 
   beforeEach(async function () {
-    ;[client, host] = await ethers.getSigners()
+    ;[client, host1, host2, host3] = await ethers.getSigners()
+    host = host1
 
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
-    await token.mint(client.address, 1000)
-    await token.mint(host.address, 1000)
+    for (account of [client, host1, host2, host3]) {
+      await token.mint(account.address, 1000)
+    }
 
     const Marketplace = await ethers.getContractFactory("Marketplace")
     marketplace = await Marketplace.deploy(token.address, collateral)
@@ -130,6 +132,76 @@ describe("Marketplace", function () {
       await marketplace.deposit(insufficient)
       await expect(marketplace.offerStorage(offer)).to.be.revertedWith(
         "Insufficient collateral"
+      )
+    })
+  })
+
+  describe("selecting an offer", async function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, request.maxPrice)
+      await marketplace.requestStorage(request)
+      for (host of [host1, host2, host3]) {
+        switchAccount(host)
+        let hostOffer = { ...offer, host: host.address }
+        await token.approve(marketplace.address, collateral)
+        await marketplace.deposit(collateral)
+        await marketplace.offerStorage(hostOffer)
+      }
+      switchAccount(client)
+    })
+
+    it("returns price difference to client", async function () {
+      let difference = request.maxPrice - offer.price
+      let before = await token.balanceOf(client.address)
+      await marketplace.selectOffer(offerId(offer))
+      let after = await token.balanceOf(client.address)
+      expect(after - before).to.equal(difference)
+    })
+
+    it("unlocks collateral of hosts that weren't chosen", async function () {
+      await marketplace.selectOffer(offerId(offer))
+      switchAccount(host2)
+      await expect(marketplace.withdraw()).not.to.be.reverted
+      switchAccount(host3)
+      await expect(marketplace.withdraw()).not.to.be.reverted
+    })
+
+    it("locks collateral of host that was chosen", async function () {
+      await marketplace.selectOffer(offerId(offer))
+      switchAccount(host1)
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+    })
+
+    it("rejects selection of unknown offer", async function () {
+      let unknown = exampleOffer()
+      await expect(
+        marketplace.selectOffer(offerId(unknown))
+      ).to.be.revertedWith("Unknown offer")
+    })
+
+    it("rejects selection of expired offer", async function () {
+      let expired = { ...offer, expiry: now() - hours(1) }
+      switchAccount(host1)
+      await marketplace.offerStorage(expired)
+      switchAccount(client)
+      await expect(
+        marketplace.selectOffer(offerId(expired))
+      ).to.be.revertedWith("Offer expired")
+    })
+
+    it("rejects reselection of offer", async function () {
+      let secondOffer = { ...offer, host: host2.address }
+      await marketplace.selectOffer(offerId(offer))
+      await expect(
+        marketplace.selectOffer(offerId(secondOffer))
+      ).to.be.revertedWith("Offer already selected")
+    })
+
+    it("rejects selection by anyone other than the client", async function () {
+      switchAccount(host1)
+      await expect(marketplace.selectOffer(offerId(offer))).to.be.revertedWith(
+        "Only client can select offer"
       )
     })
   })
