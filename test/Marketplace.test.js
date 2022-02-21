@@ -111,6 +111,18 @@ describe("Marketplace", function () {
       )
     })
 
+    it("rejects offer for expired request", async function () {
+      switchAccount(client)
+      let expired = { ...request, expiry: now() - hours(1) }
+      await token.approve(marketplace.address, request.maxPrice)
+      await marketplace.requestStorage(expired)
+      switchAccount(host)
+      let invalid = { ...offer, requestId: requestId(expired) }
+      await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(
+        "Request expired"
+      )
+    })
+
     it("rejects an offer that exceeds the maximum price", async function () {
       let invalid = { ...offer, price: request.maxPrice + 1 }
       await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(
