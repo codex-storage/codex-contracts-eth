@@ -56,7 +56,7 @@ contract Marketplace is Collateral {
 
     _lock(msg.sender, offer.requestId);
 
-    emit StorageOffered(id, offer);
+    emit StorageOffered(id, offer, offer.requestId);
   }
 
   function selectOffer(bytes32 id) public marketplaceInvariant {
@@ -82,7 +82,7 @@ contract Marketplace is Collateral {
     funds.balance -= difference;
     token.transfer(request.client, difference);
 
-    emit OfferSelected(id);
+    emit OfferSelected(id, offer.requestId);
   }
 
   struct Request {
@@ -108,9 +108,9 @@ contract Marketplace is Collateral {
     uint256 expiry;
   }
 
-  event StorageRequested(bytes32 id, Request request);
-  event StorageOffered(bytes32 id, Offer offer);
-  event OfferSelected(bytes32 id);
+  event StorageRequested(bytes32 requestId, Request request);
+  event StorageOffered(bytes32 offerId, Offer offer, bytes32 indexed requestId);
+  event OfferSelected(bytes32 offerId, bytes32 indexed requestId);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;

@@ -88,7 +88,7 @@ describe("Marketplace", function () {
     it("emits event when storage is offered", async function () {
       await expect(marketplace.offerStorage(offer))
         .to.emit(marketplace, "StorageOffered")
-        .withArgs(offerId(offer), offerToArray(offer))
+        .withArgs(offerId(offer), offerToArray(offer), requestId(request))
     })
 
     it("locks collateral of host", async function () {
@@ -166,7 +166,7 @@ describe("Marketplace", function () {
     it("emits event when offer is selected", async function () {
       await expect(marketplace.selectOffer(offerId(offer)))
         .to.emit(marketplace, "OfferSelected")
-        .withArgs(offerId(offer))
+        .withArgs(offerId(offer), requestId(request))
     })
 
     it("returns price difference to client", async function () {
