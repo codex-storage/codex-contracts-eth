@@ -9,7 +9,7 @@ const exampleRequest = () => ({
   contentHash: sha256("0xdeadbeef"),
   proofPeriod: 8, // 8 blocks ≈ 2 minutes
   proofTimeout: 4, // 4 blocks ≈ 1 minute
-  maxPrice: 42,
+  maxPrice: 84,
   expiry: now() + hours(1),
   nonce: hexlify(randomBytes(32)),
 })
@@ -20,6 +20,7 @@ const exampleBid = () => ({
 })
 
 const exampleOffer = () => ({
+  requestId: hexlify(randomBytes(32)),
   host: hexlify(randomBytes(20)),
   price: 42,
   expiry: now() + hours(1),

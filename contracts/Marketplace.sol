@@ -8,6 +8,7 @@ contract Marketplace is Collateral {
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
+  mapping(bytes32 => RequestState) private requestState;
   mapping(bytes32 => Offer) private offers;
 
   constructor(IERC20 _token, uint256 _collateral)
@@ -45,6 +46,25 @@ contract Marketplace is Collateral {
     emit StorageOffered(id, offer);
   }
 
+  function selectOffer(bytes32 id) public marketplaceInvariant {
+    Offer storage offer = offers[id];
+    require(offer.host != address(0), "Unknown offer");
+    // solhint-disable-next-line not-rely-on-time
+    require(offer.expiry > block.timestamp, "Offer expired");
+    Request storage request = requests[offer.requestId];
+    require(request.client == msg.sender, "Only client can select offer");
+    RequestState storage state = requestState[offer.requestId];
+    require(!state.offerSelected, "Offer already selected");
+    state.offerSelected = true;
+    _createLock(id, offer.expiry);
+    _lock(offer.host, id);
+    _unlock(offer.requestId);
+    uint256 difference = request.maxPrice - offer.price;
+    funds.sent += difference;
+    funds.balance -= difference;
+    token.transfer(request.client, difference);
+  }
+
   struct Request {
     address client;
     uint256 duration;
@@ -55,6 +75,10 @@ contract Marketplace is Collateral {
     uint256 maxPrice;
     uint256 expiry;
     bytes32 nonce;
+  }
+
+  struct RequestState {
+    bool offerSelected;
   }
 
   struct Offer {
