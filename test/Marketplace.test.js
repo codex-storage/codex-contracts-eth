@@ -163,6 +163,12 @@ describe("Marketplace", function () {
       switchAccount(client)
     })
 
+    it("emits event when offer is selected", async function () {
+      await expect(marketplace.selectOffer(offerId(offer)))
+        .to.emit(marketplace, "OfferSelected")
+        .withArgs(offerId(offer))
+    })
+
     it("returns price difference to client", async function () {
       let difference = request.maxPrice - offer.price
       let before = await token.balanceOf(client.address)
