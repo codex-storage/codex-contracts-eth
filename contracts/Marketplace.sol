@@ -81,6 +81,8 @@ contract Marketplace is Collateral {
     funds.sent += difference;
     funds.balance -= difference;
     token.transfer(request.client, difference);
+
+    emit OfferSelected(id);
   }
 
   struct Request {
@@ -108,6 +110,7 @@ contract Marketplace is Collateral {
 
   event StorageRequested(bytes32 id, Request request);
   event StorageOffered(bytes32 id, Offer offer);
+  event OfferSelected(bytes32 id);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;
