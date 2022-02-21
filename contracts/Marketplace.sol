@@ -22,29 +22,40 @@ contract Marketplace is Collateral {
     public
     marketplaceInvariant
   {
-    bytes32 id = keccak256(abi.encode(request));
     require(request.client == msg.sender, "Invalid client address");
+
+    bytes32 id = keccak256(abi.encode(request));
     require(requests[id].client == address(0), "Request already exists");
+
     requests[id] = request;
+
     _createLock(id, request.expiry);
-    transferFrom(msg.sender, request.maxPrice);
+
     funds.received += request.maxPrice;
     funds.balance += request.maxPrice;
+    transferFrom(msg.sender, request.maxPrice);
+
     emit StorageRequested(id, request);
   }
 
   function offerStorage(Offer calldata offer) public marketplaceInvariant {
-    bytes32 id = keccak256(abi.encode(offer));
-    Request storage request = requests[offer.requestId];
+    require(offer.host == msg.sender, "Invalid host address");
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
+
+    Request storage request = requests[offer.requestId];
     require(request.client != address(0), "Unknown request");
     // solhint-disable-next-line not-rely-on-time
     require(request.expiry > block.timestamp, "Request expired");
-    require(offer.host == msg.sender, "Invalid host address");
-    require(offers[id].host == address(0), "Offer already exists");
+
     require(offer.price <= request.maxPrice, "Price too high");
+
+    bytes32 id = keccak256(abi.encode(offer));
+    require(offers[id].host == address(0), "Offer already exists");
+
     offers[id] = offer;
+
     _lock(msg.sender, offer.requestId);
+
     emit StorageOffered(id, offer);
   }
 
@@ -53,14 +64,19 @@ contract Marketplace is Collateral {
     require(offer.host != address(0), "Unknown offer");
     // solhint-disable-next-line not-rely-on-time
     require(offer.expiry > block.timestamp, "Offer expired");
+
     Request storage request = requests[offer.requestId];
     require(request.client == msg.sender, "Only client can select offer");
+
     RequestState storage state = requestState[offer.requestId];
     require(!state.offerSelected, "Offer already selected");
+
     state.offerSelected = true;
+
     _createLock(id, offer.expiry);
     _lock(offer.host, id);
     _unlock(offer.requestId);
+
     uint256 difference = request.maxPrice - offer.price;
     funds.sent += difference;
     funds.balance -= difference;
