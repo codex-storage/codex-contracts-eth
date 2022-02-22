@@ -84,6 +84,12 @@ describe("Storage", function () {
       }
     }
 
+    // it("unlocks the host collateral", async function () {
+    //   await mineUntilEnd()
+    //   await storage.finishContract(id)
+    //   await expect(storage.withdraw()).not.to.be.reverted
+    // })
+
     it("pays the host", async function () {
       await mineUntilEnd()
       const startBalance = await token.balanceOf(host.address)
