@@ -85,6 +85,14 @@ contract Marketplace is Collateral {
     emit OfferSelected(id, offer.requestId);
   }
 
+  function _request(bytes32 id) internal view returns (Request storage) {
+    return requests[id];
+  }
+
+  function _offer(bytes32 id) internal view returns (Offer storage) {
+    return offers[id];
+  }
+
   struct Request {
     address client;
     uint256 duration;

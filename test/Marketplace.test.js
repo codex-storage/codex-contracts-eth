@@ -2,7 +2,7 @@ const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { exampleRequest, exampleOffer } = require("./examples")
 const { now, hours } = require("./time")
-const { keccak256, defaultAbiCoder } = ethers.utils
+const { requestId, offerId, requestToArray, offerToArray } = require("./ids")
 
 describe("Marketplace", function () {
   const collateral = 100
@@ -224,49 +224,3 @@ describe("Marketplace", function () {
     })
   })
 })
-
-function requestId(request) {
-  return keccak256(
-    defaultAbiCoder.encode(
-      [
-        "address",
-        "uint256",
-        "uint256",
-        "bytes32",
-        "uint256",
-        "uint256",
-        "uint256",
-        "uint256",
-        "bytes32",
-      ],
-      requestToArray(request)
-    )
-  )
-}
-
-function offerId(offer) {
-  return keccak256(
-    defaultAbiCoder.encode(
-      ["address", "bytes32", "uint256", "uint256"],
-      offerToArray(offer)
-    )
-  )
-}
-
-function requestToArray(request) {
-  return [
-    request.client,
-    request.duration,
-    request.size,
-    request.contentHash,
-    request.proofPeriod,
-    request.proofTimeout,
-    request.maxPrice,
-    request.expiry,
-    request.nonce,
-  ]
-}
-
-function offerToArray(offer) {
-  return [offer.host, offer.requestId, offer.price, offer.expiry]
-}
