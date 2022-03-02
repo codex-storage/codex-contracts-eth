@@ -98,8 +98,6 @@ contract Marketplace is Collateral {
     uint256 duration;
     uint256 size;
     bytes32 contentHash;
-    uint256 proofPeriod;
-    uint256 proofTimeout;
     uint256 maxPrice;
     uint256 expiry;
     bytes32 nonce;

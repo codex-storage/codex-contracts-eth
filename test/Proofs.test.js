@@ -12,40 +12,27 @@ describe("Proofs", function () {
 
   beforeEach(async function () {
     const Proofs = await ethers.getContractFactory("TestProofs")
-    proofs = await Proofs.deploy()
+    proofs = await Proofs.deploy(period, timeout)
   })
 
-  it("indicates that proofs are required", async function () {
-    await proofs.expectProofs(id, period, timeout, duration)
-    expect(await proofs.period(id)).to.equal(period)
-    expect(await proofs.timeout(id)).to.equal(timeout)
-  })
-
-  it("calculates an endtime based on duration and timeout", async function () {
-    await proofs.expectProofs(id, period, timeout, duration)
+  it("calculates an end time based on duration and timeout", async function () {
+    await proofs.expectProofs(id, duration)
     let start = await minedBlockNumber()
     let end = start + duration + 2 * timeout
     expect(await proofs.end(id)).to.equal(end)
   })
 
   it("does not allow ids to be reused", async function () {
-    await proofs.expectProofs(id, period, timeout, duration)
-    await expect(
-      proofs.expectProofs(id, period, timeout, duration)
-    ).to.be.revertedWith("Proof id already in use")
-  })
-
-  it("does not allow a proof timeout that is too large", async function () {
-    let invalidTimeout = 129 // max proof timeout is 128 blocks
-    await expect(
-      proofs.expectProofs(id, period, invalidTimeout, duration)
-    ).to.be.revertedWith("Invalid proof timeout")
+    await proofs.expectProofs(id, duration)
+    await expect(proofs.expectProofs(id, duration)).to.be.revertedWith(
+      "Proof id already in use"
+    )
   })
 
   it("requires on average a proof every period", async function () {
     let blocks = 600
     let amount = 0
-    await proofs.expectProofs(id, period, timeout, blocks)
+    await proofs.expectProofs(id, blocks)
     for (let i = 0; i < blocks; i++) {
       await mineBlock()
       if (await proofs.isProofRequired(id, await minedBlockNumber())) {
@@ -60,7 +47,7 @@ describe("Proofs", function () {
     for (let i = 0; i < 4 * period; i++) {
       mineBlock()
     }
-    await proofs.expectProofs(id, period, timeout, duration)
+    await proofs.expectProofs(id, duration)
     let start = await minedBlockNumber()
     for (let i = 1; i < 4 * period; i++) {
       expect(await proofs.isProofRequired(id, start - i)).to.be.false
@@ -69,7 +56,7 @@ describe("Proofs", function () {
 
   describe("when proofs are required", async function () {
     beforeEach(async function () {
-      await proofs.expectProofs(id, period, timeout, duration)
+      await proofs.expectProofs(id, duration)
     })
 
     async function mineUntilProofIsRequired(id) {
