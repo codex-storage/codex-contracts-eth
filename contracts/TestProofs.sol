@@ -5,12 +5,19 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
-  function period(bytes32 id) public view returns (uint256) {
-    return _period(id);
+  constructor(uint256 __period, uint256 __timeout)
+    Proofs(__period, __timeout)
+  // solhint-disable-next-line no-empty-blocks
+  {
+
   }
 
-  function timeout(bytes32 id) public view returns (uint256) {
-    return _timeout(id);
+  function period() public view returns (uint256) {
+    return _period();
+  }
+
+  function timeout() public view returns (uint256) {
+    return _timeout();
   }
 
   function end(bytes32 id) public view returns (uint256) {
@@ -21,13 +28,8 @@ contract TestProofs is Proofs {
     return _missed(id);
   }
 
-  function expectProofs(
-    bytes32 id,
-    uint256 _period,
-    uint256 _timeout,
-    uint256 _duration
-  ) public {
-    _expectProofs(id, _period, _timeout, _duration);
+  function expectProofs(bytes32 id, uint256 _duration) public {
+    _expectProofs(id, _duration);
   }
 
   function isProofRequired(bytes32 id, uint256 blocknumber)

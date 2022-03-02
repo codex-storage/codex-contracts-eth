@@ -14,10 +14,12 @@ contract Storage is Collateral, Marketplace, Proofs {
 
   constructor(
     IERC20 token,
+    uint256 _proofPeriod,
+    uint256 _proofTimeout,
     uint256 _collateralAmount,
     uint256 _slashMisses,
     uint256 _slashPercentage
-  ) Marketplace(token, _collateralAmount) {
+  ) Marketplace(token, _collateralAmount) Proofs(_proofPeriod, _proofTimeout) {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
@@ -27,12 +29,7 @@ contract Storage is Collateral, Marketplace, Proofs {
     Offer storage offer = _offer(id);
     require(msg.sender == offer.host, "Only host can call this function");
     Request storage request = _request(offer.requestId);
-    _expectProofs(
-      id,
-      request.proofPeriod,
-      request.proofTimeout,
-      request.duration
-    );
+    _expectProofs(id, request.duration);
   }
 
   function finishContract(bytes32 id) public {
@@ -41,6 +38,14 @@ contract Storage is Collateral, Marketplace, Proofs {
     finished[id] = true;
     Offer storage offer = _offer(id);
     require(token.transfer(offer.host, offer.price), "Payment failed");
+  }
+
+  function proofPeriod() public view returns (uint256) {
+    return _period();
+  }
+
+  function proofTimeout() public view returns (uint256) {
+    return _timeout();
   }
 
   function proofEnd(bytes32 contractId) public view returns (uint256) {
@@ -59,12 +64,8 @@ contract Storage is Collateral, Marketplace, Proofs {
     return _isProofRequired(contractId, blocknumber);
   }
 
-  function isProofTimedOut(bytes32 contractId, uint256 blocknumber)
-    public
-    view
-    returns (bool)
-  {
-    return _isProofTimedOut(contractId, blocknumber);
+  function isProofTimedOut(uint256 blocknumber) public view returns (bool) {
+    return _isProofTimedOut(blocknumber);
   }
 
   function submitProof(

@@ -123,7 +123,8 @@ describe("Storage", function () {
         mineBlock()
       }
       const blocknumber = await minedBlockNumber()
-      for (let i = 0; i < request.proofTimeout; i++) {
+      const timeout = await storage.proofTimeout()
+      for (let i = 0; i < timeout; i++) {
         mineBlock()
       }
       await storage.markProofAsMissing(id, blocknumber)
