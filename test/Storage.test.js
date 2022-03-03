@@ -1,7 +1,7 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { exampleRequest, exampleOffer } = require("./examples")
-const { mineBlock, minedBlockNumber } = require("./mining")
+const { mineBlock, minedBlockNumber } = require("./evm")
 const { requestId, offerId } = require("./ids")
 
 describe("Storage", function () {
