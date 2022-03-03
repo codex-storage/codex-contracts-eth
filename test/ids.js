@@ -11,6 +11,7 @@ function requestId(request) {
         "bytes32",
         "uint256",
         "uint256",
+        "uint256",
         "bytes32",
       ],
       requestToArray(request)
@@ -33,6 +34,7 @@ function requestToArray(request) {
     request.duration,
     request.size,
     request.contentHash,
+    request.proofProbability,
     request.maxPrice,
     request.expiry,
     request.nonce,
