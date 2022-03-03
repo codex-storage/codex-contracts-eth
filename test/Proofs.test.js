@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const { mineBlock, minedBlockNumber } = require("./mining")
+const { mineBlock, minedBlockNumber } = require("./evm")
 
 describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
