@@ -32,6 +32,13 @@ async function advanceTime(seconds) {
   await mineBlock()
 }
 
+async function advanceTimeTo(timestamp) {
+  if ((await currentTime()) !== timestamp) {
+    ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
+    await mineBlock()
+  }
+}
+
 module.exports = {
   snapshot,
   revert,
@@ -39,4 +46,5 @@ module.exports = {
   minedBlockNumber,
   currentTime,
   advanceTime,
+  advanceTimeTo,
 }

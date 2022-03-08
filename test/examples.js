@@ -4,10 +4,10 @@ const { sha256, hexlify, randomBytes } = ethers.utils
 
 const exampleRequest = () => ({
   client: hexlify(randomBytes(20)),
-  duration: 150, // 150 blocks ≈ half an hour
+  duration: hours(10),
   size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
   contentHash: sha256("0xdeadbeef"),
-  proofProbability: 5, // require a proof roughly once every 5^2 periods
+  proofProbability: 2, // require a proof roughly once every 2² periods
   maxPrice: 84,
   expiry: now() + hours(1),
   nonce: hexlify(randomBytes(32)),

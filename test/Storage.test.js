@@ -1,7 +1,13 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { exampleRequest, exampleOffer } = require("./examples")
-const { mineBlock, minedBlockNumber } = require("./evm")
+const {
+  mineBlock,
+  minedBlockNumber,
+  advanceTime,
+  advanceTimeTo,
+  currentTime,
+} = require("./evm")
 const { requestId, offerId } = require("./ids")
 
 describe("Storage", function () {
@@ -15,6 +21,12 @@ describe("Storage", function () {
   function switchAccount(account) {
     token = token.connect(account)
     storage = storage.connect(account)
+  }
+
+  async function ensureEnoughBlockHistory() {
+    while ((await minedBlockNumber()) < 256) {
+      await mineBlock()
+    }
   }
 
   beforeEach(async function () {
@@ -48,6 +60,8 @@ describe("Storage", function () {
     switchAccount(client)
     await storage.selectOffer(offerId(offer))
     id = offerId(offer)
+
+    await ensureEnoughBlockHistory()
   })
 
   describe("starting the contract", function () {
@@ -77,11 +91,9 @@ describe("Storage", function () {
       await storage.startContract(id)
     })
 
-    async function mineUntilEnd() {
-      const end = await storage.proofEnd(id)
-      while ((await minedBlockNumber()) < end) {
-        await mineBlock()
-      }
+    async function waitUntilEnd() {
+      const end = (await storage.proofEnd(id)).toNumber()
+      await advanceTimeTo(end)
     }
 
     // it("unlocks the host collateral", async function () {
@@ -91,7 +103,7 @@ describe("Storage", function () {
     // })
 
     it("pays the host", async function () {
-      await mineUntilEnd()
+      await waitUntilEnd()
       const startBalance = await token.balanceOf(host.address)
       await storage.finishContract(id)
       const endBalance = await token.balanceOf(host.address)
@@ -105,7 +117,7 @@ describe("Storage", function () {
     })
 
     it("can only be done once", async function () {
-      await mineUntilEnd()
+      await waitUntilEnd()
       await storage.finishContract(id)
       await expect(storage.finishContract(id)).to.be.revertedWith(
         "Contract already finished"
@@ -114,20 +126,34 @@ describe("Storage", function () {
   })
 
   describe("slashing when missing proofs", function () {
-    beforeEach(function () {
+    let period
+
+    beforeEach(async function () {
       switchAccount(host)
+      period = (await storage.proofPeriod()).toNumber()
     })
 
+    function periodOf(timestamp) {
+      return Math.floor(timestamp / period)
+    }
+
+    function periodStart(p) {
+      return period * p
+    }
+
+    function periodEnd(p) {
+      return periodStart(p + 1)
+    }
+
     async function ensureProofIsMissing() {
-      while (!(await storage.isProofRequired(id, await minedBlockNumber()))) {
-        mineBlock()
+      let currentPeriod = periodOf(await currentTime())
+      await advanceTimeTo(periodEnd(currentPeriod))
+      while (!(await storage.isProofRequired(id))) {
+        await advanceTime(period)
       }
-      const blocknumber = await minedBlockNumber()
-      const timeout = await storage.proofTimeout()
-      for (let i = 0; i < timeout; i++) {
-        mineBlock()
-      }
-      await storage.markProofAsMissing(id, blocknumber)
+      let missedPeriod = periodOf(await currentTime())
+      await advanceTime(period)
+      await storage.markProofAsMissing(id, missedPeriod)
     }
 
     it("reduces collateral when too many proofs are missing", async function () {

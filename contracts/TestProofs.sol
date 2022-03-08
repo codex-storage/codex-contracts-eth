@@ -28,27 +28,23 @@ contract TestProofs is Proofs {
     return _missed(id);
   }
 
-  function expectProofs(bytes32 id, uint256 _duration) public {
-    _expectProofs(id, _duration);
-  }
-
-  function isProofRequired(bytes32 id, uint256 blocknumber)
-    public
-    view
-    returns (bool)
-  {
-    return _isProofRequired(id, blocknumber);
-  }
-
-  function submitProof(
+  function expectProofs(
     bytes32 id,
-    uint256 blocknumber,
-    bool proof
+    uint256 _probability,
+    uint256 _duration
   ) public {
-    _submitProof(id, blocknumber, proof);
+    _expectProofs(id, _probability, _duration);
   }
 
-  function markProofAsMissing(bytes32 id, uint256 blocknumber) public {
-    _markProofAsMissing(id, blocknumber);
+  function isProofRequired(bytes32 id) public view returns (bool) {
+    return _isProofRequired(id);
+  }
+
+  function submitProof(bytes32 id, bool proof) public {
+    _submitProof(id, proof);
+  }
+
+  function markProofAsMissing(bytes32 id, uint256 _period) public {
+    _markProofAsMissing(id, _period);
   }
 }
