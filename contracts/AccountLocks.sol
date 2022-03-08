@@ -68,7 +68,6 @@ contract AccountLocks {
   }
 
   function isInactive(Lock storage lock) private view returns (bool) {
-    // solhint-disable-next-line not-rely-on-time
     return lock.unlocked || lock.expiry <= block.timestamp;
   }
 

@@ -44,7 +44,6 @@ contract Marketplace is Collateral {
 
     Request storage request = requests[offer.requestId];
     require(request.client != address(0), "Unknown request");
-    // solhint-disable-next-line not-rely-on-time
     require(request.expiry > block.timestamp, "Request expired");
 
     require(offer.price <= request.maxPrice, "Price too high");
@@ -62,7 +61,6 @@ contract Marketplace is Collateral {
   function selectOffer(bytes32 id) public marketplaceInvariant {
     Offer storage offer = offers[id];
     require(offer.host != address(0), "Unknown offer");
-    // solhint-disable-next-line not-rely-on-time
     require(offer.expiry > block.timestamp, "Offer expired");
 
     Request storage request = requests[offer.requestId];
