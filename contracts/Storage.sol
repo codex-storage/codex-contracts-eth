@@ -29,11 +29,11 @@ contract Storage is Collateral, Marketplace, Proofs {
     Offer storage offer = _offer(id);
     require(msg.sender == offer.host, "Only host can call this function");
     Request storage request = _request(offer.requestId);
-    _expectProofs(id, request.duration);
+    _expectProofs(id, request.proofProbability, request.duration);
   }
 
   function finishContract(bytes32 id) public {
-    require(block.number > proofEnd(id), "Contract has not ended yet");
+    require(block.timestamp > proofEnd(id), "Contract has not ended yet");
     require(!finished[id], "Contract already finished");
     finished[id] = true;
     Offer storage offer = _offer(id);
@@ -56,28 +56,16 @@ contract Storage is Collateral, Marketplace, Proofs {
     return _missed(contractId);
   }
 
-  function isProofRequired(bytes32 contractId, uint256 blocknumber)
-    public
-    view
-    returns (bool)
-  {
-    return _isProofRequired(contractId, blocknumber);
+  function isProofRequired(bytes32 contractId) public view returns (bool) {
+    return _isProofRequired(contractId);
   }
 
-  function isProofTimedOut(uint256 blocknumber) public view returns (bool) {
-    return _isProofTimedOut(blocknumber);
+  function submitProof(bytes32 contractId, bool proof) public {
+    _submitProof(contractId, proof);
   }
 
-  function submitProof(
-    bytes32 contractId,
-    uint256 blocknumber,
-    bool proof
-  ) public {
-    _submitProof(contractId, blocknumber, proof);
-  }
-
-  function markProofAsMissing(bytes32 contractId, uint256 blocknumber) public {
-    _markProofAsMissing(contractId, blocknumber);
+  function markProofAsMissing(bytes32 contractId, uint256 period) public {
+    _markProofAsMissing(contractId, period);
     if (_missed(contractId) % slashMisses == 0) {
       Offer storage offer = _offer(contractId);
       _slash(offer.host, slashPercentage);
