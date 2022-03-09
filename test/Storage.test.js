@@ -9,6 +9,7 @@ const {
   currentTime,
 } = require("./evm")
 const { requestId, offerId } = require("./ids")
+const { periodic } = require("./time")
 
 describe("Storage", function () {
   let storage
@@ -126,24 +127,13 @@ describe("Storage", function () {
   })
 
   describe("slashing when missing proofs", function () {
-    let period
+    let period, periodOf, periodEnd
 
     beforeEach(async function () {
       switchAccount(host)
       period = (await storage.proofPeriod()).toNumber()
+      ;({ periodOf, periodEnd } = periodic(period))
     })
-
-    function periodOf(timestamp) {
-      return Math.floor(timestamp / period)
-    }
-
-    function periodStart(p) {
-      return period * p
-    }
-
-    function periodEnd(p) {
-      return periodStart(p + 1)
-    }
 
     async function ensureProofIsMissing() {
       let currentPeriod = periodOf(await currentTime())

@@ -8,6 +8,7 @@ const {
   advanceTime,
   advanceTimeTo,
 } = require("./evm")
+const { periodic } = require("./time")
 
 describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
@@ -103,6 +104,8 @@ describe("Proofs", function () {
   })
 
   describe("when proofs are required", async function () {
+    const { periodOf, periodEnd } = periodic(period)
+
     beforeEach(async function () {
       await proofs.expectProofs(id, probability, duration)
     })
@@ -111,18 +114,6 @@ describe("Proofs", function () {
       while (!(await proofs.isProofRequired(id))) {
         await advanceTime(period)
       }
-    }
-
-    function periodOf(timestamp) {
-      return Math.floor(timestamp / period)
-    }
-
-    function periodStart(p) {
-      return period * p
-    }
-
-    function periodEnd(p) {
-      return periodStart(p + 1)
     }
 
     it("submits a correct proof", async function () {

@@ -3,4 +3,10 @@ const hours = (amount) => amount * minutes(60)
 const minutes = (amount) => amount * seconds(60)
 const seconds = (amount) => amount
 
-module.exports = { now, hours, minutes, seconds }
+const periodic = (length) => ({
+  periodOf: (timestamp) => Math.floor(timestamp / length),
+  periodStart: (period) => period * length,
+  periodEnd: (period) => (period + 1) * length,
+})
+
+module.exports = { now, hours, minutes, seconds, periodic }
