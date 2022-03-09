@@ -14,17 +14,9 @@ async function revert() {
   await ethers.provider.send("evm_setNextBlockTimestamp", [time + 1])
 }
 
-async function mineBlock() {
-  await ethers.provider.send("evm_mine")
-}
-
-async function minedBlockNumber() {
-  return await ethers.provider.getBlockNumber()
-}
-
 async function ensureMinimumBlockHeight(height) {
-  while ((await minedBlockNumber()) < height) {
-    await mineBlock()
+  while ((await ethers.provider.getBlockNumber()) < height) {
+    await ethers.provider.send("evm_mine")
   }
 }
 
@@ -34,22 +26,20 @@ async function currentTime() {
 }
 
 async function advanceTime(seconds) {
-  ethers.provider.send("evm_increaseTime", [seconds])
-  await mineBlock()
+  await ethers.provider.send("evm_increaseTime", [seconds])
+  await ethers.provider.send("evm_mine")
 }
 
 async function advanceTimeTo(timestamp) {
   if ((await currentTime()) !== timestamp) {
-    ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
-    await mineBlock()
+    await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
+    await ethers.provider.send("evm_mine")
   }
 }
 
 module.exports = {
   snapshot,
   revert,
-  mineBlock,
-  minedBlockNumber,
   ensureMinimumBlockHeight,
   currentTime,
   advanceTime,
