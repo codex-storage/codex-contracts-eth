@@ -105,6 +105,7 @@ describe("Proofs", function () {
     })
 
     async function waitUntilProofIsRequired(id) {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       while (!(await proofs.isProofRequired(id))) {
         await advanceTime(period)
       }
