@@ -6,6 +6,7 @@ contract Proofs {
   uint256 private immutable timeout;
 
   constructor(uint256 __period, uint256 __timeout) {
+    require(block.number > 256, "Insufficient block height");
     period = __period;
     timeout = __timeout;
   }

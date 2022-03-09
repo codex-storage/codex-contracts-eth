@@ -22,6 +22,12 @@ async function minedBlockNumber() {
   return await ethers.provider.getBlockNumber()
 }
 
+async function ensureMinimumBlockHeight(height) {
+  while ((await minedBlockNumber()) < height) {
+    await mineBlock()
+  }
+}
+
 async function currentTime() {
   let block = await ethers.provider.getBlock("latest")
   return block.timestamp
@@ -44,6 +50,7 @@ module.exports = {
   revert,
   mineBlock,
   minedBlockNumber,
+  ensureMinimumBlockHeight,
   currentTime,
   advanceTime,
   advanceTimeTo,

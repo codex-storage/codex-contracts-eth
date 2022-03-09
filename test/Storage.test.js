@@ -2,8 +2,7 @@ const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { exampleRequest, exampleOffer } = require("./examples")
 const {
-  mineBlock,
-  minedBlockNumber,
+  ensureMinimumBlockHeight,
   advanceTime,
   advanceTimeTo,
   currentTime,
@@ -24,15 +23,10 @@ describe("Storage", function () {
     storage = storage.connect(account)
   }
 
-  async function ensureEnoughBlockHistory() {
-    while ((await minedBlockNumber()) < 256) {
-      await mineBlock()
-    }
-  }
-
   beforeEach(async function () {
     ;[client, host] = await ethers.getSigners()
 
+    await ensureMinimumBlockHeight(256)
     await deployments.fixture(["TestToken", "Storage"])
     token = await ethers.getContract("TestToken")
     storage = await ethers.getContract("Storage")
@@ -61,8 +55,6 @@ describe("Storage", function () {
     switchAccount(client)
     await storage.selectOffer(offerId(offer))
     id = offerId(offer)
-
-    await ensureEnoughBlockHistory()
   })
 
   describe("starting the contract", function () {
