@@ -89,11 +89,11 @@ describe("Storage", function () {
       await advanceTimeTo(end)
     }
 
-    // it("unlocks the host collateral", async function () {
-    //   await mineUntilEnd()
-    //   await storage.finishContract(id)
-    //   await expect(storage.withdraw()).not.to.be.reverted
-    // })
+    it("unlocks the host collateral", async function () {
+      await waitUntilEnd()
+      await storage.finishContract(id)
+      await expect(storage.withdraw()).not.to.be.reverted
+    })
 
     it("pays the host", async function () {
       await waitUntilEnd()
