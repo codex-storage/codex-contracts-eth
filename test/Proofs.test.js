@@ -1,9 +1,9 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const { mineBlock, minedBlockNumber } = require("./evm")
 const {
   snapshot,
   revert,
+  ensureMinimumBlockHeight,
   currentTime,
   advanceTime,
   advanceTimeTo,
@@ -19,15 +19,9 @@ describe("Proofs", function () {
 
   let proofs
 
-  async function ensureEnoughBlockHistory() {
-    while ((await minedBlockNumber()) < 256) {
-      await mineBlock()
-    }
-  }
-
   beforeEach(async function () {
     await snapshot()
-    await ensureEnoughBlockHistory()
+    await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
     proofs = await Proofs.deploy(period, timeout)
   })
