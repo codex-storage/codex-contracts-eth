@@ -14,6 +14,7 @@ describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
   const period = 10
   const timeout = 5
+  const downtime = 64
   const duration = 1000
   const probability = 4 // require a proof roughly once every 4 periods
 
@@ -23,7 +24,7 @@ describe("Proofs", function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
-    proofs = await Proofs.deploy(period, timeout)
+    proofs = await Proofs.deploy(period, timeout, downtime)
   })
 
   afterEach(async function () {

@@ -4,11 +4,17 @@ pragma solidity ^0.8.0;
 contract Proofs {
   uint256 private immutable period;
   uint256 private immutable timeout;
+  uint8 private immutable downtime;
 
-  constructor(uint256 __period, uint256 __timeout) {
+  constructor(
+    uint256 __period,
+    uint256 __timeout,
+    uint8 __downtime
+  ) {
     require(block.number > 256, "Insufficient block height");
     period = __period;
     timeout = __timeout;
+    downtime = __downtime;
   }
 
   mapping(bytes32 => bool) private ids;
@@ -95,12 +101,11 @@ contract Proofs {
       return false;
     }
     uint8 pointer = _getPointer(id, proofPeriod);
-    // TODO: make configurable:
-    if (pointer < 64) {
+    if (pointer < downtime) {
       return false;
     }
     bytes32 challenge = _getChallenge(pointer);
-    uint256 probability = (probabilities[id] * (256 - 64)) / 256;
+    uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
     return uint256(challenge) % probability == 0;
   }
 

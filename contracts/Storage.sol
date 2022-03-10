@@ -16,10 +16,14 @@ contract Storage is Collateral, Marketplace, Proofs {
     IERC20 token,
     uint256 _proofPeriod,
     uint256 _proofTimeout,
+    uint8 _proofDowntime,
     uint256 _collateralAmount,
     uint256 _slashMisses,
     uint256 _slashPercentage
-  ) Marketplace(token, _collateralAmount) Proofs(_proofPeriod, _proofTimeout) {
+  )
+    Marketplace(token, _collateralAmount)
+    Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
+  {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
