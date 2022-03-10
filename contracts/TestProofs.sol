@@ -48,6 +48,10 @@ contract TestProofs is Proofs {
     return _getChallenge(id);
   }
 
+  function getPointer(bytes32 id) public view returns (uint8) {
+    return _getPointer(id);
+  }
+
   function submitProof(bytes32 id, bool proof) public {
     _submitProof(id, proof);
   }
