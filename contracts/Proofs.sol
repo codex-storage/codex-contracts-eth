@@ -57,38 +57,30 @@ contract Proofs {
     markers[id] = uint256(blockhash(block.number - 1)) % period;
   }
 
-  function _getChallenges(bytes32 id, uint256 proofperiod)
+  function _getPointer(bytes32 id, uint256 proofPeriod)
     internal
     view
-    returns (Challenge memory challenge1, Challenge memory challenge2)
+    returns (uint8)
   {
-    if (
-      proofperiod <= periodOf(starts[id]) || proofperiod >= periodOf(ends[id])
-    ) {
-      bytes32 nullChallenge;
-      return (Challenge(false, nullChallenge), Challenge(false, nullChallenge));
-    }
+    uint256 blockNumber = block.number % 256;
+    uint256 periodNumber = proofPeriod % 256;
+    uint256 idOffset = uint256(id) % 256;
+    uint256 pointer = (blockNumber + periodNumber + idOffset) % 256;
+    return uint8(pointer);
+  }
 
-    uint256 blocknumber = block.number % 256;
-    uint256 periodnumber = proofperiod % 256;
-    uint256 idoffset = uint256(id) % 256;
+  function _getChallenge(uint8 pointer) internal view returns (bytes32) {
+    bytes32 hash = blockhash(block.number - 1 - pointer);
+    assert(uint256(hash) != 0);
+    return keccak256(abi.encode(hash));
+  }
 
-    uint256 pointer1 = (blocknumber + periodnumber + idoffset) % 256;
-    uint256 pointer2 = (blocknumber + periodnumber + idoffset + 128) % 256;
-
-    bytes32 blockhash1 = blockhash(block.number - 1 - pointer1);
-    bytes32 blockhash2 = blockhash(block.number - 1 - pointer2);
-
-    assert(uint256(blockhash1) != 0);
-    assert(uint256(blockhash2) != 0);
-
-    challenge1.challenge = keccak256(abi.encode(blockhash1));
-    challenge2.challenge = keccak256(abi.encode(blockhash2));
-
-    challenge1.isProofRequired =
-      uint256(challenge1.challenge) % probabilities[id] == 0;
-    challenge2.isProofRequired =
-      uint256(challenge2.challenge) % probabilities[id] == 0;
+  function _getChallenge(bytes32 id, uint256 proofPeriod)
+    internal
+    view
+    returns (bytes32)
+  {
+    return _getChallenge(_getPointer(id, proofPeriod));
   }
 
   function _isProofRequired(bytes32 id, uint256 proofPeriod)
@@ -96,10 +88,20 @@ contract Proofs {
     view
     returns (bool)
   {
-    Challenge memory challenge1;
-    Challenge memory challenge2;
-    (challenge1, challenge2) = _getChallenges(id, proofPeriod);
-    return challenge1.isProofRequired && challenge2.isProofRequired;
+    if (proofPeriod <= periodOf(starts[id])) {
+      return false;
+    }
+    if (proofPeriod >= periodOf(ends[id])) {
+      return false;
+    }
+    uint8 pointer = _getPointer(id, proofPeriod);
+    // TODO: make configurable:
+    if (pointer < 64) {
+      return false;
+    }
+    bytes32 challenge = _getChallenge(pointer);
+    uint256 probability = (probabilities[id] * (256 - 64)) / 256;
+    return uint256(challenge) % probability == 0;
   }
 
   function _isProofRequired(bytes32 id) internal view returns (bool) {
@@ -121,10 +123,5 @@ contract Proofs {
     require(!missing[id][missedPeriod], "Proof already marked as missing");
     missing[id][missedPeriod] = true;
     missed[id] += 1;
-  }
-
-  struct Challenge {
-    bool isProofRequired;
-    bytes32 challenge;
   }
 }

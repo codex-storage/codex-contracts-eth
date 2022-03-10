@@ -7,7 +7,7 @@ const exampleRequest = () => ({
   duration: hours(10),
   size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
   contentHash: sha256("0xdeadbeef"),
-  proofProbability: 2, // require a proof roughly once every 2² periods
+  proofProbability: 4, // require a proof roughly once every 4 periods
   maxPrice: 84,
   expiry: now() + hours(1),
   nonce: hexlify(randomBytes(32)),
