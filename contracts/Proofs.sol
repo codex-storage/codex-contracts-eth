@@ -75,6 +75,10 @@ contract Proofs {
     return uint8(pointer);
   }
 
+  function _getPointer(bytes32 id) internal view returns (uint8) {
+    return _getPointer(id, currentPeriod());
+  }
+
   function _getChallenge(uint8 pointer) internal view returns (bytes32) {
     bytes32 hash = blockhash(block.number - 1 - pointer);
     assert(uint256(hash) != 0);

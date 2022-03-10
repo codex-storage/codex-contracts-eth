@@ -68,6 +68,10 @@ contract Storage is Collateral, Marketplace, Proofs {
     return _getChallenge(contractId);
   }
 
+  function getPointer(bytes32 id) public view returns (uint8) {
+    return _getPointer(id);
+  }
+
   function submitProof(bytes32 contractId, bool proof) public {
     _submitProof(contractId, proof);
   }
