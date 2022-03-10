@@ -5,8 +5,12 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
-  constructor(uint256 __period, uint256 __timeout)
-    Proofs(__period, __timeout)
+  constructor(
+    uint256 __period,
+    uint256 __timeout,
+    uint8 __downtime
+  )
+    Proofs(__period, __timeout, __downtime)
   // solhint-disable-next-line no-empty-blocks
   {
 
