@@ -89,6 +89,10 @@ contract Proofs {
     return _getChallenge(_getPointer(id, proofPeriod));
   }
 
+  function _getChallenge(bytes32 id) internal view returns (bytes32) {
+    return _getChallenge(id, currentPeriod());
+  }
+
   function _isProofRequired(bytes32 id, uint256 proofPeriod)
     internal
     view

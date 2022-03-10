@@ -112,6 +112,23 @@ describe("Proofs", function () {
       }
     }
 
+    it("provides different challenges per period", async function () {
+      await waitUntilProofIsRequired(id)
+      const challenge1 = await proofs.getChallenge(id)
+      await waitUntilProofIsRequired(id)
+      const challenge2 = await proofs.getChallenge(id)
+      expect(challenge2).not.to.equal(challenge1)
+    })
+
+    it("provides different challenges per id", async function () {
+      const id2 = ethers.utils.randomBytes(32)
+      const id3 = ethers.utils.randomBytes(32)
+      const challenge1 = await proofs.getChallenge(id)
+      const challenge2 = await proofs.getChallenge(id2)
+      const challenge3 = await proofs.getChallenge(id3)
+      expect(challenge1 === challenge2 && challenge2 === challenge3).to.be.false
+    })
+
     it("submits a correct proof", async function () {
       await proofs.submitProof(id, true)
     })
