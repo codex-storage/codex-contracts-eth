@@ -44,6 +44,10 @@ contract TestProofs is Proofs {
     return _isProofRequired(id);
   }
 
+  function getChallenge(bytes32 id) public view returns (bytes32) {
+    return _getChallenge(id);
+  }
+
   function submitProof(bytes32 id, bool proof) public {
     _submitProof(id, proof);
   }
