@@ -15,7 +15,7 @@ describe("Proofs", function () {
   const period = 10
   const timeout = 5
   const duration = 1000
-  const probability = 2 // require a proof roughly once every 2² periods
+  const probability = 4 // require a proof roughly once every 4 periods
 
   let proofs
 
@@ -53,7 +53,7 @@ describe("Proofs", function () {
       }
       await advanceTime(period)
     }
-    let expected = 100 / probability ** 2
+    let expected = 100 / probability
     expect(amount).to.be.closeTo(expected, expected / 2)
   })
 
