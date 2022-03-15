@@ -1,12 +1,7 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { exampleRequest, exampleOffer } = require("./examples")
-const {
-  ensureMinimumBlockHeight,
-  advanceTime,
-  advanceTimeTo,
-  currentTime,
-} = require("./evm")
+const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
 const { requestId, offerId } = require("./ids")
 const { periodic } = require("./time")
 
@@ -26,7 +21,6 @@ describe("Storage", function () {
   beforeEach(async function () {
     ;[client, host] = await ethers.getSigners()
 
-    await ensureMinimumBlockHeight(256)
     await deployments.fixture(["TestToken", "Storage"])
     token = await ethers.getContract("TestToken")
     storage = await ethers.getContract("Storage")

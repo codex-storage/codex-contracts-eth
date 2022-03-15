@@ -1,4 +1,4 @@
-module.exports = async ({ deployments, getNamedAccounts }) => {
+async function deployStorage({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
   const proofPeriod = 10
   const proofTimeout = 5
@@ -17,6 +17,17 @@ module.exports = async ({ deployments, getNamedAccounts }) => {
   ]
   const { deployer } = await getNamedAccounts()
   await deployments.deploy("Storage", { args, from: deployer })
+}
+
+async function mine256blocks({ network, ethers }) {
+  if (network.tags.local) {
+    await ethers.provider.send("hardhat_mine", ["0x100"])
+  }
+}
+
+module.exports = async (environment) => {
+  await mine256blocks(environment)
+  await deployStorage(environment)
 }
 
 module.exports.tags = ["Storage"]
