@@ -121,21 +121,25 @@ describe("Storage", function () {
       ;({ periodOf, periodEnd } = periodic(period))
     })
 
-    async function ensureProofIsMissing() {
-      let currentPeriod = periodOf(await currentTime())
-      await advanceTimeTo(periodEnd(currentPeriod))
-      while (!(await storage.isProofRequired(id))) {
+    async function waitUntilProofIsRequired() {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      while (
+        !(
+          (await storage.isProofRequired(id)) &&
+          (await storage.getPointer(id)) < 250
+        )
+      ) {
         await advanceTime(period)
       }
-      let missedPeriod = periodOf(await currentTime())
-      await advanceTime(period)
-      await storage.markProofAsMissing(id, missedPeriod)
     }
 
     it("reduces collateral when too many proofs are missing", async function () {
       await storage.connect(host).startContract(id)
       for (let i = 0; i < slashMisses; i++) {
-        await ensureProofIsMissing()
+        await waitUntilProofIsRequired()
+        let missedPeriod = periodOf(await currentTime())
+        await advanceTime(period)
+        await storage.markProofAsMissing(id, missedPeriod)
       }
       const expectedBalance = (collateralAmount * (100 - slashPercentage)) / 100
       expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
