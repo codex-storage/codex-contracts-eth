@@ -44,7 +44,7 @@ describe("Collateral", function () {
       let allowed = await token.allowance(account0.address, collateral.address)
       let invalidAmount = allowed.toNumber() + 1
       await expect(collateral.deposit(invalidAmount)).to.be.revertedWith(
-        "ERC20: transfer amount exceeds allowance"
+        "ERC20: insufficient allowance"
       )
     })
   })

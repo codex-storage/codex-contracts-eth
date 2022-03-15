@@ -62,7 +62,7 @@ describe("Marketplace", function () {
       let insufficient = request.maxPrice - 1
       await token.approve(marketplace.address, insufficient)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "ERC20: transfer amount exceeds allowance"
+        "ERC20: insufficient allowance"
       )
     })
 
