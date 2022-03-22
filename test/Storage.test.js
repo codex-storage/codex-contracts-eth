@@ -84,7 +84,6 @@ describe("Storage", function () {
   describe("finishing the contract", function () {
     beforeEach(async function () {
       switchAccount(host)
-      await storage.startContract(id)
     })
 
     async function waitUntilEnd() {
@@ -93,12 +92,14 @@ describe("Storage", function () {
     }
 
     it("unlocks the host collateral", async function () {
+      await storage.startContract(id)
       await waitUntilEnd()
       await storage.finishContract(id)
       await expect(storage.withdraw()).not.to.be.reverted
     })
 
     it("pays the host", async function () {
+      await storage.startContract(id)
       await waitUntilEnd()
       const startBalance = await token.balanceOf(host.address)
       await storage.finishContract(id)
@@ -106,18 +107,31 @@ describe("Storage", function () {
       expect(endBalance - startBalance).to.equal(offer.price)
     })
 
+    it("is only allowed when the contract has started", async function () {
+      await expect(storage.finishContract(id)).to.be.revertedWith(
+        "Contract not started"
+      )
+    })
+
     it("is only allowed when end time has passed", async function () {
+      await storage.startContract(id)
       await expect(storage.finishContract(id)).to.be.revertedWith(
         "Contract has not ended yet"
       )
     })
 
     it("can only be done once", async function () {
+      await storage.startContract(id)
       await waitUntilEnd()
       await storage.finishContract(id)
-      await expect(storage.finishContract(id)).to.be.revertedWith(
-        "Contract already finished"
-      )
+      await expect(storage.finishContract(id)).to.be.reverted
+    })
+
+    it("can not be restarted", async function () {
+      await storage.startContract(id)
+      await waitUntilEnd()
+      await storage.finishContract(id)
+      await expect(storage.startContract(id)).to.be.reverted
     })
   })
 
