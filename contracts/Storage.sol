@@ -10,7 +10,7 @@ contract Storage is Collateral, Marketplace, Proofs {
   uint256 public slashMisses;
   uint256 public slashPercentage;
 
-  mapping(bytes32 => bool) private finished;
+  mapping(bytes32 => ContractState) private contractState;
 
   constructor(
     IERC20 token,
@@ -33,14 +33,15 @@ contract Storage is Collateral, Marketplace, Proofs {
     Offer storage offer = _offer(id);
     require(msg.sender == offer.host, "Only host can call this function");
     require(_selectedOffer(offer.requestId) == id, "Offer was not selected");
+    contractState[id] = ContractState.started;
     Request storage request = _request(offer.requestId);
     _expectProofs(id, request.proofProbability, request.duration);
   }
 
   function finishContract(bytes32 id) public {
+    require(contractState[id] == ContractState.started, "Contract not started");
     require(block.timestamp > proofEnd(id), "Contract has not ended yet");
-    require(!finished[id], "Contract already finished");
-    finished[id] = true;
+    contractState[id] = ContractState.finished;
     Offer storage offer = _offer(id);
     require(token.transfer(offer.host, offer.price), "Payment failed");
   }
@@ -83,5 +84,11 @@ contract Storage is Collateral, Marketplace, Proofs {
       Offer storage offer = _offer(contractId);
       _slash(offer.host, slashPercentage);
     }
+  }
+
+  enum ContractState {
+    none,
+    started,
+    finished
   }
 }
