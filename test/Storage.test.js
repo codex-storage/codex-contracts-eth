@@ -70,6 +70,15 @@ describe("Storage", function () {
       await storage.startContract(id)
       await expect(storage.startContract(id)).to.be.reverted
     })
+
+    it("can only be done for a selected offer", async function () {
+      switchAccount(host)
+      const differentOffer = { ...offer, price: offer.price * 2 }
+      await storage.offerStorage(differentOffer)
+      await expect(
+        storage.startContract(offerId(differentOffer))
+      ).to.be.revertedWith("Offer was not selected")
+    })
   })
 
   describe("finishing the contract", function () {
