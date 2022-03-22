@@ -67,9 +67,9 @@ contract Marketplace is Collateral {
     require(request.client == msg.sender, "Only client can select offer");
 
     RequestState storage state = requestState[offer.requestId];
-    require(!state.offerSelected, "Offer already selected");
+    require(state.selectedOffer == bytes32(0), "Offer already selected");
 
-    state.offerSelected = true;
+    state.selectedOffer = id;
 
     _createLock(id, offer.expiry);
     _lock(offer.host, id);
@@ -91,6 +91,10 @@ contract Marketplace is Collateral {
     return offers[id];
   }
 
+  function _selectedOffer(bytes32 requestId) internal view returns (bytes32) {
+    return requestState[requestId].selectedOffer;
+  }
+
   struct Request {
     address client;
     uint256 duration;
@@ -103,7 +107,7 @@ contract Marketplace is Collateral {
   }
 
   struct RequestState {
-    bool offerSelected;
+    bytes32 selectedOffer;
   }
 
   struct Offer {

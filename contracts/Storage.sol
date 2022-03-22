@@ -32,6 +32,7 @@ contract Storage is Collateral, Marketplace, Proofs {
   function startContract(bytes32 id) public {
     Offer storage offer = _offer(id);
     require(msg.sender == offer.host, "Only host can call this function");
+    require(_selectedOffer(offer.requestId) == id, "Offer was not selected");
     Request storage request = _request(offer.requestId);
     _expectProofs(id, request.proofProbability, request.duration);
   }
