@@ -97,28 +97,43 @@ contract Proofs {
     return _getChallenge(id, currentPeriod());
   }
 
+  function _getProofRequirement(bytes32 id, uint256 proofPeriod)
+    internal
+    view
+    returns (bool isRequired, uint8 pointer)
+  {
+    if (proofPeriod <= periodOf(starts[id])) {
+      return (false, 0);
+    }
+    if (proofPeriod >= periodOf(ends[id])) {
+      return (false, 0);
+    }
+    pointer = _getPointer(id, proofPeriod);
+    bytes32 challenge = _getChallenge(pointer);
+    uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
+    isRequired = uint256(challenge) % probability == 0;
+  }
+
   function _isProofRequired(bytes32 id, uint256 proofPeriod)
     internal
     view
     returns (bool)
   {
-    if (proofPeriod <= periodOf(starts[id])) {
-      return false;
-    }
-    if (proofPeriod >= periodOf(ends[id])) {
-      return false;
-    }
-    uint8 pointer = _getPointer(id, proofPeriod);
-    if (pointer < downtime) {
-      return false;
-    }
-    bytes32 challenge = _getChallenge(pointer);
-    uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
-    return uint256(challenge) % probability == 0;
+    bool isRequired;
+    uint8 pointer;
+    (isRequired, pointer) = _getProofRequirement(id, proofPeriod);
+    return isRequired && pointer >= downtime;
   }
 
   function _isProofRequired(bytes32 id) internal view returns (bool) {
     return _isProofRequired(id, currentPeriod());
+  }
+
+  function _willProofBeRequired(bytes32 id) internal view returns (bool) {
+    bool isRequired;
+    uint8 pointer;
+    (isRequired, pointer) = _getProofRequirement(id, currentPeriod());
+    return isRequired && pointer < downtime;
   }
 
   function _submitProof(bytes32 id, bool proof) internal {
