@@ -109,6 +109,36 @@ describe("Proofs", function () {
     }
   })
 
+  describe("when proof requirement is upcoming", function () {
+    async function waitUntilProofWillBeRequired() {
+      while (!(await proofs.willProofBeRequired(id))) {
+        await mine()
+      }
+    }
+
+    beforeEach(async function () {
+      await proofs.expectProofs(id, probability, duration)
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await waitUntilProofWillBeRequired()
+    })
+
+    it("means the pointer is in downtime", async function () {
+      expect(await proofs.getPointer(id)).to.be.lt(downtime)
+      while ((await proofs.getPointer(id)) < downtime) {
+        expect(await proofs.willProofBeRequired(id)).to.be.true
+        await mine()
+      }
+    })
+
+    it("means that a proof is required after downtime", async function () {
+      while ((await proofs.getPointer(id)) < downtime) {
+        await mine()
+      }
+      expect(await proofs.willProofBeRequired(id)).to.be.false
+      expect(await proofs.isProofRequired(id)).to.be.true
+    })
+  })
+
   describe("when proofs are required", async function () {
     beforeEach(async function () {
       await proofs.expectProofs(id, probability, duration)
