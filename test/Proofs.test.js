@@ -3,6 +3,7 @@ const { ethers } = require("hardhat")
 const {
   snapshot,
   revert,
+  mine,
   ensureMinimumBlockHeight,
   currentTime,
   advanceTime,
@@ -12,11 +13,12 @@ const { periodic } = require("./time")
 
 describe("Proofs", function () {
   const id = ethers.utils.randomBytes(32)
-  const period = 10
+  const period = 30 * 60
   const timeout = 5
   const downtime = 64
-  const duration = 1000
+  const duration = 1000 * period
   const probability = 4 // require a proof roughly once every 4 periods
+  const { periodOf, periodEnd } = periodic(period)
 
   let proofs
 
@@ -45,7 +47,6 @@ describe("Proofs", function () {
   })
 
   it("requires proofs with an agreed upon probability", async function () {
-    const duration = 100_000
     await proofs.expectProofs(id, probability, duration)
     let amount = 0
     for (let i = 0; i < 100; i++) {
@@ -64,7 +65,7 @@ describe("Proofs", function () {
     await proofs.expectProofs(id, probability, duration)
     while (Math.floor((await currentTime()) / period) == startPeriod) {
       expect(await proofs.isProofRequired(id)).to.be.false
-      await advanceTime(1)
+      await advanceTime(Math.floor(period / 10))
     }
   })
 
@@ -98,9 +99,17 @@ describe("Proofs", function () {
     }
   })
 
-  describe("when proofs are required", async function () {
-    const { periodOf, periodEnd } = periodic(period)
+  it("moves pointer one block at a time", async function () {
+    await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+    for (let i = 0; i < 256; i++) {
+      let previous = await proofs.getPointer(id)
+      await mine()
+      let current = await proofs.getPointer(id)
+      expect(current).to.equal((previous + 1) % 256)
+    }
+  })
 
+  describe("when proofs are required", async function () {
     beforeEach(async function () {
       await proofs.expectProofs(id, probability, duration)
     })
