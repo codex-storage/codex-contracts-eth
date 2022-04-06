@@ -31,11 +31,11 @@ contract Marketplace is Collateral {
 
     _createLock(id, request.expiry);
 
-    funds.received += request.maxPrice;
-    funds.balance += request.maxPrice;
-    transferFrom(msg.sender, request.maxPrice);
+    funds.received += request.ask.maxPrice;
+    funds.balance += request.ask.maxPrice;
+    transferFrom(msg.sender, request.ask.maxPrice);
 
-    emit StorageRequested(id, request);
+    emit StorageRequested(id, request.ask);
   }
 
   function offerStorage(Offer calldata offer) public marketplaceInvariant {
@@ -46,7 +46,7 @@ contract Marketplace is Collateral {
     require(request.client != address(0), "Unknown request");
     require(request.expiry > block.timestamp, "Request expired");
 
-    require(offer.price <= request.maxPrice, "Price too high");
+    require(offer.price <= request.ask.maxPrice, "Price too high");
 
     bytes32 id = keccak256(abi.encode(offer));
     require(offers[id].host == address(0), "Offer already exists");
@@ -75,7 +75,7 @@ contract Marketplace is Collateral {
     _lock(offer.host, id);
     _unlock(offer.requestId);
 
-    uint256 difference = request.maxPrice - offer.price;
+    uint256 difference = request.ask.maxPrice - offer.price;
     funds.sent += difference;
     funds.balance -= difference;
     token.transfer(request.client, difference);
@@ -95,15 +95,39 @@ contract Marketplace is Collateral {
     return requestState[requestId].selectedOffer;
   }
 
+  uint256 private constant POR_SECTORS = 10; // amount of sectors in PoR scheme
+
   struct Request {
     address client;
-    uint256 duration;
-    uint256 size;
-    bytes32 contentHash;
-    uint256 proofProbability;
-    uint256 maxPrice;
-    uint256 expiry;
-    bytes32 nonce;
+    Ask ask;
+    Content content;
+    uint256 expiry; // time at which this request expires
+    bytes32 nonce; // random nonce to differentiate between similar requests
+  }
+
+  struct Ask {
+    uint256 size; // size of requested storage in number of bytes
+    uint256 duration; // how long content should be stored (in seconds)
+    uint256 proofProbability; // how often storage proofs are required
+    uint256 maxPrice; // maximum price client will pay (in number of tokens)
+  }
+
+  struct Content {
+    string cid; // content id (if part of a larger set, the chunk cid)
+    Erasure erasure; // Erasure coding attributes
+    PoR por; // Proof of Retrievability parameters
+  }
+
+  struct Erasure {
+    uint64 totalChunks; // the total number of chunks in the larger data set
+    uint64 totalNodes; // the total number of nodes that store the data set
+    uint64 nodeId; // index of this node in the list of total nodes
+  }
+
+  struct PoR {
+    bytes1[POR_SECTORS * 48] u; // parameters u_1..u_s
+    bytes1[96] publicKey; // public key
+    bytes1[512] name; // random name
   }
 
   struct RequestState {
@@ -117,7 +141,7 @@ contract Marketplace is Collateral {
     uint256 expiry;
   }
 
-  event StorageRequested(bytes32 requestId, Request request);
+  event StorageRequested(bytes32 requestId, Ask ask);
   event StorageOffered(bytes32 offerId, Offer offer, bytes32 indexed requestId);
   event OfferSelected(bytes32 offerId, bytes32 indexed requestId);
 
