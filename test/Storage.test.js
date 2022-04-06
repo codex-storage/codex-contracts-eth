@@ -51,6 +51,23 @@ describe("Storage", function () {
     id = offerId(offer)
   })
 
+  it("can retrieve storage requests", async function () {
+    const id = requestId(request)
+    const retrieved = await storage.getRequest(id)
+    expect(retrieved.client).to.equal(request.client)
+    expect(retrieved.expiry).to.equal(request.expiry)
+    expect(retrieved.nonce).to.equal(request.nonce)
+  })
+
+  it("can retrieve storage offers", async function () {
+    const id = offerId(offer)
+    const retrieved = await storage.getOffer(id)
+    expect(retrieved.requestId).to.equal(offer.requestId)
+    expect(retrieved.host).to.equal(offer.host)
+    expect(retrieved.price).to.equal(offer.price)
+    expect(retrieved.expiry).to.equal(offer.expiry)
+  })
+
   describe("starting the contract", function () {
     it("starts requiring storage proofs", async function () {
       switchAccount(host)
