@@ -29,6 +29,14 @@ contract Storage is Collateral, Marketplace, Proofs {
     slashPercentage = _slashPercentage;
   }
 
+  function getRequest(bytes32 id) public view returns (Request memory) {
+    return _request(id);
+  }
+
+  function getOffer(bytes32 id) public view returns (Offer memory) {
+    return _offer(id);
+  }
+
   function startContract(bytes32 id) public {
     Offer storage offer = _offer(id);
     require(msg.sender == offer.host, "Only host can call this function");
