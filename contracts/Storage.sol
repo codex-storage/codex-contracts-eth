@@ -35,7 +35,7 @@ contract Storage is Collateral, Marketplace, Proofs {
     require(_selectedOffer(offer.requestId) == id, "Offer was not selected");
     contractState[id] = ContractState.started;
     Request storage request = _request(offer.requestId);
-    _expectProofs(id, request.proofProbability, request.duration);
+    _expectProofs(id, request.ask.proofProbability, request.ask.duration);
   }
 
   function finishContract(bytes32 id) public {

@@ -2,7 +2,7 @@ const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { exampleRequest, exampleOffer } = require("./examples")
 const { now, hours } = require("./time")
-const { requestId, offerId, requestToArray, offerToArray } = require("./ids")
+const { requestId, offerId, offerToArray, askToArray } = require("./ids")
 
 describe("Marketplace", function () {
   const collateral = 100
@@ -44,22 +44,22 @@ describe("Marketplace", function () {
     })
 
     it("emits event when storage is requested", async function () {
-      await token.approve(marketplace.address, request.maxPrice)
+      await token.approve(marketplace.address, request.ask.maxPrice)
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
-        .withArgs(requestId(request), requestToArray(request))
+        .withArgs(requestId(request), askToArray(request.ask))
     })
 
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
-      await token.approve(marketplace.address, invalid.maxPrice)
+      await token.approve(marketplace.address, invalid.ask.maxPrice)
       await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
         "Invalid client address"
       )
     })
 
     it("rejects request with insufficient payment", async function () {
-      let insufficient = request.maxPrice - 1
+      let insufficient = request.ask.maxPrice - 1
       await token.approve(marketplace.address, insufficient)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "ERC20: insufficient allowance"
@@ -67,7 +67,7 @@ describe("Marketplace", function () {
     })
 
     it("rejects resubmission of request", async function () {
-      await token.approve(marketplace.address, request.maxPrice * 2)
+      await token.approve(marketplace.address, request.ask.maxPrice * 2)
       await marketplace.requestStorage(request)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Request already exists"
@@ -78,7 +78,7 @@ describe("Marketplace", function () {
   describe("offering storage", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, request.maxPrice)
+      await token.approve(marketplace.address, request.ask.maxPrice)
       await marketplace.requestStorage(request)
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
@@ -114,7 +114,7 @@ describe("Marketplace", function () {
     it("rejects offer for expired request", async function () {
       switchAccount(client)
       let expired = { ...request, expiry: now() - hours(1) }
-      await token.approve(marketplace.address, request.maxPrice)
+      await token.approve(marketplace.address, request.ask.maxPrice)
       await marketplace.requestStorage(expired)
       switchAccount(host)
       let invalid = { ...offer, requestId: requestId(expired) }
@@ -124,7 +124,7 @@ describe("Marketplace", function () {
     })
 
     it("rejects an offer that exceeds the maximum price", async function () {
-      let invalid = { ...offer, price: request.maxPrice + 1 }
+      let invalid = { ...offer, price: request.ask.maxPrice + 1 }
       await expect(marketplace.offerStorage(invalid)).to.be.revertedWith(
         "Price too high"
       )
@@ -151,7 +151,7 @@ describe("Marketplace", function () {
   describe("selecting an offer", async function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, request.maxPrice)
+      await token.approve(marketplace.address, request.ask.maxPrice)
       await marketplace.requestStorage(request)
       for (host of [host1, host2, host3]) {
         switchAccount(host)
@@ -170,7 +170,7 @@ describe("Marketplace", function () {
     })
 
     it("returns price difference to client", async function () {
-      let difference = request.maxPrice - offer.price
+      let difference = request.ask.maxPrice - offer.price
       let before = await token.balanceOf(client.address)
       await marketplace.selectOffer(offerId(offer))
       let after = await token.balanceOf(client.address)
