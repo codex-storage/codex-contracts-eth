@@ -199,13 +199,17 @@ contract Proofs {
     // Note: for BLS curves (in nim-blscurve),
     // type
     //   blst_fp = array[0..5, uint64]
-    uint64[4] ls;
+    // uint64[4] ls; // this is what the data type SHOULD be
+    uint      ls;  // but using a uint256 has the same number of bytes, but
+                   // doesn't require conversion
   }
   struct BnFp {
     // see notes from BnFr, the only difference is that we use the
     // ordered bit width in BnFr, as opposed to the bit width for Fr.
     // Both are 254 bits wide, so the data structure is identical.
-    uint64[4] ls;
+    // uint64[4] ls; // this is what the data type SHOULD be
+    uint      ls;  // but using a uint256 has the same number of bytes, but
+                   // doesn't require conversion
   }
 
   struct BnFp2 {
@@ -239,11 +243,12 @@ contract Proofs {
     // # blst_scalar
     // # = typedesc[array[0..31, byte]]
     // array[typeof(256)(typeof(256)(256 / typeof(256)(8))), byte]
-    bytes32[32]  ls;
+    bytes[32]  ls;
   }
 
   struct TauZero {
-    bytes32[512]  name;
+    // bytes[512]  name; // array[512, byte], byte is alias for uint8
+    bytes  name;
     int64         n;
     BnP1[]        u; // seq[blst_p1]
   }
@@ -272,6 +277,39 @@ contract Proofs {
     }
     return false;
   }
+  // function toBytes(uint64 x) internal pure returns (bytes memory c) {
+  //   bytes32 b = bytes32(64);
+  //   c = new bytes(32);
+  //   for (uint i=0; i < 32; i++) {
+  //       c[i] = b[i];
+  //   }
+  // }
+
+//   function toBytes(uint i) internal pure returns (bytes memory){
+//     if (i == 0) return "0";
+//     uint j = i;
+//     uint length;
+//     while (j != 0){
+//         length++;
+//         j /= 10;
+//     }
+//     bytes memory bstr = new bytes(length);
+//     uint k = length - 1;
+//     while (i != 0){
+//         bstr[k--] = byte(48 + i % 10);
+//         i /= 10;
+//     }
+//     return bstr;
+// }
+  function toBnP1(uint x, uint y) internal pure returns(BnP1 memory p1) {
+    BnFp memory bits = BnFp({ls: uint(255)});
+    p1 = BnP1(
+          {
+            x: BnFp({ls: x}),
+            y: BnFp({ls: y}),
+            z: bits
+          });
+  }
   function _verifyProof(
     Tau memory tau,
     QElement[] memory q,
@@ -293,14 +331,19 @@ contract Proofs {
     //     prod.blst_p1_mult(hashNameI(tau.t.name, qelem.I), qelem.V, 255)
     //     first.blst_p1_add_or_double(first, prod)
     //     doAssert(blst_p1_on_curve(first).bool)
-    BnP1 memory bnP1;
+    BnP1 memory first;
     for (uint i = 0; i<q.length; i++) {
       QElement memory qelem = q[i];
-      var (x, y) = EllipticCurve.hashToTryAndIncrement(bytes(string(tau.t.name)));// + string(qelem.i));
+      bytes memory namei = abi.encodePacked(tau.t.name, qelem.i);
+      (uint x, uint y) = BN256G1.hashToTryAndIncrement(namei);// + string(qelem.i));
       // p1Affine = toAffine(qelem.i)
       // TODO: Where does 255 get used???
-      BnP1 memory prod = BN256G1.multiply(x, y, qelem.v);
-
+      // TODO: Where does qelem.v get used???
+      (uint mx, uint my) = BN256G1.multiply([x, y, qelem.v]);
+      BnP1 memory prod = toBnP1(mx, my);
+      (uint ax, uint ay) = BN256G1.add([first.x.ls, first.y.ls, prod.x.ls, prod.y.ls]);
+      first = toBnP1(ax, ay);
+      require(BN256G1.isOnCurve([first.x.ls, first.y.ls]), "Point must be on BN254 curve");
     }
   }
   
