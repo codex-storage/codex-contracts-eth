@@ -4,7 +4,7 @@ const { keccak256, defaultAbiCoder } = ethers.utils
 function requestId(request) {
   const Ask = "tuple(uint256, uint256, uint256, uint256)"
   const Erasure = "tuple(uint64, uint64, uint64)"
-  const PoR = "tuple(bytes1[480], bytes1[96], bytes1[512])"
+  const PoR = "tuple(bytes, bytes, bytes)"
   const Content = "tuple(string, " + Erasure + ", " + PoR + ")"
   const Request =
     "tuple(address, " + Ask + ", " + Content + ", uint256, bytes32)"
