@@ -95,8 +95,6 @@ contract Marketplace is Collateral {
     return requestState[requestId].selectedOffer;
   }
 
-  uint256 private constant POR_SECTORS = 10; // amount of sectors in PoR scheme
-
   struct Request {
     address client;
     Ask ask;
@@ -125,9 +123,9 @@ contract Marketplace is Collateral {
   }
 
   struct PoR {
-    bytes1[POR_SECTORS * 48] u; // parameters u_1..u_s
-    bytes1[96] publicKey; // public key
-    bytes1[512] name; // random name
+    bytes u; // parameters u_1..u_s
+    bytes publicKey; // public key
+    bytes name; // random name
   }
 
   struct RequestState {
