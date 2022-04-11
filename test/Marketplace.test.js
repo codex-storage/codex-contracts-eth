@@ -148,7 +148,7 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("selecting an offer", async function () {
+  describe("selecting an offer", function () {
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(marketplace.address, request.ask.maxPrice)
