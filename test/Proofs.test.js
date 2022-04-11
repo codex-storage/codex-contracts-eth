@@ -139,7 +139,7 @@ describe("Proofs", function () {
     })
   })
 
-  describe("when proofs are required", async function () {
+  describe("when proofs are required", function () {
     beforeEach(async function () {
       await proofs.expectProofs(id, probability, duration)
     })
