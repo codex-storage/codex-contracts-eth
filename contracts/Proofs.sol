@@ -133,38 +133,6 @@ contract Proofs {
     return _isProofRequired(id, currentPeriod());
   }
 
-// proc verifyProof*(tau: Tau, q: openArray[QElement], mus: openArray[blst_scalar], sigma: blst_p1, spk: PublicKey): bool =
-//   ## Verify a BLS proof given a query
-
-//   # verify signature on Tau
-//   var signature: Signature
-//   if not signature.fromBytes(tau.signature):
-//     return false
-//   if not verify(spk.signkey, $tau.t, signature):
-//     return false
-
-//   var first: blst_p1
-//   for qelem in q :
-//     var prod: blst_p1
-//     prod.blst_p1_mult(hashNameI(tau.t.name, qelem.I), qelem.V, 255)
-//     first.blst_p1_add_or_double(first, prod)
-//     doAssert(blst_p1_on_curve(first).bool)
-
-//   let us = tau.t.u
-//   var second: blst_p1
-//   for j in 0 ..< len(us) :
-//     var prod: blst_p1
-//     prod.blst_p1_mult(us[j], mus[j], 255)
-//     second.blst_p1_add_or_double(second, prod)
-//     doAssert(blst_p1_on_curve(second).bool)
-
-//   var sum: blst_p1
-//   sum.blst_p1_add_or_double(first, second)
-
-//   var g{.noInit.}: blst_p2
-//   g.blst_p2_from_affine(BLS12_381_G2)
-
-//   return verifyPairings(sum, spk.key, sigma, g)
   struct BnFr {
     // in mratsim/constantine, given the following:
     //
@@ -302,8 +270,6 @@ contract Proofs {
   struct PublicKey {
     Curve.G1Point signkey;
     Curve.G2Point key;
-    // uint256 x;
-    // uint256 y;
   }
 
   struct QElement {
@@ -318,63 +284,15 @@ contract Proofs {
     }
     return false;
   }
-  // function toBnP1(uint x, uint y) internal pure returns(BnP1 memory p1) {
-  //   p1 = BnP1(
-  //         {
-  //           x: BnFp({ls: x}),
-  //           y: BnFp({ls: y})
-  //         });
-  // }
-
-  // function toBnP2(uint x, uint y) internal pure returns(BnP2 memory p2) {
-  //   p2 = BnP2(
-  //         {
-  //           x: BnFp2({ls: x}),
-  //           y: BnFp2({ls: y})
-  //         });
-  // }
-
-  // proc pairing(a: blst_p1, b: blst_p2): blst_fp12 =
-  //   ## Calculate pairing G_1,G_2 -> G_T
-  //   var aa: blst_p1_affine
-  //   var bb: blst_p2_affine
-  //   blst_p1_to_affine(aa, a)
-  //   blst_p2_to_affine(bb, b)
-  //   var l: blst_fp12
-  //   blst_miller_loop(l, bb, aa)
-  //   blst_final_exp(result, l)
-  // function _pairing (BnP1 memory a, BnP2 memory b) internal returns (BnFp12 memory fp12) {
-  //   (uint aax, uint aay) = EllipticCurve.toAffine(a.x, a.y, _z, BN256G1.PP);
-  //   (uint bbx, uint bby) = EllipticCurve.toAffine(b.x, b.y, _z, BN256G1.PP);
-  // }
-
-  // function _verifyPairings (
-  //   BnP1 memory a1,
-  //   BnP2 memory a2,
-  //   BnP1 memory b1,
-  //   BnP2 memory b2) internal returns (bool) {
-
-  //   // let e1 = pairing(a1, a2)
-  //   // let e2 = pairing(b1, b2)
-  //   // return e1 == e2
-  //   BnFp12 memory e1 = _pairing(a1, a2);
-  //   BnFp12 memory e2 = _pairing(b1, b2);
-  //   return e1 == e2;
-
-  // }
 
   // Example of BLS signature verification
   // Taken from: https://ethereum.stackexchange.com/a/59315
   function _verifySignature(
     Curve.G1Point memory sig,
-    Curve.G2Point memory signkey,
+    Curve.G2Point memory key,
     uint hashedMsg) internal view returns (bool)
   {
-
-    // bytes memory message = hex"7b0a2020226f70656e223a207b0a20202020227072696365223a2039353931372c0a202020202274696d65223a207b0a20202020202022756e6978223a20313438333134323430302c0a2020202020202269736f223a2022323031362d31322d33315430303a30303a30302e3030305a220a202020207d0a20207d2c0a202022636c6f7365223a207b0a20202020227072696365223a2039363736302c0a202020202274696d65223a207b0a20202020202022756e6978223a20313438333232383830302c0a2020202020202269736f223a2022323031372d30312d30315430303a30303a30302e3030305a220a202020207d0a20207d2c0a2020226c6f6f6b7570223a207b0a20202020227072696365223a2039363736302c0a20202020226b223a20312c0a202020202274696d65223a207b0a20202020202022756e6978223a20313438333232383830302c0a2020202020202269736f223a2022323031372d30312d30315430303a30303a30302e3030305a220a202020207d0a20207d0a7d0a6578616d706c652e636f6d2f6170692f31";
-
-    // Curve.G1Point memory signature = Curve.G1Point(11181692345848957662074290878138344227085597134981019040735323471731897153462, 6479746447046570360435714249272776082787932146211764251347798668447381926167);
-
+    // TODO: Is it ok to use the PublicKey.key (G2) here?
     // Curve.G2Point memory v = Curve.G2Point(
     //   [18523194229674161632574346342370534213928970227736813349975332190798837787897, 5725452645840548248571879966249653216818629536104756116202892528545334967238],
     //   [3816656720215352836236372430537606984911914992659540439626020770732736710924, 677280212051826798882467475639465784259337739185938192379192340908771705870]
@@ -382,7 +300,7 @@ contract Proofs {
 
     Curve.G1Point memory h = Curve.HashToPoint(hashedMsg);
 
-    return Curve.pairingProd2(Curve.g1neg(sig), Curve.P2(), h, signkey);
+    return Curve.pairingProd2(Curve.g1neg(sig), Curve.P2(), h, key);
   }
 
   function _isOnCurve(Curve.G1Point memory g1) internal view returns (bool) {
