@@ -402,12 +402,14 @@ contract Proofs {
     Curve.G1Point memory sigma,
     PublicKey memory spk) internal returns (bool) {
 
-    // is this needed in solidity?
+    // TODO: is this needed in solidity?
     // require(!isEmpty(tau.signature), "Signature cannot be empty");
 
-    // $tau.t -- how to do this in solidity?
+    // TODO: $tau.t -- how to do this in solidity?
+    // TODO: what's the second G2 point needed, PublicKey.signkey is a G1
+    // point?? Is using the PublicKey.key sufficient?
     uint hashedMsg = uint(sha256(abi.encodePacked(tau.t)));
-    require(_verifySignature(tau.signature, spk.signkey, hashedMsg),
+    require(_verifySignature(tau.signature, spk.key, hashedMsg),
       "invalid signature");
 
     // var first: blst_p1
