@@ -229,11 +229,48 @@ contract Proofs {
     //       coords: array[2, Fp[BN254_Snarks]]
     BnFp[2] fp;
   }
+  // blst_fp6* {.byref.} = object
+  //   fp2*: array[3, blst_fp2]
+  struct BnFp6 {
+    BnFp2[3]  fp2;
+  }
+  // blst_fp12* {.byref.} = object
+  //   fp6*: array[2, blst_fp6]
+  struct BnFp12 {
+    BnFp6[2]  fp6;
+  }
 
   struct BnP1 {
     BnFp  x;
     BnFp  y;
-    BnFp  z;
+    // BnFp  z; // for some reason, BN254G1 doesn't accept z in operations on
+                // jacobian coords, and removing an unused field is easier
+                // trying to instantiate a struct with an unused field.
+  }
+
+  struct BnP1Affine {
+    BnFp  x;
+    BnFp  y;
+  }
+
+  // blst_p2* {.byref.} = object
+  //   x*: blst_fp2
+  //   y*: blst_fp2
+  //   z*: blst_fp2
+  struct BnP2 {
+    BnFp2 x;
+    BnFp2 y;
+    // BnFp2 z; // for some reason, BN254G1 doesn't accept z in operations on
+                // jacobian coords, and removing an unused field is easier
+                // trying to instantiate a struct with an unused field.
+  }
+
+  // blst_p2_affine* {.byref.} = object
+  //   x*: blst_fp2
+  //   y*: blst_fp2
+  struct BnP2Affine {
+    BnFp2 x;
+    BnFp2 y;
   }
 
   struct BnScalar {
@@ -243,7 +280,7 @@ contract Proofs {
     // # blst_scalar
     // # = typedesc[array[0..31, byte]]
     // array[typeof(256)(typeof(256)(256 / typeof(256)(8))), byte]
-    bytes[32]  ls;
+    bytes32  ls;
   }
 
   struct TauZero {
@@ -277,38 +314,49 @@ contract Proofs {
     }
     return false;
   }
-  // function toBytes(uint64 x) internal pure returns (bytes memory c) {
-  //   bytes32 b = bytes32(64);
-  //   c = new bytes(32);
-  //   for (uint i=0; i < 32; i++) {
-  //       c[i] = b[i];
-  //   }
-  // }
-
-//   function toBytes(uint i) internal pure returns (bytes memory){
-//     if (i == 0) return "0";
-//     uint j = i;
-//     uint length;
-//     while (j != 0){
-//         length++;
-//         j /= 10;
-//     }
-//     bytes memory bstr = new bytes(length);
-//     uint k = length - 1;
-//     while (i != 0){
-//         bstr[k--] = byte(48 + i % 10);
-//         i /= 10;
-//     }
-//     return bstr;
-// }
   function toBnP1(uint x, uint y) internal pure returns(BnP1 memory p1) {
-    BnFp memory bits = BnFp({ls: uint(255)});
     p1 = BnP1(
           {
             x: BnFp({ls: x}),
-            y: BnFp({ls: y}),
-            z: bits
+            y: BnFp({ls: y})
           });
+  }
+
+  function toBnP2(uint x, uint y) internal pure returns(BnP2 memory p2) {
+    p2 = BnP2(
+          {
+            x: BnFp2({ls: x}),
+            y: BnFp2({ls: y})
+          });
+  }
+
+  // proc pairing(a: blst_p1, b: blst_p2): blst_fp12 =
+  //   ## Calculate pairing G_1,G_2 -> G_T
+  //   var aa: blst_p1_affine
+  //   var bb: blst_p2_affine
+  //   blst_p1_to_affine(aa, a)
+  //   blst_p2_to_affine(bb, b)
+  //   var l: blst_fp12
+  //   blst_miller_loop(l, bb, aa)
+  //   blst_final_exp(result, l)
+  function _pairing (BnP1 memory a, BnP2 memory b) internal returns (BnFp12 memory fp12) {
+    (uint aax, uint aay) = EllipticCurve.toAffine(a.x, a.y, _z, BN256G1.PP);
+    (uint bbx, uint bby) = EllipticCurve.toAffine(b.x, b.y, _z, BN256G1.PP);
+  }
+
+  function _verifyPairings (
+    BnP1 memory a1,
+    BnP2 memory a2,
+    BnP1 memory b1,
+    BnP2 memory b2) internal returns (bool) {
+
+    // let e1 = pairing(a1, a2)
+    // let e2 = pairing(b1, b2)
+    // return e1 == e2
+    BnFp12 memory e1 = _pairing(a1, a2);
+    BnFp12 memory e2 = _pairing(b1, b2);
+    return e1 == e2;
+
   }
   function _verifyProof(
     Tau memory tau,
@@ -325,26 +373,63 @@ contract Proofs {
     //   if not verify(spk.signkey, $tau.t, signature):
     //     return false
 
-    //   var first: blst_p1
-    //   for qelem in q :
-    //     var prod: blst_p1
-    //     prod.blst_p1_mult(hashNameI(tau.t.name, qelem.I), qelem.V, 255)
-    //     first.blst_p1_add_or_double(first, prod)
-    //     doAssert(blst_p1_on_curve(first).bool)
-    BnP1 memory first;
+    // var first: blst_p1
+    // for qelem in q :
+    //   var prod: blst_p1
+    //   prod.blst_p1_mult(hashNameI(tau.t.name, qelem.I), qelem.V, 255)
+    //   first.blst_p1_add_or_double(first, prod)
+    //   doAssert(blst_p1_on_curve(first).bool)
+    // BnP1 memory first;
+    uint firstX;
+    uint firstY;
     for (uint i = 0; i<q.length; i++) {
       QElement memory qelem = q[i];
       bytes memory namei = abi.encodePacked(tau.t.name, qelem.i);
-      (uint x, uint y) = BN256G1.hashToTryAndIncrement(namei);// + string(qelem.i));
-      // p1Affine = toAffine(qelem.i)
+      (uint x, uint y) = BN256G1.hashToTryAndIncrement(namei); // affine coords, BnP1 (but we don't really need to convert to BnP1)
       // TODO: Where does 255 get used???
-      // TODO: Where does qelem.v get used???
-      (uint mx, uint my) = BN256G1.multiply([x, y, qelem.v]);
-      BnP1 memory prod = toBnP1(mx, my);
-      (uint ax, uint ay) = BN256G1.add([first.x.ls, first.y.ls, prod.x.ls, prod.y.ls]);
-      first = toBnP1(ax, ay);
-      require(BN256G1.isOnCurve([first.x.ls, first.y.ls]), "Point must be on BN254 curve");
+      // TODO: Can we convert qelem.v.ls from a 32 byte array to a uint256 without worry?
+      // TODO: It's very hard to know if multiply takes jacobian or affine coords...???
+      (uint prodX, uint prodY) = BN256G1.multiply([x, y, uint(qelem.v.ls)]);
+      // BnP1 memory prod = toBnP1(prodX, prodY);
+      (firstX, firstY) = BN256G1.add([firstX, firstY, prodX, prodY]);
+      // first = toBnP1(sumX, sumY);
+      require(BN256G1.isOnCurve([firstX, firstY]), "First point must be on BN254 curve");
     }
+    // let us = tau.t.u
+    // var second: blst_p1
+    // for j in 0 ..< len(us) :
+    //   var prod: blst_p1
+    //   prod.blst_p1_mult(us[j], mus[j], 255)
+    //   second.blst_p1_add_or_double(second, prod)
+    //   doAssert(blst_p1_on_curve(second).bool)
+    BnP1[] memory us = tau.t.u;
+    // BnP1 memory second;
+    uint secondX;
+    uint secondY;
+    for (uint j = 0; j<us.length; j++) {
+      BnP1 memory usP1 = us[j];
+      // TODO: Where does 255 get used???
+      (uint prodX, uint prodY) = BN256G1.multiply([usP1.x.ls, usP1.y.ls, mus[j].ls]);
+      // BnP1 memory prod = toBnP1(prodX, prodY);
+      (secondX, secondY) = BN256G1.add([secondX, secondY, prodX, prodY]);
+      // first = toBnP1(sumX, sumY);
+      require(BN256G1.isOnCurve([secondX, secondY]), "Second point must be on BN254 curve");
+    }
+
+    // var sum: blst_p1
+    // sum.blst_p1_add_or_double(first, second)
+    (uint sumX, uint sumY) = BN256G1.add([firstX, firstY, secondX, secondY]);
+    // BnP1 memory sum = toBnP1(sumX, sumY);
+
+    // var g{.noInit.}: blst_p2
+    // g.blst_p2_from_affine(BLS12_381_G2)
+    BnP2 memory g;
+
+    // return verifyPairings(sum, spk.key, sigma, g)
+    BnP1 a1 = toBnP1(sumX, sumY);
+    BnP2 a2 = toBnP2(spk.x, spk.y);
+    return _verifyPairings(a1, a2, sigma, g);
+
   }
   
   function _willProofBeRequired(bytes32 id) internal view returns (bool) {
