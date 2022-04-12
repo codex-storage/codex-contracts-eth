@@ -1,5 +1,6 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
+const { hexlify, randomBytes } = ethers.utils
 const {
   snapshot,
   revert,
@@ -12,7 +13,7 @@ const {
 const { periodic } = require("./time")
 
 describe("Proofs", function () {
-  const id = ethers.utils.randomBytes(32)
+  const id = hexlify(randomBytes(32))
   const period = 30 * 60
   const timeout = 5
   const downtime = 64
@@ -84,9 +85,9 @@ describe("Proofs", function () {
   })
 
   it("requires proofs for different ids at different times", async function () {
-    let id1 = ethers.utils.randomBytes(32)
-    let id2 = ethers.utils.randomBytes(32)
-    let id3 = ethers.utils.randomBytes(32)
+    let id1 = hexlify(randomBytes(32))
+    let id2 = hexlify(randomBytes(32))
+    let id3 = hexlify(randomBytes(32))
     for (let id of [id1, id2, id3]) {
       await proofs.expectProofs(id, probability, duration)
     }
@@ -140,6 +141,8 @@ describe("Proofs", function () {
   })
 
   describe("when proofs are required", function () {
+    const proof = hexlify(randomBytes(42))
+
     beforeEach(async function () {
       await proofs.expectProofs(id, probability, duration)
     })
@@ -165,8 +168,8 @@ describe("Proofs", function () {
     })
 
     it("provides different challenges per id", async function () {
-      const id2 = ethers.utils.randomBytes(32)
-      const id3 = ethers.utils.randomBytes(32)
+      const id2 = hexlify(randomBytes(32))
+      const id3 = hexlify(randomBytes(32))
       const challenge1 = await proofs.getChallenge(id)
       const challenge2 = await proofs.getChallenge(id2)
       const challenge3 = await proofs.getChallenge(id3)
@@ -174,19 +177,25 @@ describe("Proofs", function () {
     })
 
     it("submits a correct proof", async function () {
-      await proofs.submitProof(id, true)
+      await proofs.submitProof(id, proof)
     })
 
     it("fails proof submission when proof is incorrect", async function () {
-      await expect(proofs.submitProof(id, false)).to.be.revertedWith(
+      await expect(proofs.submitProof(id, [])).to.be.revertedWith(
         "Invalid proof"
       )
     })
 
+    it("emits an event when proof was submitted", async function () {
+      await expect(proofs.submitProof(id, proof))
+        .to.emit(proofs, "ProofSubmitted")
+        .withArgs(id, proof)
+    })
+
     it("fails proof submission when already submitted", async function () {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-      await proofs.submitProof(id, true)
-      await expect(proofs.submitProof(id, true)).to.be.revertedWith(
+      await proofs.submitProof(id, proof)
+      await expect(proofs.submitProof(id, proof)).to.be.revertedWith(
         "Proof already submitted"
       )
     })
@@ -220,7 +229,7 @@ describe("Proofs", function () {
     it("does not mark a submitted proof as missing", async function () {
       await waitUntilProofIsRequired(id)
       let submittedPeriod = periodOf(await currentTime())
-      await proofs.submitProof(id, true)
+      await proofs.submitProof(id, proof)
       await advanceTimeTo(periodEnd(submittedPeriod))
       await expect(
         proofs.markProofAsMissing(id, submittedPeriod)

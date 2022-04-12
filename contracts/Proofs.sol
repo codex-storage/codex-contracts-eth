@@ -136,10 +136,11 @@ contract Proofs {
     return isRequired && pointer < downtime;
   }
 
-  function _submitProof(bytes32 id, bool proof) internal {
-    require(proof, "Invalid proof"); // TODO: replace bool by actual proof
+  function _submitProof(bytes32 id, bytes calldata proof) internal {
+    require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
     require(!received[id][currentPeriod()], "Proof already submitted");
     received[id][currentPeriod()] = true;
+    emit ProofSubmitted(id, proof);
   }
 
   function _markProofAsMissing(bytes32 id, uint256 missedPeriod) internal {
@@ -152,4 +153,6 @@ contract Proofs {
     missing[id][missedPeriod] = true;
     missed[id] += 1;
   }
+
+  event ProofSubmitted(bytes32 id, bytes proof);
 }
