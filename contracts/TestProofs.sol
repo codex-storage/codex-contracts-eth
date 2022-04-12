@@ -56,7 +56,7 @@ contract TestProofs is Proofs {
     return _getPointer(id);
   }
 
-  function submitProof(bytes32 id, bool proof) public {
+  function submitProof(bytes32 id, bytes calldata proof) public {
     _submitProof(id, proof);
   }
 
