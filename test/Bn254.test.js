@@ -4,11 +4,8 @@ const {
   snapshot,
   revert,
   ensureMinimumBlockHeight,
-  currentTime,
   advanceTime,
-  advanceTimeTo,
 } = require("./evm")
-const { periodic } = require("./time")
 
 describe("Bn254", function () {
   let bn254
@@ -32,7 +29,13 @@ describe("Bn254", function () {
     expect(await bn254.g()).to.be.true
   })
 
-  it("multiplication along BN254 emits expected values", async function () {
-    expect(await bn254.testMul()).to.be.true
+  it("points should be paired correctly", async function () {
+    expect(await bn254.pair()).to.be.true
+  })
+
+  it("can verify proof", async function () {
+    let result = await bn254.verifyTx()
+    console.log("verify result: " + JSON.stringify(result, null, 2))
+    expect(await bn254.verifyTx()).to.be.true
   })
 })

@@ -61,7 +61,7 @@ contract TestBn254 {
     uint p = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
     Curve.G1Point[] memory g1points = new Curve.G1Point[](2);
     Curve.G2Point[] memory g2points = new Curve.G2Point[](2);
-//       // check e(5 P1, P2)e(-P1, 5 P2) == 1
+    // check e(5 P1, P2)e(-P1, 5 P2) == 1
     g1points[0] = Bn254.P1().g1mul(5);
     g1points[1] = Bn254.P1();
     g1points[1].Y = p - g1points[1].Y;
@@ -78,7 +78,7 @@ contract TestBn254 {
       return false;
     return true;
   }
-  function verifyingKey() internal pure returns (VerifyingKey memory vk) {
+  function _verifyingKey() internal pure returns (VerifyingKey memory vk) {
     vk.A = Curve.G2Point([0x209dd15ebff5d46c4bd888e51a93cf99a7329636c63514396b4a452003a35bf7, 0x04bf11ca01483bfa8b34b43561848d28905960114c8ac04049af4b6315a41678], [0x2bb8324af6cfc93537a2ad1a445cfd0ca2a71acd7ac41fadbf933c2a51be344d, 0x120a2a4cf30c1bf9845f20c6fe39e07ea2cce61f0c9bb048165fe5e4de877550]);
     vk.B = Curve.G1Point(0x2eca0c7238bf16e83e7a1e6c5d49540685ff51380f309842a98561558019fc02, 0x03d3260361bb8451de5ff5ecd17f010ff22f5c31cdf184e9020b06fa5997db84);
     vk.C = Curve.G2Point([0x2e89718ad33c8bed92e210e81d1853435399a271913a6520736a4729cf0d51eb, 0x01a9e2ffa2e92599b68e44de5bcf354fa2642bd4f26b259daa6f7ce3ed57aeb3], [0x14a9a87b789a58af499b314e13c3d65bede56c07ea2d418d6874857b70763713, 0x178fb49a2d6cd347dc58973ff49613a20757d0fcc22079f9abd10c3baee24590]);
@@ -98,8 +98,8 @@ contract TestBn254 {
     vk.IC[8] = Curve.G1Point(0x0a6de0e2240aa253f46ce0da883b61976e3588146e01c9d8976548c145fe6e4a, 0x04fbaa3a4aed4bb77f30ebb07a3ec1c7d77a7f2edd75636babfeff97b1ea686e);
     vk.IC[9] = Curve.G1Point(0x111e2e2a5f8828f80ddad08f9f74db56dac1cc16c1cb278036f79a84cf7a116f, 0x1d7d62e192b219b9808faa906c5ced871788f6339e8d91b83ac1343e20a16b30);
   }
-  function verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-    VerifyingKey memory vk = verifyingKey();
+  function _verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
+    VerifyingKey memory vk = _verifyingKey();
     require(input.length + 1 == vk.IC.length);
     // Compute the linear combination vk_x
     Curve.G1Point memory vk_x = Curve.G1Point(0, 0);
@@ -121,8 +121,8 @@ contract TestBn254 {
     )) return 5;
     return 0;
   }
-  event Verified(string);
-  function verifyTx() internal returns (bool r) {
+
+  function verifyTx() public view returns (bool r) {
     uint[] memory input = new uint[](9);
     Proof memory proof;
     proof.A = Curve.G1Point(12873740738727497448187997291915224677121726020054032516825496230827252793177, 21804419174137094775122804775419507726154084057848719988004616848382402162497);
@@ -144,11 +144,6 @@ contract TestBn254 {
     input[6] = 5613571677741714971687805233468747950848449704454346829971683826953541367271;
     input[7] = 9643208548031422463313148630985736896287522941726746581856185889848792022807;
     input[8] = 18066496933330839731877828156604;
-    if (verify(input, proof) == 0) {
-        emit Verified("Transaction successfully verified.");
-        return true;
-    } else {
-        return false;
-    }
+    return _verify(input, proof) == 0;
   }
 }
