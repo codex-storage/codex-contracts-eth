@@ -169,6 +169,9 @@ library Bn254 {
   }
 
   function _verifyProof(Types.Proof memory proof) internal returns (bool) {
+    require(_isOnCurve(proof.sigma), "proof generated incorrectly");
+    require(_isOnCurve(proof.publicKey), "proof keys generated incorrectly");
+    require(proof.name.length > 0, "proof name must be provided");
     // var first: blst_p1
     // for qelem in q :
     //   var prod: blst_p1
@@ -183,7 +186,7 @@ library Bn254 {
       // uint256 hPointX = abi.encodePacked(namei);
       Types.G1Point memory h = _hashToPoint(abi.encodePacked(namei));
       // TODO: Where does 255 get used???
-      Types.G1Point memory prod = _multiply(h, uint256(qelem.v));
+      Types.G1Point memory prod = _multiply(h, qelem.v);
       first = _add(first, prod);
       require(_isOnCurve(first), "must be on Bn254 curve");
     }
@@ -197,6 +200,7 @@ library Bn254 {
     Types.G1Point[] memory us = proof.u;
     Types.G1Point memory second;
     for (uint256 j = 0; j<us.length; j++) {
+      require(_isOnCurve(us[j]), "incorrect proof setup");
       // TODO: Where does 255 get used???
       Types.G1Point memory prod = _multiply(us[j], proof.mus[j]);
       second = _add(second, prod);

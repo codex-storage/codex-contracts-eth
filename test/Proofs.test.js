@@ -177,6 +177,25 @@ describe("Proofs", function () {
     })
 
     it("submits a correct proof", async function () {
+      let proof = {
+        q: [
+          { i: -1, v: 1 },
+          { i: -2, v: 2 },
+          { i: -3, v: 3 },
+        ],
+        mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+        sigma: { x: 1, y: 2 },
+        u: [
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+          { x: 1, y: 2 },
+        ],
+        name: ethers.utils.toUtf8Bytes("test"),
+        publicKey: {
+          x: [1, 2],
+          y: [1, 2],
+        },
+      }
       await proofs.submitProof(id, proof)
     })
 

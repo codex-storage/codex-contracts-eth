@@ -133,7 +133,32 @@ describe("Bn254", function () {
     expect(isOnCurve).to.be.false
   })
 
-  it("should fail proof verification when first point is not on curve", async function () {
+  it("should fail proof verification with incorrect proof generation", async function () {
+    let proof = {
+      q: [
+        { i: -1, v: 1 },
+        { i: -2, v: 2 },
+        { i: -3, v: 3 },
+      ],
+      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      sigma: { x: 111, y: 222 }, // Wrong
+      u: [
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      name: ethers.utils.toUtf8Bytes("test"),
+      publicKey: {
+        x: [1, 2],
+        y: [1, 2],
+      },
+    }
+    expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
+      "proof generated incorrectly"
+    )
+  })
+
+  it("should fail proof verification with incorrect key generation", async function () {
     let proof = {
       q: [
         { i: -1, v: 1 },
@@ -144,8 +169,58 @@ describe("Bn254", function () {
       sigma: { x: 1, y: 2 },
       u: [
         { x: 1, y: 2 },
-        { x: 2, y: 2 },
-        { x: 3, y: 3 },
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      name: ethers.utils.toUtf8Bytes("test"),
+      publicKey: {
+        x: [111, 222], // Wrong
+        y: [1, 2],
+      },
+    }
+    expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
+      "proof keys generated incorrectly"
+    )
+  })
+
+  it("should fail proof verification with incorrect proof name", async function () {
+    let proof = {
+      q: [
+        { i: -1, v: 1 },
+        { i: -2, v: 2 },
+        { i: -3, v: 3 },
+      ],
+      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      sigma: { x: 1, y: 2 },
+      u: [
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      name: ethers.utils.toUtf8Bytes(""), // Wrong
+      publicKey: {
+        x: [111, 222],
+        y: [1, 2],
+      },
+    }
+    expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
+      "proof name must be provided"
+    )
+  })
+
+  it("should fail proof verification with incorrect setup", async function () {
+    let proof = {
+      q: [
+        { i: -1, v: 1 },
+        { i: -2, v: 2 },
+        { i: -3, v: 3 },
+      ],
+      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      sigma: { x: 1, y: 2 },
+      u: [
+        { x: 111, y: 222 }, // Wrong
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
       ],
       name: ethers.utils.toUtf8Bytes("test"),
       publicKey: {
@@ -154,7 +229,7 @@ describe("Bn254", function () {
       },
     }
     expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
-      "elliptic curve multiplication failed"
+      "incorrect proof setup"
     )
   })
 })
