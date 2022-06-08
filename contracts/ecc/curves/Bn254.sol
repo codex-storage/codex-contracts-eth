@@ -2,143 +2,24 @@
 //
 // From: https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
 
-pragma solidity >=0.8.0 <=0.8.13;
+pragma solidity >=0.7.0 <=0.8.13;
 
-import "../Curve.sol";
+import "../Types.sol";
+import "../vendor/witnet/elliptic-curve-solidity/contracts/EllipticCurve.sol";
+import "../vendor/witnet/bls-solidity/contracts/BN256G1.sol";
+import "../vendor/witnet/bls-solidity/contracts/BN256G2.sol";
 
 library Bn254 {
-  // p = p(u) = 36u^4 + 36u^3 + 24u^2 + 6u + 1
-  uint256 internal constant FIELD_ORDER =
-    0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47;
-
-  // Number of elements in the field (often called `q`)
-  // n = n(u) = 36u^4 + 36u^3 + 18u^2 + 6u + 1
-  uint256 internal constant GEN_ORDER =
-    0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
-
-  uint256 internal constant CURVE_B = 3;
-
-  // a = (p+1) / 4
-  uint256 internal constant CURVE_A =
-    0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52;
-
-  // struct Curve.G1Point {
-  //   uint256 X;
-  //   uint256 Y;
-  // }
-
-  // // Encoding of field elements is: X[0] * z + X[1]
-  // struct Curve.G2Point {
-  //   uint256[2] X;
-  //   uint256[2] Y;
-  // }
-
-  // (P+1) / 4
-  function A() internal pure returns (uint256) {
-    return CURVE_A;
-  }
-
-  function B() internal pure returns (uint256) {
-    return CURVE_B;
-  }
-
-  function P() internal pure returns (uint256) {
-    return FIELD_ORDER;
-  }
-
-  function N() internal pure returns (uint256) {
-    return GEN_ORDER;
-  }
 
   /// @return the generator of G1
-  function P1() internal pure returns (Curve.G1Point memory) {
-    return Curve.G1Point(1, 2);
-  }
-
-  function HashToPoint(uint256 s) internal view returns (Curve.G1Point memory g) {
-    uint256 beta = 0;
-    uint256 y = 0;
-
-    // XXX: Gen Order (n) or Field Order (p) ?
-    uint256 x = s % GEN_ORDER;
-
-    while (true) {
-      (beta, y) = FindYforX(x);
-
-      // y^2 == beta
-      if (beta == mulmod(y, y, FIELD_ORDER)) {
-        return Curve.G1Point(x, y);
-      }
-
-      x = addmod(x, 1, FIELD_ORDER);
-    }
-  }
-
-  /**
-   * Given X, find Y
-   *
-   *   where y = sqrt(x^3 + b)
-   *
-   * Returns: (x^3 + b), y
-   */
-  function FindYforX(uint256 x) internal view returns (uint256, uint256) {
-    // beta = (x^3 + b) % p
-    uint256 beta = addmod(
-      mulmod(mulmod(x, x, FIELD_ORDER), x, FIELD_ORDER),
-      CURVE_B,
-      FIELD_ORDER
-    );
-
-    // y^2 = x^3 + b
-    // this acts like: y = sqrt(beta)
-    uint256 y = expMod(beta, CURVE_A, FIELD_ORDER);
-
-    return (beta, y);
-  }
-
-  // a - b = c;
-  function submod(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 a_nn;
-
-    if (a > b) {
-      a_nn = a;
-    } else {
-      a_nn = a + GEN_ORDER;
-    }
-
-    return addmod(a_nn - b, 0, GEN_ORDER);
-  }
-
-  function expMod(
-    uint256 _base,
-    uint256 _exponent,
-    uint256 _modulus
-  ) internal view returns (uint256 retval) {
-    bool success;
-    uint256[1] memory output;
-    uint256[6] memory input;
-    input[0] = 0x20; // baseLen = new(big.Int).SetBytes(getData(input, 0, 32))
-    input[1] = 0x20; // expLen  = new(big.Int).SetBytes(getData(input, 32, 32))
-    input[2] = 0x20; // modLen  = new(big.Int).SetBytes(getData(input, 64, 32))
-    input[3] = _base;
-    input[4] = _exponent;
-    input[5] = _modulus;
-    assembly {
-      success := staticcall(sub(gas(), 2000), 5, input, 0xc0, output, 0x20)
-      // Use "invalid" to make gas estimation work
-      switch success
-      case 0 {
-        invalid()
-      }
-    }
-    require(success);
-    return output[0];
+  function _p1Generator() internal pure returns (Types.G1Point memory) {
+    return Types.G1Point(1, 2);
   }
 
   /// @return the generator of G2
-  function P2() internal pure returns (Curve.G2Point memory) {
+  function _p2Generator() internal pure returns (Types.G2Point memory) {
     return
-      Curve.G2Point(
+      Types.G2Point(
         [
           11559732032986387107991004021392285783925812861821192530917403151452391805634,
           10857046999023057135944570762232829481370756359578518086990519993285655852781
@@ -150,185 +31,188 @@ library Bn254 {
       );
   }
 
-  /// @return the negation of p, i.e. p.add(p.negate()) should be zero.
-  function g1neg(Curve.G1Point memory p) internal pure returns (Curve.G1Point memory) {
-    // The prime q in the base field F_q for G1
-    uint256 q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
-    if (p.X == 0 && p.Y == 0) return Curve.G1Point(0, 0);
-    return Curve.G1Point(p.X, q - (p.Y % q));
-  }
-
-  /// @return r the sum of two points of G1
-  function g1add(Curve.G1Point memory p1, Curve.G1Point memory p2)
+  /// @dev  computes P + Q
+  /// @param p: G1 point p
+  /// @param q: G1 point q
+  /// @return G1 point with x and y coordinates of P+Q.
+  function _add(Types.G1Point memory p, Types.G1Point memory q)
     internal
-    view
-    returns (Curve.G1Point memory r)
+    returns (Types.G1Point memory)
   {
-    uint256[4] memory input;
-    input[0] = p1.X;
-    input[1] = p1.Y;
-    input[2] = p2.X;
-    input[3] = p2.Y;
-    bool success;
-    assembly {
-      success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
-      // Use "invalid" to make gas estimation work
-      switch success
-      case 0 {
-        invalid()
-      }
-    }
-    require(success);
+    (uint256 x, uint256 y) = BN256G1._add([p.x, p.y, q.x, q.y]);
+    return Types.G1Point(x, y);
   }
 
-  /// @return r the product of a point on G1 and a scalar, i.e.
-  /// p == p.mul(1) and p.add(p) == p.mul(2) for all points p.
-  function g1mul(Curve.G1Point memory p, uint256 s)
+  /// @dev  computes P*k.
+  /// @param p: G1 point p
+  /// @param k: scalar k.
+  /// @return G1 point with x and y coordinates of P*k.
+  function _multiply(Types.G1Point memory p, uint256 k)
     internal
-    view
-    returns (Curve.G1Point memory r)
+    returns (Types.G1Point memory)
   {
-    uint256[3] memory input;
-    input[0] = p.X;
-    input[1] = p.Y;
-    input[2] = s;
-    bool success;
-    assembly {
-      success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
-      // Use "invalid" to make gas estimation work
-      switch success
-      case 0 {
-        invalid()
-      }
-    }
-    require(success);
+    (uint256 x, uint256 y) = BN256G1._multiply([p.x, p.y, k]);
+    return Types.G1Point(x, y);
   }
 
-  /// @return the result of computing the pairing check
-  /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
-  /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
-  /// return true.
-  function pairing(Curve.G1Point[] memory p1, Curve.G2Point[] memory p2)
+
+  /// @dev Check whether point (x,y) is on curve BN254.
+  /// @param p1 G1 point
+  /// @return true if x,y in the curve, false else
+  function _isOnCurve(Types.G1Point memory p1)
     internal
-    view
+    pure
     returns (bool)
   {
-    require(p1.length == p2.length);
-    uint256 elements = p1.length;
-    uint256 inputSize = elements * 6;
-    uint256[] memory input = new uint256[](inputSize);
-    for (uint256 i = 0; i < elements; i++) {
-      input[i * 6 + 0] = p1[i].X;
-      input[i * 6 + 1] = p1[i].Y;
-      input[i * 6 + 2] = p2[i].X[0];
-      input[i * 6 + 3] = p2[i].X[1];
-      input[i * 6 + 4] = p2[i].Y[0];
-      input[i * 6 + 5] = p2[i].Y[1];
-    }
-    uint256[1] memory out;
-    bool success;
-    assembly {
-      success := staticcall(
-        sub(gas(), 2000),
-        8,
-        add(input, 0x20),
-        mul(inputSize, 0x20),
-        out,
-        0x20
-      )
-      // Use "invalid" to make gas estimation work
-      switch success
-      case 0 {
-        invalid()
-      }
-    }
-    require(success);
-    return out[0] != 0;
+    return BN256G1._isOnCurve([p1.x, p1.y]);
+  }
+  /**
+  * @notice Checks if FQ2 is on G2
+  * @param p1 G2 Point
+  * @return True if the FQ2 is on G2
+  */
+  function _isOnCurve(Types.G2Point memory p1)
+    internal
+    pure
+    returns (bool)
+  {
+    return BN256G2._isOnCurve(p1.x[0], p1.y[0], p1.x[1], p1.y[1]);
   }
 
-  /// Convenience method for a pairing check for two pairs.
-  function pairingProd2(
-    Curve.G1Point memory a1,
-    Curve.G2Point memory a2,
-    Curve.G1Point memory b1,
-    Curve.G2Point memory b2
-  ) internal view returns (bool) {
-    Curve.G1Point[] memory p1 = new Curve.G1Point[](2);
-    Curve.G2Point[] memory p2 = new Curve.G2Point[](2);
-    p1[0] = a1;
-    p1[1] = b1;
-    p2[0] = a2;
-    p2[1] = b2;
-    return pairing(p1, p2);
+  /// @dev Derives the y coordinate from a compressed-format point x [[SEC-1]](https://www.secg.org/SEC1-Ver-1.0.pdf).
+  /// @param prefix parity byte (0x02 even, 0x03 odd)
+  /// @param x coordinate x
+  /// @return y coordinate y
+  function _deriveY(uint8 prefix, uint256 x)
+    internal
+    pure
+    returns (uint256)
+  {
+    return BN256G1._deriveY(prefix, x);
   }
 
-  /// Convenience method for a pairing check for three pairs.
-  function pairingProd3(
-    Curve.G1Point memory a1,
-    Curve.G2Point memory a2,
-    Curve.G1Point memory b1,
-    Curve.G2Point memory b2,
-    Curve.G1Point memory c1,
-    Curve.G2Point memory c2
-  ) internal view returns (bool) {
-    Curve.G1Point[] memory p1 = new Curve.G1Point[](3);
-    Curve.G2Point[] memory p2 = new Curve.G2Point[](3);
-    p1[0] = a1;
-    p1[1] = b1;
-    p1[2] = c1;
-    p2[0] = a2;
-    p2[1] = b2;
-    p2[2] = c2;
-    return pairing(p1, p2);
+  /// @dev Calculate inverse (x, -y) of point (x, y).
+  /// @param p1 G1 point
+  /// @return (x, -y)
+  function _negate(Types.G1Point memory p1)
+    internal
+    pure
+    returns (Types.G1Point memory)
+  {
+    (uint256 x, uint256 y) = EllipticCurve.ecInv(p1.x, p1.y, BN256G1.PP);
+    return Types.G1Point(x, y);
   }
 
-  /// Convenience method for a pairing check for four pairs.
-  function pairingProd4(
-    Curve.G1Point memory a1,
-    Curve.G2Point memory a2,
-    Curve.G1Point memory b1,
-    Curve.G2Point memory b2,
-    Curve.G1Point memory c1,
-    Curve.G2Point memory c2,
-    Curve.G1Point memory d1,
-    Curve.G2Point memory d2
-  ) internal view returns (bool) {
-    Curve.G1Point[] memory p1 = new Curve.G1Point[](4);
-    Curve.G2Point[] memory p2 = new Curve.G2Point[](4);
-    p1[0] = a1;
-    p1[1] = b1;
-    p1[2] = c1;
-    p1[3] = d1;
-    p2[0] = a2;
-    p2[1] = b2;
-    p2[2] = c2;
-    p2[3] = d2;
-    return pairing(p1, p2);
+  /// @dev Substract two points (x1, y1) and (x2, y2) in affine coordinates.
+  /// @param p1 G1 point P1
+  /// @param p2 G1 point P2
+  /// @return (qx, qy) = P1-P2 in affine coordinates
+  function _subtract(Types.G1Point memory p1, Types.G1Point memory p2)
+    internal
+    pure
+    returns(Types.G1Point memory)
+  {
+    (uint256 x, uint256 y) =  EllipticCurve.ecSub(
+      p1.x,
+      p1.y,
+      p2.x,
+      p2.y,
+      BN256G1.AA,
+      BN256G1.PP);
+
+    return Types.G1Point(x, y);
   }
 
-  function isOnCurve(Curve.G1Point memory g1) internal pure returns (bool) {
-    uint256 aa = Bn254.A();
-    uint256 bb = Bn254.B();
-    uint256 pp = Bn254.P();
+  /// @dev Function to convert a `Hash(msg|DATA)` to a point in the curve as defined in [VRF-draft-04](https://tools.ietf.org/pdf/draft-irtf-cfrg-vrf-04).
+  /// @param _message The message used for computing the VRF
+  /// @return The hash point in affine coordinates
+  function _hashToPoint(bytes memory _message)
+    internal
+    pure
+    returns (Types.G1Point memory)
+  {
+    (uint256 x, uint256 y) = BN256G1._hashToTryAndIncrement(_message);
+    return Types.G1Point(x, y);
+  }
 
-    // Implementation borrowed from the witnet/elliptic-curve-solidity lib:
-    // https://github.com/witnet/elliptic-curve-solidity/blob/b6886bb08333ccf6883ac42827d62c1bfdb37d44/contracts/EllipticCurve.sol#L113-L145
-    if (0 == g1.X || g1.X == pp || 0 == g1.Y || g1.Y == pp) {
-      return false;
+  /// @dev Checks if e(P, Q) = e (R,S).
+  /// @param p: G1 point P
+  /// @param q: G2 point Q
+  /// @param r: G1 point R
+  /// @param s: G2 point S
+  /// @return true if e(P, Q) = e (R,S).
+  function _checkPairing(
+    Types.G1Point memory p,
+    Types.G2Point memory q,
+    Types.G1Point memory r,
+    Types.G2Point memory s
+  )
+    internal
+    returns (bool)
+  {
+    return BN256G1._bn256CheckPairing(
+      [
+        p.x,    // x-coordinate of point P
+        p.y,    // y-coordinate of point P
+        q.x[0], // x real coordinate of point Q
+        q.x[1], // x imaginary coordinate of point Q
+        q.y[0], // y real coordinate of point Q
+        q.y[1], // y imaginary coordinate of point Q
+        r.x,    // x-coordinate of point R
+        r.y,    // y-coordinate of point R
+        s.x[0], // x real coordinate of point S
+        s.x[1], // x imaginary coordinate of point S
+        s.y[0], // y real coordinate of point S
+        s.y[1]    // y imaginary coordinate of point S
+      ]
+    );
+  }
+
+  function _verifyProof(Types.Proof memory proof) internal returns (bool) {
+    // var first: blst_p1
+    // for qelem in q :
+    //   var prod: blst_p1
+    //   prod.blst_p1_mult(hashNameI(tau.t.name, qelem.I), qelem.V, 255)
+    //   first.blst_p1_add_or_double(first, prod)
+    //   doAssert(blst_p1_on_curve(first).bool)
+    Types.G1Point memory first;
+    for (uint256 i = 0; i<proof.q.length; i++) {
+      Types.QElement memory qelem = proof.q[i];
+      bytes32 namei = sha256(abi.encodePacked(proof.name, qelem.i));
+      // Step 4: arbitraty string to point and check if it is on curve
+      // uint256 hPointX = abi.encodePacked(namei);
+      Types.G1Point memory h = _hashToPoint(abi.encodePacked(namei));
+      // TODO: Where does 255 get used???
+      Types.G1Point memory prod = _multiply(h, uint256(qelem.v));
+      first = _add(first, prod);
+      require(_isOnCurve(first), "must be on Bn254 curve");
     }
-    // y^2
-    uint256 lhs = mulmod(g1.Y, g1.Y, pp);
-    // x^3
-    uint256 rhs = mulmod(mulmod(g1.X, g1.X, pp), g1.X, pp);
-    if (aa != 0) {
-      // x^3 + a*x
-      rhs = addmod(rhs, mulmod(g1.X, aa, pp), pp);
-    }
-    if (bb != 0) {
-      // x^3 + a*x + b
-      rhs = addmod(rhs, bb, pp);
+    // let us = tau.t.u
+    // var second: blst_p1
+    // for j in 0 ..< len(us) :
+    //   var prod: blst_p1
+    //   prod.blst_p1_mult(us[j], mus[j], 255)
+    //   second.blst_p1_add_or_double(second, prod)
+    //   doAssert(blst_p1_on_curve(second).bool)
+    Types.G1Point[] memory us = proof.u;
+    Types.G1Point memory second;
+    for (uint256 j = 0; j<us.length; j++) {
+      // TODO: Where does 255 get used???
+      Types.G1Point memory prod = _multiply(us[j], proof.mus[j]);
+      second = _add(second, prod);
+      require(_isOnCurve(second), "must be on Bn254 curve");
     }
 
-    return lhs == rhs;
+    // var sum: blst_p1
+    // sum.blst_p1_add_or_double(first, second)
+    Types.G1Point memory sum = _add(first, second);
+
+    // var g{.noInit.}: blst_p2
+    // g.blst_p2_from_affine(BLS12_381_G2)
+    // TODO: do we need to convert Bn254._p2Generator() to/from affine???
+
+    // return verifyPairings(sum, spk.key, sigma, g)
+    return Bn254._checkPairing(sum, proof.publicKey, proof.sigma, Bn254._p2Generator());
+
   }
 }

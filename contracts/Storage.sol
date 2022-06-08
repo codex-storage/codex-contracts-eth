@@ -86,7 +86,7 @@ contract Storage is Collateral, Marketplace, Proofs {
     return _getPointer(id);
   }
 
-  function submitProof(bytes32 contractId, Verifier.Proof calldata proof) public {
+  function submitProof(bytes32 contractId, Types.Proof calldata proof) public {
     _submitProof(contractId, proof);
   }
 

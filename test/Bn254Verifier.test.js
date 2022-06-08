@@ -29,20 +29,20 @@ describe("Bn254Verifier", function () {
         { i: -3, v: 3 },
       ],
       mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
-      sigma: { X: 1, Y: 2 },
+      sigma: { x: 1, y: 2 },
       u: [
-        { X: 1, Y: 2 },
-        { X: 2, Y: 2 },
-        { X: 3, Y: 3 },
+        { x: 1, y: 2 },
+        { x: 2, y: 2 },
+        { x: 3, y: 3 },
       ],
       name: ethers.utils.toUtf8Bytes("test"),
       publicKey: {
-        X: [1, 2],
-        Y: [1, 2],
+        x: [1, 2],
+        y: [1, 2],
       },
     }
     await expect(verifier.verifyProof(proof)).to.be.revertedWith(
-      "must be on Bn254 curve"
+      "elliptic curve multiplication failed"
     )
   })
 })
