@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-
+// taken from: https://github.com/witnet/bls-solidity/blob/master/contracts/BN256G1.sol
+// Adapated to use a higher compiler version.
 pragma solidity >=0.8.0 <=0.8.13;
 
 import "../../elliptic-curve-solidity/contracts/EllipticCurve.sol";

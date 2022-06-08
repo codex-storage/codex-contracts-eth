@@ -181,7 +181,26 @@ describe("Proofs", function () {
     })
 
     it("fails proof submission when proof is incorrect", async function () {
-      await expect(proofs.submitProof(id, [])).to.be.revertedWith(
+      let proof = {
+        q: [
+          { i: -1, v: 1 },
+          { i: -2, v: 2 },
+          { i: -3, v: 3 },
+        ],
+        mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+        sigma: { x: 1, y: 2 },
+        u: [
+          { x: 1, y: 2 },
+          { x: 2, y: 2 },
+          { x: 3, y: 3 },
+        ],
+        name: ethers.utils.toUtf8Bytes("test"),
+        publicKey: {
+          x: [1, 2],
+          y: [1, 2],
+        },
+      }
+      await expect(proofs.submitProof(id, proof)).to.be.revertedWith(
         "Invalid proof"
       )
     })
@@ -194,6 +213,25 @@ describe("Proofs", function () {
 
     it("fails proof submission when already submitted", async function () {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      let proof = {
+        q: [
+          { i: -1, v: 1 },
+          { i: -2, v: 2 },
+          { i: -3, v: 3 },
+        ],
+        mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+        sigma: { x: 1, y: 2 },
+        u: [
+          { x: 1, y: 2 },
+          { x: 2, y: 2 },
+          { x: 3, y: 3 },
+        ],
+        name: ethers.utils.toUtf8Bytes("test"),
+        publicKey: {
+          x: [1, 2],
+          y: [1, 2],
+        },
+      }
       await proofs.submitProof(id, proof)
       await expect(proofs.submitProof(id, proof)).to.be.revertedWith(
         "Proof already submitted"
@@ -229,6 +267,25 @@ describe("Proofs", function () {
     it("does not mark a submitted proof as missing", async function () {
       await waitUntilProofIsRequired(id)
       let submittedPeriod = periodOf(await currentTime())
+      let proof = {
+        q: [
+          { i: -1, v: 1 },
+          { i: -2, v: 2 },
+          { i: -3, v: 3 },
+        ],
+        mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+        sigma: { x: 1, y: 2 },
+        u: [
+          { x: 1, y: 2 },
+          { x: 2, y: 2 },
+          { x: 3, y: 3 },
+        ],
+        name: ethers.utils.toUtf8Bytes("test"),
+        publicKey: {
+          x: [1, 2],
+          y: [1, 2],
+        },
+      }
       await proofs.submitProof(id, proof)
       await advanceTimeTo(periodEnd(submittedPeriod))
       await expect(
