@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <=0.8.13;
 
-import "./curves/Bn254Proofs.sol";
+import "./ecc/verifiers/Bn254Verifier.sol";
+import "./ecc/Verifier.sol";
 
 contract Proofs {
+  using Bn254Verifier for Verifier.Proof;
+
   uint256 private immutable period;
   uint256 private immutable timeout;
   uint8 private immutable downtime;
@@ -131,8 +134,8 @@ contract Proofs {
     return _isProofRequired(id, currentPeriod());
   }
 
-  function _submitProof(bytes32 id, bytes calldata proof) internal {
-    require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
+  function _submitProof(bytes32 id, Verifier.Proof calldata proof) internal {
+    require(proof._verifyProof(), "Invalid proof");
     require(!received[id][currentPeriod()], "Proof already submitted");
     received[id][currentPeriod()] = true;
     emit ProofSubmitted(id, proof);

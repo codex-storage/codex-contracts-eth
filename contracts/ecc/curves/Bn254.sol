@@ -4,6 +4,8 @@
 
 pragma solidity >=0.8.0 <=0.8.13;
 
+import "../Curve.sol";
+
 library Bn254 {
   // p = p(u) = 36u^4 + 36u^3 + 24u^2 + 6u + 1
   uint256 internal constant FIELD_ORDER =
@@ -20,16 +22,16 @@ library Bn254 {
   uint256 internal constant CURVE_A =
     0xc19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52;
 
-  struct G1Point {
-    uint256 X;
-    uint256 Y;
-  }
+  // struct Curve.G1Point {
+  //   uint256 X;
+  //   uint256 Y;
+  // }
 
-  // Encoding of field elements is: X[0] * z + X[1]
-  struct G2Point {
-    uint256[2] X;
-    uint256[2] Y;
-  }
+  // // Encoding of field elements is: X[0] * z + X[1]
+  // struct Curve.G2Point {
+  //   uint256[2] X;
+  //   uint256[2] Y;
+  // }
 
   // (P+1) / 4
   function A() internal pure returns (uint256) {
@@ -49,11 +51,11 @@ library Bn254 {
   }
 
   /// @return the generator of G1
-  function P1() internal pure returns (G1Point memory) {
-    return G1Point(1, 2);
+  function P1() internal pure returns (Curve.G1Point memory) {
+    return Curve.G1Point(1, 2);
   }
 
-  function HashToPoint(uint256 s) internal view returns (G1Point memory g) {
+  function HashToPoint(uint256 s) internal view returns (Curve.G1Point memory g) {
     uint256 beta = 0;
     uint256 y = 0;
 
@@ -65,7 +67,7 @@ library Bn254 {
 
       // y^2 == beta
       if (beta == mulmod(y, y, FIELD_ORDER)) {
-        return G1Point(x, y);
+        return Curve.G1Point(x, y);
       }
 
       x = addmod(x, 1, FIELD_ORDER);
@@ -134,9 +136,9 @@ library Bn254 {
   }
 
   /// @return the generator of G2
-  function P2() internal pure returns (G2Point memory) {
+  function P2() internal pure returns (Curve.G2Point memory) {
     return
-      G2Point(
+      Curve.G2Point(
         [
           11559732032986387107991004021392285783925812861821192530917403151452391805634,
           10857046999023057135944570762232829481370756359578518086990519993285655852781
@@ -149,18 +151,18 @@ library Bn254 {
   }
 
   /// @return the negation of p, i.e. p.add(p.negate()) should be zero.
-  function g1neg(G1Point memory p) internal pure returns (G1Point memory) {
+  function g1neg(Curve.G1Point memory p) internal pure returns (Curve.G1Point memory) {
     // The prime q in the base field F_q for G1
     uint256 q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
-    if (p.X == 0 && p.Y == 0) return G1Point(0, 0);
-    return G1Point(p.X, q - (p.Y % q));
+    if (p.X == 0 && p.Y == 0) return Curve.G1Point(0, 0);
+    return Curve.G1Point(p.X, q - (p.Y % q));
   }
 
   /// @return r the sum of two points of G1
-  function g1add(G1Point memory p1, G1Point memory p2)
+  function g1add(Curve.G1Point memory p1, Curve.G1Point memory p2)
     internal
     view
-    returns (G1Point memory r)
+    returns (Curve.G1Point memory r)
   {
     uint256[4] memory input;
     input[0] = p1.X;
@@ -181,10 +183,10 @@ library Bn254 {
 
   /// @return r the product of a point on G1 and a scalar, i.e.
   /// p == p.mul(1) and p.add(p) == p.mul(2) for all points p.
-  function g1mul(G1Point memory p, uint256 s)
+  function g1mul(Curve.G1Point memory p, uint256 s)
     internal
     view
-    returns (G1Point memory r)
+    returns (Curve.G1Point memory r)
   {
     uint256[3] memory input;
     input[0] = p.X;
@@ -206,7 +208,7 @@ library Bn254 {
   /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
   /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
   /// return true.
-  function pairing(G1Point[] memory p1, G2Point[] memory p2)
+  function pairing(Curve.G1Point[] memory p1, Curve.G2Point[] memory p2)
     internal
     view
     returns (bool)
@@ -246,13 +248,13 @@ library Bn254 {
 
   /// Convenience method for a pairing check for two pairs.
   function pairingProd2(
-    G1Point memory a1,
-    G2Point memory a2,
-    G1Point memory b1,
-    G2Point memory b2
+    Curve.G1Point memory a1,
+    Curve.G2Point memory a2,
+    Curve.G1Point memory b1,
+    Curve.G2Point memory b2
   ) internal view returns (bool) {
-    G1Point[] memory p1 = new G1Point[](2);
-    G2Point[] memory p2 = new G2Point[](2);
+    Curve.G1Point[] memory p1 = new Curve.G1Point[](2);
+    Curve.G2Point[] memory p2 = new Curve.G2Point[](2);
     p1[0] = a1;
     p1[1] = b1;
     p2[0] = a2;
@@ -262,15 +264,15 @@ library Bn254 {
 
   /// Convenience method for a pairing check for three pairs.
   function pairingProd3(
-    G1Point memory a1,
-    G2Point memory a2,
-    G1Point memory b1,
-    G2Point memory b2,
-    G1Point memory c1,
-    G2Point memory c2
+    Curve.G1Point memory a1,
+    Curve.G2Point memory a2,
+    Curve.G1Point memory b1,
+    Curve.G2Point memory b2,
+    Curve.G1Point memory c1,
+    Curve.G2Point memory c2
   ) internal view returns (bool) {
-    G1Point[] memory p1 = new G1Point[](3);
-    G2Point[] memory p2 = new G2Point[](3);
+    Curve.G1Point[] memory p1 = new Curve.G1Point[](3);
+    Curve.G2Point[] memory p2 = new Curve.G2Point[](3);
     p1[0] = a1;
     p1[1] = b1;
     p1[2] = c1;
@@ -282,17 +284,17 @@ library Bn254 {
 
   /// Convenience method for a pairing check for four pairs.
   function pairingProd4(
-    G1Point memory a1,
-    G2Point memory a2,
-    G1Point memory b1,
-    G2Point memory b2,
-    G1Point memory c1,
-    G2Point memory c2,
-    G1Point memory d1,
-    G2Point memory d2
+    Curve.G1Point memory a1,
+    Curve.G2Point memory a2,
+    Curve.G1Point memory b1,
+    Curve.G2Point memory b2,
+    Curve.G1Point memory c1,
+    Curve.G2Point memory c2,
+    Curve.G1Point memory d1,
+    Curve.G2Point memory d2
   ) internal view returns (bool) {
-    G1Point[] memory p1 = new G1Point[](4);
-    G2Point[] memory p2 = new G2Point[](4);
+    Curve.G1Point[] memory p1 = new Curve.G1Point[](4);
+    Curve.G2Point[] memory p2 = new Curve.G2Point[](4);
     p1[0] = a1;
     p1[1] = b1;
     p1[2] = c1;
@@ -304,7 +306,7 @@ library Bn254 {
     return pairing(p1, p2);
   }
 
-  function isOnCurve(Bn254.G1Point memory g1) internal pure returns (bool) {
+  function isOnCurve(Curve.G1Point memory g1) internal pure returns (bool) {
     uint256 aa = Bn254.A();
     uint256 bb = Bn254.B();
     uint256 pp = Bn254.P();
