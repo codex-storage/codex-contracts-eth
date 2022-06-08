@@ -1,15 +1,10 @@
-// This file is MIT Licensed.
+// SPDX-License-Identifier: MIT
 //
-// From: https://gist.githubusercontent.com/chriseth/f9be9d9391efc5beb9704255a8e2989d/raw/4d0fb90847df1d4e04d507019031888df8372239/snarktest.solidity
-//
-// Copyright 2017 Christian Reitwiessner
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// From: https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
 
-pragma solidity >=0.6.0 <=0.8.13;
+pragma solidity >=0.8.0 <=0.8.13;
 
-library Curve {
+library Bn254 {
   // p = p(u) = 36u^4 + 36u^3 + 24u^2 + 6u + 1
   uint256 internal constant FIELD_ORDER =
     0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47;
@@ -58,7 +53,7 @@ library Curve {
     return G1Point(1, 2);
   }
 
-  function HashToPoint(uint256 s) internal view returns (G1Point memory) {
+  function HashToPoint(uint256 s) internal view returns (G1Point memory g) {
     uint256 beta = 0;
     uint256 y = 0;
 
@@ -154,9 +149,7 @@ library Curve {
   }
 
   /// @return the negation of p, i.e. p.add(p.negate()) should be zero.
-  function g1neg(G1Point memory p)
-    internal pure returns (G1Point memory)
-  {
+  function g1neg(G1Point memory p) internal pure returns (G1Point memory) {
     // The prime q in the base field F_q for G1
     uint256 q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
     if (p.X == 0 && p.Y == 0) return G1Point(0, 0);
@@ -165,7 +158,9 @@ library Curve {
 
   /// @return r the sum of two points of G1
   function g1add(G1Point memory p1, G1Point memory p2)
-    internal view returns (G1Point memory r)
+    internal
+    view
+    returns (G1Point memory r)
   {
     uint256[4] memory input;
     input[0] = p1.X;
@@ -187,7 +182,9 @@ library Curve {
   /// @return r the product of a point on G1 and a scalar, i.e.
   /// p == p.mul(1) and p.add(p) == p.mul(2) for all points p.
   function g1mul(G1Point memory p, uint256 s)
-    internal view returns (G1Point memory r)
+    internal
+    view
+    returns (G1Point memory r)
   {
     uint256[3] memory input;
     input[0] = p.X;
@@ -305,5 +302,31 @@ library Curve {
     p2[2] = c2;
     p2[3] = d2;
     return pairing(p1, p2);
+  }
+
+  function isOnCurve(Bn254.G1Point memory g1) internal pure returns (bool) {
+    uint256 aa = Bn254.A();
+    uint256 bb = Bn254.B();
+    uint256 pp = Bn254.P();
+
+    // Implementation borrowed from the witnet/elliptic-curve-solidity lib:
+    // https://github.com/witnet/elliptic-curve-solidity/blob/b6886bb08333ccf6883ac42827d62c1bfdb37d44/contracts/EllipticCurve.sol#L113-L145
+    if (0 == g1.X || g1.X == pp || 0 == g1.Y || g1.Y == pp) {
+      return false;
+    }
+    // y^2
+    uint256 lhs = mulmod(g1.Y, g1.Y, pp);
+    // x^3
+    uint256 rhs = mulmod(mulmod(g1.X, g1.X, pp), g1.X, pp);
+    if (aa != 0) {
+      // x^3 + a*x
+      rhs = addmod(rhs, mulmod(g1.X, aa, pp), pp);
+    }
+    if (bb != 0) {
+      // x^3 + a*x + b
+      rhs = addmod(rhs, bb, pp);
+    }
+
+    return lhs == rhs;
   }
 }
