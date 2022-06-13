@@ -3,16 +3,24 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Collateral.sol";
+import "./Proofs.sol";
 
-contract Marketplace is Collateral {
+contract Marketplace is Collateral, Proofs {
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
   mapping(bytes32 => RequestState) private requestState;
   mapping(bytes32 => Offer) private offers;
 
-  constructor(IERC20 _token, uint256 _collateral)
+  constructor(
+    IERC20 _token,
+    uint256 _collateral,
+    uint256 _proofPeriod,
+    uint256 _proofTimeout,
+    uint8 _proofDowntime
+  )
     Collateral(_token)
+    Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
     marketplaceInvariant
   {
     collateral = _collateral;
@@ -36,6 +44,26 @@ contract Marketplace is Collateral {
     transferFrom(msg.sender, request.ask.maxPrice);
 
     emit StorageRequested(id, request.ask);
+  }
+
+  function fulfillRequest(bytes32 requestId, bytes calldata proof)
+    public
+    marketplaceInvariant
+  {
+    RequestState storage state = requestState[requestId];
+    require(!state.fulfilled, "Request already fulfilled");
+
+    Request storage request = requests[requestId];
+    require(request.client != address(0), "Unknown request");
+    require(request.expiry > block.timestamp, "Request expired");
+
+    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
+    _lock(msg.sender, requestId);
+
+    _submitProof(requestId, proof);
+
+    state.fulfilled = true;
+    emit RequestFulfilled(requestId);
   }
 
   function offerStorage(Offer calldata offer) public marketplaceInvariant {
@@ -129,6 +157,7 @@ contract Marketplace is Collateral {
   }
 
   struct RequestState {
+    bool fulfilled;
     bytes32 selectedOffer;
   }
 
@@ -140,6 +169,7 @@ contract Marketplace is Collateral {
   }
 
   event StorageRequested(bytes32 requestId, Ask ask);
+  event RequestFulfilled(bytes32 indexed requestId);
   event StorageOffered(bytes32 offerId, Offer offer, bytes32 indexed requestId);
   event OfferSelected(bytes32 offerId, bytes32 indexed requestId);
 

@@ -5,7 +5,7 @@ import "./Marketplace.sol";
 import "./Proofs.sol";
 import "./Collateral.sol";
 
-contract Storage is Collateral, Marketplace, Proofs {
+contract Storage is Collateral, Marketplace {
   uint256 public collateralAmount;
   uint256 public slashMisses;
   uint256 public slashPercentage;
@@ -21,8 +21,13 @@ contract Storage is Collateral, Marketplace, Proofs {
     uint256 _slashMisses,
     uint256 _slashPercentage
   )
-    Marketplace(token, _collateralAmount)
-    Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
+    Marketplace(
+      token,
+      _collateralAmount,
+      _proofPeriod,
+      _proofTimeout,
+      _proofDowntime
+    )
   {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
