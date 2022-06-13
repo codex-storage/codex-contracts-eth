@@ -10,7 +10,7 @@ contract Storage is Collateral, Marketplace {
   uint256 public slashMisses;
   uint256 public slashPercentage;
 
-  mapping(bytes32 => ContractState) private contractState;
+  mapping(bytes32 => bool) private contractFinished;
 
   constructor(
     IERC20 token,
@@ -38,25 +38,15 @@ contract Storage is Collateral, Marketplace {
     return _request(id);
   }
 
-  function getOffer(bytes32 id) public view returns (Offer memory) {
-    return _offer(id);
-  }
-
-  function startContract(bytes32 id) public {
-    Offer storage offer = _offer(id);
-    require(msg.sender == offer.host, "Only host can call this function");
-    require(_selectedOffer(offer.requestId) == id, "Offer was not selected");
-    contractState[id] = ContractState.started;
-    Request storage request = _request(offer.requestId);
-    _expectProofs(id, request.ask.proofProbability, request.ask.duration);
-  }
-
   function finishContract(bytes32 id) public {
-    require(contractState[id] == ContractState.started, "Contract not started");
+    require(_host(id) != address(0), "Contract not started");
+    require(!contractFinished[id], "Contract already finished");
     require(block.timestamp > proofEnd(id), "Contract has not ended yet");
-    contractState[id] = ContractState.finished;
-    Offer storage offer = _offer(id);
-    require(token.transfer(offer.host, offer.price), "Payment failed");
+    contractFinished[id] = true;
+    require(
+      token.transfer(_host(id), _request(id).ask.maxPrice),
+      "Payment failed"
+    );
   }
 
   function missingProofs(bytes32 contractId) public view returns (uint256) {
@@ -86,14 +76,7 @@ contract Storage is Collateral, Marketplace {
   function markProofAsMissing(bytes32 contractId, uint256 period) public {
     _markProofAsMissing(contractId, period);
     if (_missed(contractId) % slashMisses == 0) {
-      Offer storage offer = _offer(contractId);
-      _slash(offer.host, slashPercentage);
+      _slash(_host(contractId), slashPercentage);
     }
-  }
-
-  enum ContractState {
-    none,
-    started,
-    finished
   }
 }

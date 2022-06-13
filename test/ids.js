@@ -11,15 +11,6 @@ function requestId(request) {
   return keccak256(defaultAbiCoder.encode([Request], requestToArray(request)))
 }
 
-function offerId(offer) {
-  return keccak256(
-    defaultAbiCoder.encode(
-      ["address", "bytes32", "uint256", "uint256"],
-      offerToArray(offer)
-    )
-  )
-}
-
 function askToArray(ask) {
   return [ask.size, ask.duration, ask.proofProbability, ask.maxPrice]
 }
@@ -48,14 +39,8 @@ function requestToArray(request) {
   ]
 }
 
-function offerToArray(offer) {
-  return [offer.host, offer.requestId, offer.price, offer.expiry]
-}
-
 module.exports = {
   requestId,
-  offerId,
   requestToArray,
   askToArray,
-  offerToArray,
 }

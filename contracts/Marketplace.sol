@@ -10,7 +10,6 @@ contract Marketplace is Collateral, Proofs {
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
   mapping(bytes32 => RequestState) private requestState;
-  mapping(bytes32 => Offer) private offers;
 
   constructor(
     IERC20 _token,
@@ -51,7 +50,7 @@ contract Marketplace is Collateral, Proofs {
     marketplaceInvariant
   {
     RequestState storage state = requestState[requestId];
-    require(!state.fulfilled, "Request already fulfilled");
+    require(state.host == address(0), "Request already fulfilled");
 
     Request storage request = requests[requestId];
     require(request.client != address(0), "Unknown request");
@@ -67,65 +66,16 @@ contract Marketplace is Collateral, Proofs {
     );
     _submitProof(requestId, proof);
 
-    state.fulfilled = true;
+    state.host = msg.sender;
     emit RequestFulfilled(requestId);
   }
 
-  function offerStorage(Offer calldata offer) public marketplaceInvariant {
-    require(offer.host == msg.sender, "Invalid host address");
-    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
-
-    Request storage request = requests[offer.requestId];
-    require(request.client != address(0), "Unknown request");
-    require(request.expiry > block.timestamp, "Request expired");
-
-    require(offer.price <= request.ask.maxPrice, "Price too high");
-
-    bytes32 id = keccak256(abi.encode(offer));
-    require(offers[id].host == address(0), "Offer already exists");
-
-    offers[id] = offer;
-
-    _lock(msg.sender, offer.requestId);
-
-    emit StorageOffered(id, offer, offer.requestId);
-  }
-
-  function selectOffer(bytes32 id) public marketplaceInvariant {
-    Offer storage offer = offers[id];
-    require(offer.host != address(0), "Unknown offer");
-    require(offer.expiry > block.timestamp, "Offer expired");
-
-    Request storage request = requests[offer.requestId];
-    require(request.client == msg.sender, "Only client can select offer");
-
-    RequestState storage state = requestState[offer.requestId];
-    require(state.selectedOffer == bytes32(0), "Offer already selected");
-
-    state.selectedOffer = id;
-
-    _createLock(id, offer.expiry);
-    _lock(offer.host, id);
-    _unlock(offer.requestId);
-
-    uint256 difference = request.ask.maxPrice - offer.price;
-    funds.sent += difference;
-    funds.balance -= difference;
-    token.transfer(request.client, difference);
-
-    emit OfferSelected(id, offer.requestId);
+  function _host(bytes32 requestId) internal view returns (address) {
+    return requestState[requestId].host;
   }
 
   function _request(bytes32 id) internal view returns (Request storage) {
     return requests[id];
-  }
-
-  function _offer(bytes32 id) internal view returns (Offer storage) {
-    return offers[id];
-  }
-
-  function _selectedOffer(bytes32 requestId) internal view returns (bytes32) {
-    return requestState[requestId].selectedOffer;
   }
 
   function proofPeriod() public view returns (uint256) {
@@ -174,21 +124,11 @@ contract Marketplace is Collateral, Proofs {
   }
 
   struct RequestState {
-    bool fulfilled;
-    bytes32 selectedOffer;
-  }
-
-  struct Offer {
     address host;
-    bytes32 requestId;
-    uint256 price;
-    uint256 expiry;
   }
 
   event StorageRequested(bytes32 requestId, Ask ask);
   event RequestFulfilled(bytes32 indexed requestId);
-  event StorageOffered(bytes32 offerId, Offer offer, bytes32 indexed requestId);
-  event OfferSelected(bytes32 offerId, bytes32 indexed requestId);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;
