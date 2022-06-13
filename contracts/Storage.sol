@@ -44,7 +44,7 @@ contract Storage is Collateral, Marketplace {
     require(block.timestamp > proofEnd(id), "Contract has not ended yet");
     contractFinished[id] = true;
     require(
-      token.transfer(_host(id), _request(id).ask.maxPrice),
+      token.transfer(_host(id), _request(id).ask.reward),
       "Payment failed"
     );
   }

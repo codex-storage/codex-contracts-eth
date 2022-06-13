@@ -8,7 +8,7 @@ const exampleRequest = () => ({
     size: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
     duration: hours(10),
     proofProbability: 4, // require a proof roughly once every 4 periods
-    maxPrice: 84,
+    reward: 84,
   },
   content: {
     cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
