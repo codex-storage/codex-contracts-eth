@@ -1,11 +1,16 @@
 const { ethers } = require("hardhat")
+const { hexlify, randomBytes } = ethers.utils
 const { expect } = require("chai")
 const { exampleRequest, exampleOffer } = require("./examples")
+const { snapshot, revert, ensureMinimumBlockHeight } = require("./evm")
 const { now, hours } = require("./time")
 const { requestId, offerId, offerToArray, askToArray } = require("./ids")
 
 describe("Marketplace", function () {
   const collateral = 100
+  const proofPeriod = 30 * 60
+  const proofTimeout = 5
+  const proofDowntime = 64
 
   let marketplace
   let token
@@ -13,6 +18,8 @@ describe("Marketplace", function () {
   let request, offer
 
   beforeEach(async function () {
+    await snapshot()
+    await ensureMinimumBlockHeight(256)
     ;[client, host1, host2, host3] = await ethers.getSigners()
     host = host1
 
@@ -23,7 +30,13 @@ describe("Marketplace", function () {
     }
 
     const Marketplace = await ethers.getContractFactory("Marketplace")
-    marketplace = await Marketplace.deploy(token.address, collateral)
+    marketplace = await Marketplace.deploy(
+      token.address,
+      collateral,
+      proofPeriod,
+      proofTimeout,
+      proofDowntime
+    )
 
     request = exampleRequest()
     request.client = client.address
@@ -31,6 +44,10 @@ describe("Marketplace", function () {
     offer = exampleOffer()
     offer.host = host.address
     offer.requestId = requestId(request)
+  })
+
+  afterEach(async function () {
+    await revert()
   })
 
   function switchAccount(account) {
@@ -72,6 +89,72 @@ describe("Marketplace", function () {
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Request already exists"
       )
+    })
+  })
+
+  describe("fulfilling request", function () {
+    const proof = hexlify(randomBytes(42))
+
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, request.ask.maxPrice)
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("emits event when request is fulfilled", async function () {
+      await expect(marketplace.fulfillRequest(requestId(request), proof))
+        .to.emit(marketplace, "RequestFulfilled")
+        .withArgs(requestId(request))
+    })
+
+    it("locks collateral of host", async function () {
+      await marketplace.fulfillRequest(requestId(request), proof)
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+    })
+
+    it("is rejected when proof is incorrect", async function () {
+      let invalid = hexlify([])
+      await expect(
+        marketplace.fulfillRequest(requestId(request), invalid)
+      ).to.be.revertedWith("Invalid proof")
+    })
+
+    it("is rejected when collateral is insufficient", async function () {
+      let insufficient = collateral - 1
+      await marketplace.withdraw()
+      await token.approve(marketplace.address, insufficient)
+      await marketplace.deposit(insufficient)
+      await expect(
+        marketplace.fulfillRequest(requestId(request), proof)
+      ).to.be.revertedWith("Insufficient collateral")
+    })
+
+    it("is rejected when request already fulfilled", async function () {
+      await marketplace.fulfillRequest(requestId(request), proof)
+      await expect(
+        marketplace.fulfillRequest(requestId(request), proof)
+      ).to.be.revertedWith("Request already fulfilled")
+    })
+
+    it("is rejected when request is unknown", async function () {
+      let unknown = exampleRequest()
+      await expect(
+        marketplace.fulfillRequest(requestId(unknown), proof)
+      ).to.be.revertedWith("Unknown request")
+    })
+
+    it("is rejected when request is expired", async function () {
+      switchAccount(client)
+      let expired = { ...request, expiry: now() - hours(1) }
+      await token.approve(marketplace.address, request.ask.maxPrice)
+      await marketplace.requestStorage(expired)
+      switchAccount(host)
+      await expect(
+        marketplace.fulfillRequest(requestId(expired), proof)
+      ).to.be.revertedWith("Request expired")
     })
   })
 
