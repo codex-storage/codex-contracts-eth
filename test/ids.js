@@ -12,7 +12,7 @@ function requestId(request) {
 }
 
 function askToArray(ask) {
-  return [ask.size, ask.duration, ask.proofProbability, ask.maxPrice]
+  return [ask.size, ask.duration, ask.proofProbability, ask.reward]
 }
 
 function erasureToArray(erasure) {

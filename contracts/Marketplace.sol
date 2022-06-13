@@ -38,9 +38,9 @@ contract Marketplace is Collateral, Proofs {
 
     _createLock(id, request.expiry);
 
-    funds.received += request.ask.maxPrice;
-    funds.balance += request.ask.maxPrice;
-    transferFrom(msg.sender, request.ask.maxPrice);
+    funds.received += request.ask.reward;
+    funds.balance += request.ask.reward;
+    transferFrom(msg.sender, request.ask.reward);
 
     emit StorageRequested(id, request.ask);
   }
@@ -102,7 +102,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 size; // size of requested storage in number of bytes
     uint256 duration; // how long content should be stored (in seconds)
     uint256 proofProbability; // how often storage proofs are required
-    uint256 maxPrice; // maximum price client will pay (in number of tokens)
+    uint256 reward; // reward that the client will pay (in number of tokens)
   }
 
   struct Content {

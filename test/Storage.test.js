@@ -40,7 +40,7 @@ describe("Storage", function () {
     id = requestId(request)
 
     switchAccount(client)
-    await token.approve(storage.address, request.ask.maxPrice)
+    await token.approve(storage.address, request.ask.reward)
     await storage.requestStorage(request)
     switchAccount(host)
     await token.approve(storage.address, collateralAmount)
@@ -74,7 +74,7 @@ describe("Storage", function () {
       const startBalance = await token.balanceOf(host.address)
       await storage.finishContract(id)
       const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - startBalance).to.equal(request.ask.maxPrice)
+      expect(endBalance - startBalance).to.equal(request.ask.reward)
     })
 
     it("is only allowed when the contract has started", async function () {
