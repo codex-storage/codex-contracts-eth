@@ -27,21 +27,9 @@ const exampleRequest = () => ({
   nonce: hexlify(randomBytes(32)),
 })
 
-const exampleBid = () => ({
-  price: 42,
-  bidExpiry: now() + hours(1),
-})
-
-const exampleOffer = () => ({
-  requestId: hexlify(randomBytes(32)),
-  host: hexlify(randomBytes(20)),
-  price: 42,
-  expiry: now() + hours(1),
-})
-
 const exampleLock = () => ({
   id: hexlify(randomBytes(32)),
   expiry: now() + hours(1),
 })
 
-module.exports = { exampleRequest, exampleOffer, exampleBid, exampleLock }
+module.exports = { exampleRequest, exampleLock }

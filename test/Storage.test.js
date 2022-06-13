@@ -1,15 +1,18 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
-const { exampleRequest, exampleOffer } = require("./examples")
+const { hexlify, randomBytes } = ethers.utils
+const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
-const { requestId, offerId } = require("./ids")
+const { requestId } = require("./ids")
 const { periodic } = require("./time")
 
 describe("Storage", function () {
+  const proof = hexlify(randomBytes(42))
+
   let storage
   let token
   let client, host
-  let request, offer
+  let request
   let collateralAmount, slashMisses, slashPercentage
   let id
 
@@ -34,10 +37,7 @@ describe("Storage", function () {
 
     request = exampleRequest()
     request.client = client.address
-
-    offer = exampleOffer()
-    offer.host = host.address
-    offer.requestId = requestId(request)
+    id = requestId(request)
 
     switchAccount(client)
     await token.approve(storage.address, request.ask.maxPrice)
@@ -45,10 +45,6 @@ describe("Storage", function () {
     switchAccount(host)
     await token.approve(storage.address, collateralAmount)
     await storage.deposit(collateralAmount)
-    await storage.offerStorage(offer)
-    switchAccount(client)
-    await storage.selectOffer(offerId(offer))
-    id = offerId(offer)
   })
 
   it("can retrieve storage requests", async function () {
@@ -59,69 +55,26 @@ describe("Storage", function () {
     expect(retrieved.nonce).to.equal(request.nonce)
   })
 
-  it("can retrieve storage offers", async function () {
-    const id = offerId(offer)
-    const retrieved = await storage.getOffer(id)
-    expect(retrieved.requestId).to.equal(offer.requestId)
-    expect(retrieved.host).to.equal(offer.host)
-    expect(retrieved.price).to.equal(offer.price)
-    expect(retrieved.expiry).to.equal(offer.expiry)
-  })
-
-  describe("starting the contract", function () {
-    it("starts requiring storage proofs", async function () {
-      switchAccount(host)
-      await storage.startContract(id)
-      expect(await storage.proofEnd(id)).to.be.gt(0)
-    })
-
-    it("can only be done by the host", async function () {
-      switchAccount(client)
-      await expect(storage.startContract(id)).to.be.revertedWith(
-        "Only host can call this function"
-      )
-    })
-
-    it("can only be done once", async function () {
-      switchAccount(host)
-      await storage.startContract(id)
-      await expect(storage.startContract(id)).to.be.reverted
-    })
-
-    it("can only be done for a selected offer", async function () {
-      switchAccount(host)
-      const differentOffer = { ...offer, price: offer.price * 2 }
-      await storage.offerStorage(differentOffer)
-      await expect(
-        storage.startContract(offerId(differentOffer))
-      ).to.be.revertedWith("Offer was not selected")
-    })
-  })
-
   describe("finishing the contract", function () {
-    beforeEach(async function () {
-      switchAccount(host)
-    })
-
     async function waitUntilEnd() {
       const end = (await storage.proofEnd(id)).toNumber()
       await advanceTimeTo(end)
     }
 
     it("unlocks the host collateral", async function () {
-      await storage.startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       await waitUntilEnd()
       await storage.finishContract(id)
       await expect(storage.withdraw()).not.to.be.reverted
     })
 
     it("pays the host", async function () {
-      await storage.startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       await waitUntilEnd()
       const startBalance = await token.balanceOf(host.address)
       await storage.finishContract(id)
       const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - startBalance).to.equal(offer.price)
+      expect(endBalance - startBalance).to.equal(request.ask.maxPrice)
     })
 
     it("is only allowed when the contract has started", async function () {
@@ -131,24 +84,24 @@ describe("Storage", function () {
     })
 
     it("is only allowed when end time has passed", async function () {
-      await storage.startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       await expect(storage.finishContract(id)).to.be.revertedWith(
         "Contract has not ended yet"
       )
     })
 
     it("can only be done once", async function () {
-      await storage.startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       await waitUntilEnd()
       await storage.finishContract(id)
       await expect(storage.finishContract(id)).to.be.reverted
     })
 
     it("can not be restarted", async function () {
-      await storage.startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       await waitUntilEnd()
       await storage.finishContract(id)
-      await expect(storage.startContract(id)).to.be.reverted
+      await expect(storage.fulfillRequest(id, proof)).to.be.reverted
     })
   })
 
@@ -156,7 +109,6 @@ describe("Storage", function () {
     let period, periodOf, periodEnd
 
     beforeEach(async function () {
-      switchAccount(host)
       period = (await storage.proofPeriod()).toNumber()
       ;({ periodOf, periodEnd } = periodic(period))
     })
@@ -174,7 +126,7 @@ describe("Storage", function () {
     }
 
     it("reduces collateral when too many proofs are missing", async function () {
-      await storage.connect(host).startContract(id)
+      await storage.fulfillRequest(requestId(request), proof)
       for (let i = 0; i < slashMisses; i++) {
         await waitUntilProofIsRequired()
         let missedPeriod = periodOf(await currentTime())
@@ -187,7 +139,6 @@ describe("Storage", function () {
   })
 })
 
-// TODO: failure to start contract burns host and client
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
 // TODO: allow other host to take over contract when too many missed proofs
 // TODO: small partial payouts when proofs are being submitted
