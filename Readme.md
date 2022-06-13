@@ -36,42 +36,34 @@ When all goes well, the client and host perform the following steps:
       |                                            |
       | --------------- request (1) -------------> |
       |                                            |
-      |                     | ---- offer (2) ----> |
-      |                                            |
-      | ------------- select offer (3) ----------> |
-      |                                            |
-      | ----- data (4) ---> |                      |
+      | ----- data (2) ---> |                      |
+      |                     |                      |
+                            | --- fulfill (3) ---> |
                             |                      |
-                            | ---- start (5) ----> |
+                            | ---- proof (4) ----> |
                             |                      |
-                            | ---- proof (6) ----> |
+                            | ---- proof (4) ----> |
                             |                      |
-                            | ---- proof (6) ----> |
+                            | ---- proof (4) ----> |
                             |                      |
-                            | ---- proof (6) ----> |
-                            |                      |
-                            | <-- payment (7) ---- |
+                            | <-- payment (5) ---- |
 
   1. Client submits a request for storage, containing the size of the data that
      it wants to store and the length of time it wants to store it
-  2. Several hosts submit offers containing a price
-  3. The client selects an offer
-  4. The client sends the data it wants to store to the host
-  5. Once the host has received the data it starts the storage contract
-  6. While the storage contract is active, the host proves that it is still
+  2. Client makes the data available to hosts
+  3. The first host to submit a storage proof can fulfill the request
+  4. While the storage contract is active, the host proves that it is still
      storing the data by responding to frequent random challenges
-  7. At the end of the contract the host is paid
+  5. At the end of the contract the host is paid
 
 Contracts
 ---------
 
-A storage contract can be negotiated through requests and offers. A request
-contains the size of the data and the length of time during which it needs to be
-stored. It also contains a maximum price that a client is willing to pay and
-proof requirements such as how often a proof will need to be submitted by the
-host. A random nonce is included to ensure uniqueness among similar requests. An
-offer contains a reference to the request it pertains to, a price, and an expiry
-time.
+A storage contract can be negotiated through requests. A request contains the
+size of the data and the length of time during which it needs to be stored. It
+also contains a reward that a client is willing to pay and proof requirements
+such as how often a proof will need to be submitted by the host. A random nonce
+is included to ensure uniqueness among similar requests.
 
 When a new storage contract is created the client immediately pays the entire
 price of the contract. The payment is only released to the host upon successful
@@ -119,14 +111,6 @@ To Do
 
     Allow another host to take over a contract when the original host missed too
     many proofs.
-
-  * Start failures
-
-    When a contract fails to start it should be aborted after a timeout. A
-    contract may fail to start because the client failed to send the data, or
-    because the host failed to start the contract. To discourage this, a small
-    portion of both the client and host money can be burned if the contract
-    doesn't start within a certain amount of time.
 
   * Reward validators
 
