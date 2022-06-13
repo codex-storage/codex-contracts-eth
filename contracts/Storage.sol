@@ -59,18 +59,6 @@ contract Storage is Collateral, Marketplace {
     require(token.transfer(offer.host, offer.price), "Payment failed");
   }
 
-  function proofPeriod() public view returns (uint256) {
-    return _period();
-  }
-
-  function proofTimeout() public view returns (uint256) {
-    return _timeout();
-  }
-
-  function proofEnd(bytes32 contractId) public view returns (uint256) {
-    return _end(contractId);
-  }
-
   function missingProofs(bytes32 contractId) public view returns (uint256) {
     return _missed(contractId);
   }
