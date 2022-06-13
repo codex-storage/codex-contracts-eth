@@ -60,6 +60,11 @@ contract Marketplace is Collateral, Proofs {
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
     _lock(msg.sender, requestId);
 
+    _expectProofs(
+      requestId,
+      request.ask.proofProbability,
+      request.ask.duration
+    );
     _submitProof(requestId, proof);
 
     state.fulfilled = true;
@@ -121,6 +126,18 @@ contract Marketplace is Collateral, Proofs {
 
   function _selectedOffer(bytes32 requestId) internal view returns (bytes32) {
     return requestState[requestId].selectedOffer;
+  }
+
+  function proofPeriod() public view returns (uint256) {
+    return _period();
+  }
+
+  function proofTimeout() public view returns (uint256) {
+    return _timeout();
+  }
+
+  function proofEnd(bytes32 contractId) public view returns (uint256) {
+    return _end(contractId);
   }
 
   struct Request {

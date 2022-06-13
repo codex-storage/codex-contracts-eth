@@ -115,6 +115,11 @@ describe("Marketplace", function () {
       await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
     })
 
+    it("starts requiring storage proofs", async function () {
+      await marketplace.fulfillRequest(requestId(request), proof)
+      expect(await marketplace.proofEnd(requestId(request))).to.be.gt(0)
+    })
+
     it("is rejected when proof is incorrect", async function () {
       let invalid = hexlify([])
       await expect(
