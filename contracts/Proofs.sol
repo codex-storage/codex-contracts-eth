@@ -134,6 +134,13 @@ contract Proofs {
     return _isProofRequired(id, currentPeriod());
   }
 
+  function _willProofBeRequired(bytes32 id) internal view returns (bool) {
+    bool isRequired;
+    uint8 pointer;
+    (isRequired, pointer) = _getProofRequirement(id, currentPeriod());
+    return isRequired && pointer < downtime;
+  }
+
   function _submitProof(bytes32 id, Types.Proof calldata proof) internal {
     require(proof._verifyProof(), "Invalid proof");
     require(!received[id][currentPeriod()], "Proof already submitted");
@@ -152,5 +159,5 @@ contract Proofs {
     missed[id] += 1;
   }
 
-  event ProofSubmitted(bytes32 id, bytes proof);
+  event ProofSubmitted(bytes32 id, Types.Proof proof);
 }

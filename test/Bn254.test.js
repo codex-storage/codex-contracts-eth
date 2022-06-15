@@ -140,7 +140,7 @@ describe("Bn254", function () {
         { i: -2, v: 2 },
         { i: -3, v: 3 },
       ],
-      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      mus: [1, 2, 3],
       sigma: { x: 111, y: 222 }, // Wrong
       u: [
         { x: 1, y: 2 },
@@ -165,7 +165,7 @@ describe("Bn254", function () {
         { i: -2, v: 2 },
         { i: -3, v: 3 },
       ],
-      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      mus: [1, 2, 3],
       sigma: { x: 1, y: 2 },
       u: [
         { x: 1, y: 2 },
@@ -174,12 +174,13 @@ describe("Bn254", function () {
       ],
       name: ethers.utils.toUtf8Bytes("test"),
       publicKey: {
-        x: [111, 222], // Wrong
+        // Wrong
+        x: [1, 2],
         y: [1, 2],
       },
     }
     expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
-      "proof keys generated incorrectly"
+      "public key not on Bn254 curve"
     )
   })
 
@@ -190,7 +191,7 @@ describe("Bn254", function () {
         { i: -2, v: 2 },
         { i: -3, v: 3 },
       ],
-      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      mus: [1, 2, 3],
       sigma: { x: 1, y: 2 },
       u: [
         { x: 1, y: 2 },
@@ -215,7 +216,7 @@ describe("Bn254", function () {
         { i: -2, v: 2 },
         { i: -3, v: 3 },
       ],
-      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
+      mus: [1, 2, 3],
       sigma: { x: 1, y: 2 },
       u: [
         { x: 111, y: 222 }, // Wrong
@@ -231,5 +232,83 @@ describe("Bn254", function () {
     expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
       "incorrect proof setup"
     )
+  })
+
+  it("should fail proof verification with length mismatch", async function () {
+    let proof = {
+      q: [
+        { i: -1, v: 1 },
+        { i: -2, v: 2 },
+        { i: -3, v: 3 },
+      ],
+      mus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], // Wrong
+      sigma: { x: 1, y: 2 },
+      u: [
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+        { x: 1, y: 2 },
+      ],
+      name: ethers.utils.toUtf8Bytes("test"),
+      publicKey: {
+        x: [1, 2],
+        y: [1, 2],
+      },
+    }
+    expect(bn254.callStatic.verifyProof(proof)).to.be.revertedWith(
+      "setup, query, and proof length mismatch"
+    )
+  })
+
+  it("should fail to verify a proof with an incorrect public key", async function () {
+    let proof = {
+      q: [
+        {
+          i: 0,
+          v: "0x0c31b73f16d1c31de28dd4651a9b5f62a9212938b4b041f3f4db25a65539ce9c",
+        },
+      ],
+      mus: [
+        "0x25920f9d4590bcb099933cae3afeda6ad9a0e4bb8602f167c31d1ab332f6718b",
+      ],
+      sigma: {
+        x: "0x24e9c16ab07296e7a16c06d91c10fd52eda14798ca5bf6a7e16a98d528bd199e",
+        y: "0x204ab8989fc6a373baa71bed526ed0f63705dd2617ae6b9f9df9e115f5e8fae4",
+      },
+      u: [
+        {
+          x: "0x102bd2e684495754b9ef8edd0aa70cf628fb8666c692a11ee89ad9fbfeb11a02",
+          y: "0x245369d1ea21fbaaea3264b9867ea74c121e72f66a94b3b785b9ce742be6c8f6",
+        },
+      ],
+      name: ethers.utils.toUtf8Bytes(
+        "91de7326fea6823a95d65880e7d9c695de96d84e0c1292f1fe6beae6b33d26927699" +
+        "22796b3c2f213e2f667202babb53a97ff54443520998192b82da11a1de7c2e90875f" +
+        "84b4fed5f31622093fe57d89669f660e8fc731bf22293529a141ece41d4060e7a664" +
+        "5bd8fe0c1172ae377fdc5ae73889d34f81d2dbf105c3f756b4e0a253451a5a7a3cfb" +
+        "fb253b21c49c59701513b9ad9f8a9b192c3cc7232024254be4173785a7c08f32a60c" +
+        "3425d74c263584078604d2527ffdec60c15b050877eedd8c73700991f4efd04d7639" +
+        "14b73d8179e25aa6bd4ee6ae0fcd0b11f8c502baf828e0cbbd3a6dfd712894f10e8c" +
+        "96a90f454ef4b2a22ef19ea550555e324d69e977a9e5a8bd57b34563fb199530919a" +
+        "d80acd8d2f2c1eb4c9b48d2e57e6305131f1878b68c45d6b1fa35ab0e6bf44001f81" +
+        "1f613538f11f2efaba53e339d521074d8c14756c39c9b0b5cc68b14779cb223cd2e1" +
+        "c08bacc55f6499b72ea5ceca033efb6826c699d225ed772428a2153da091f6f6536c" +
+        "8df25e51e861526e2f9bb130f33c6d03c94f65bd3a3f4a6f0e7ab80ee5303b275667" +
+        "a922ae87102e6862a80fa8840ef291ec6a66a1ee94818e6b715fba1546a2aeffae38" +
+        "078986ecdc6df4305836e17dd4633b3b9bbd0f22d8e1a0292f4940509d98fa7ee0d5" +
+        "2078c85080458fdab6b4bf9a42400248e8b4e9530fa9f1cd421e98f40ee8585434e4" +
+        "98d2"
+      ),
+      publicKey: {
+        x: [
+          "0x07d42b42c4eddef5a05309382acd6facd59cee75d1d811cbbcd52b1b55b8e31b",
+          "0x21e4617026fdf43d59893c2ad8fb00acb4167ae895e80c58a5d013928a601184",
+        ],
+        y: [
+          "0x0e86e2f05fb3e72609b0cfea77633eca05f4bf34851874d84e5a2c2f2985fa7d",
+          "0x1d20bf4bc725cc14d0d0a8bc98b3391582c48ad99a41669a5349a5cab5864e10",
+        ],
+      },
+    }
+    expect(await bn254.callStatic.verifyProof(proof)).to.be.equal(false)
   })
 })

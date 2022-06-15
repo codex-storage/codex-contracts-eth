@@ -28,7 +28,7 @@ library Types {
   struct Proof {
     // TODO: should `q` be bounded?
     QElement[]    q;
-    uint256[10]   mus;
+    uint256[]   mus;
     // sigma is probably only the x coordinate
     // (https://github.com/supranational/blst#serialization-format)
     G1Point       sigma;

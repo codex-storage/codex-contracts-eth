@@ -76,7 +76,7 @@ library Bn254 {
     pure
     returns (bool)
   {
-    return BN256G2._isOnCurve(p1.x[0], p1.y[0], p1.x[1], p1.y[1]);
+    return BN256G2._isOnCurve(p1.x[0], p1.x[1], p1.y[0], p1.y[1]);
   }
 
   /// @dev Derives the y coordinate from a compressed-format point x [[SEC-1]](https://www.secg.org/SEC1-Ver-1.0.pdf).
@@ -163,15 +163,18 @@ library Bn254 {
         s.x[0], // x real coordinate of point S
         s.x[1], // x imaginary coordinate of point S
         s.y[0], // y real coordinate of point S
-        s.y[1]    // y imaginary coordinate of point S
+        s.y[1]  // y imaginary coordinate of point S
       ]
     );
   }
 
   function _verifyProof(Types.Proof memory proof) internal returns (bool) {
     require(_isOnCurve(proof.sigma), "proof generated incorrectly");
-    require(_isOnCurve(proof.publicKey), "proof keys generated incorrectly");
+    require(_isOnCurve(proof.publicKey), "public key not on Bn254 curve");
     require(proof.name.length > 0, "proof name must be provided");
+    require(proof.mus.length == proof.q.length &&
+            proof.q.length == proof.u.length,
+            "setup, query, and proof length mismatch");
     // var first: blst_p1
     // for qelem in q :
     //   var prod: blst_p1
