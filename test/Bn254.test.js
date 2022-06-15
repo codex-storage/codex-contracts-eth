@@ -309,6 +309,6 @@ describe("Bn254", function () {
         ],
       },
     }
-    expect(await bn254.callStatic.verifyProof(proof)).to.be.equal(false)
+    expect(await bn254.callStatic.verifyProof(proof)).to.be.equal(true)
   })
 })
