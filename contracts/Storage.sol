@@ -38,6 +38,10 @@ contract Storage is Collateral, Marketplace {
     return _request(id);
   }
 
+  function getHost(bytes32 id) public view returns (address) {
+    return _host(id);
+  }
+
   function finishContract(bytes32 id) public {
     require(_host(id) != address(0), "Contract not started");
     require(!contractFinished[id], "Contract already finished");
