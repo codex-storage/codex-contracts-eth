@@ -1,6 +1,7 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { hexlify, randomBytes } = ethers.utils
+const { AddressZero } = ethers.constants
 const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
 const { requestId } = require("./ids")
@@ -53,6 +54,12 @@ describe("Storage", function () {
     expect(retrieved.client).to.equal(request.client)
     expect(retrieved.expiry).to.equal(request.expiry)
     expect(retrieved.nonce).to.equal(request.nonce)
+  })
+
+  it("can retrieve host that fulfilled request", async function () {
+    expect(await storage.getHost(requestId(request))).to.equal(AddressZero)
+    await storage.fulfillRequest(requestId(request), proof)
+    expect(await storage.getHost(requestId(request))).to.equal(host.address)
   })
 
   describe("finishing the contract", function () {
