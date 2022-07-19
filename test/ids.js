@@ -39,8 +39,16 @@ function requestToArray(request) {
   ]
 }
 
+function slotId(slot) {
+  const types = "tuple(bytes32, uint256)"
+  const values = [slot.request, slot.index]
+  const encoding = defaultAbiCoder.encode([types], [values])
+  return keccak256(encoding)
+}
+
 module.exports = {
   requestId,
+  slotId,
   requestToArray,
   askToArray,
 }
