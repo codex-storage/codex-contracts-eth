@@ -70,6 +70,22 @@ contract Marketplace is Collateral, Proofs {
     emit SlotFilled(requestId, slotIndex, slotId);
   }
 
+  function payoutSlot(bytes32 requestId, uint256 slotIndex)
+    public
+    marketplaceInvariant
+  {
+    bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
+    require(block.timestamp > proofEnd(slotId), "Contract not ended");
+    Slot storage slot = slots[slotId];
+    require(slot.host != address(0), "Slot empty");
+    require(!slot.hostPaid, "Already paid");
+    uint256 amount = requests[requestId].ask.reward;
+    funds.sent += amount;
+    funds.balance -= amount;
+    slot.hostPaid = true;
+    require(token.transfer(slot.host, amount), "Payment failed");
+  }
+
   function fulfillRequest(bytes32 requestId, bytes calldata proof)
     public
     marketplaceInvariant
@@ -154,6 +170,7 @@ contract Marketplace is Collateral, Proofs {
 
   struct Slot {
     address host;
+    bool hostPaid;
   }
 
   event StorageRequested(bytes32 requestId, Ask ask);
