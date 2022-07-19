@@ -4,7 +4,7 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { snapshot, revert, ensureMinimumBlockHeight } = require("./evm")
 const { now, hours } = require("./time")
-const { requestId, askToArray } = require("./ids")
+const { requestId, slotId, askToArray } = require("./ids")
 
 describe("Marketplace", function () {
   const collateral = 100
@@ -85,6 +85,89 @@ describe("Marketplace", function () {
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Request already exists"
       )
+    })
+  })
+
+  describe("filling a slot", function () {
+    const proof = hexlify(randomBytes(42))
+    let slot
+
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, request.ask.reward)
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+      slot = {
+        request: requestId(request),
+        index: request.content.erasure.totalNodes / 2,
+      }
+    })
+
+    it("emits event when slot is filled", async function () {
+      await expect(marketplace.fillSlot(slot.request, slot.index, proof))
+        .to.emit(marketplace, "SlotFilled")
+        .withArgs(slot.request, slot.index, slotId(slot))
+    })
+
+    it("locks collateral of host", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+    })
+
+    it("starts requiring storage proofs", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(0)
+    })
+
+    it("is rejected when proof is incorrect", async function () {
+      let invalid = hexlify([])
+      await expect(
+        marketplace.fillSlot(slot.request, slot.index, invalid)
+      ).to.be.revertedWith("Invalid proof")
+    })
+
+    it("is rejected when collateral is insufficient", async function () {
+      let insufficient = collateral - 1
+      await marketplace.withdraw()
+      await token.approve(marketplace.address, insufficient)
+      await marketplace.deposit(insufficient)
+      await expect(
+        marketplace.fillSlot(slot.request, slot.index, proof)
+      ).to.be.revertedWith("Insufficient collateral")
+    })
+
+    it("is rejected when slot already filled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(
+        marketplace.fillSlot(slot.request, slot.index, proof)
+      ).to.be.revertedWith("Slot already filled")
+    })
+
+    it("is rejected when request is unknown", async function () {
+      let unknown = exampleRequest()
+      await expect(
+        marketplace.fillSlot(requestId(unknown), 0, proof)
+      ).to.be.revertedWith("Unknown request")
+    })
+
+    it("is rejected when request is expired", async function () {
+      switchAccount(client)
+      let expired = { ...request, expiry: now() - hours(1) }
+      await token.approve(marketplace.address, request.ask.reward)
+      await marketplace.requestStorage(expired)
+      switchAccount(host)
+      await expect(
+        marketplace.fillSlot(requestId(expired), slot.index, proof)
+      ).to.be.revertedWith("Request expired")
+    })
+
+    it("is rejected when slot index not in range", async function () {
+      const invalid = request.content.erasure.totalNodes
+      await expect(
+        marketplace.fillSlot(slot.request, invalid, proof)
+      ).to.be.revertedWith("Invalid slot")
     })
   })
 

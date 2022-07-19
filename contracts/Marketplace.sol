@@ -10,6 +10,7 @@ contract Marketplace is Collateral, Proofs {
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
   mapping(bytes32 => RequestState) private requestState;
+  mapping(bytes32 => Slot) private slots;
 
   constructor(
     IERC20 _token,
@@ -43,6 +44,30 @@ contract Marketplace is Collateral, Proofs {
     transferFrom(msg.sender, request.ask.reward);
 
     emit StorageRequested(id, request.ask);
+  }
+
+  function fillSlot(
+    bytes32 requestId,
+    uint256 slotIndex,
+    bytes calldata proof
+  ) public marketplaceInvariant {
+    Request storage request = requests[requestId];
+    require(request.client != address(0), "Unknown request");
+    require(request.expiry > block.timestamp, "Request expired");
+    require(slotIndex < request.content.erasure.totalNodes, "Invalid slot");
+
+    bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
+    Slot storage slot = slots[slotId];
+    require(slot.host == address(0), "Slot already filled");
+
+    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
+    _lock(msg.sender, requestId);
+
+    _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
+    _submitProof(slotId, proof);
+
+    slot.host = msg.sender;
+    emit SlotFilled(requestId, slotIndex, slotId);
   }
 
   function fulfillRequest(bytes32 requestId, bytes calldata proof)
@@ -127,8 +152,17 @@ contract Marketplace is Collateral, Proofs {
     address host;
   }
 
+  struct Slot {
+    address host;
+  }
+
   event StorageRequested(bytes32 requestId, Ask ask);
   event RequestFulfilled(bytes32 indexed requestId);
+  event SlotFilled(
+    bytes32 indexed requestId,
+    uint256 indexed slotIndex,
+    bytes32 indexed slotId
+  );
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;
