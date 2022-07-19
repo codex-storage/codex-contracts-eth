@@ -2,20 +2,27 @@ const { ethers } = require("hardhat")
 const { hexlify, randomBytes } = ethers.utils
 const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
-const { snapshot, revert, ensureMinimumBlockHeight } = require("./evm")
 const { now, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
+const {
+  snapshot,
+  revert,
+  ensureMinimumBlockHeight,
+  advanceTimeTo,
+} = require("./evm")
 
 describe("Marketplace", function () {
   const collateral = 100
   const proofPeriod = 30 * 60
   const proofTimeout = 5
   const proofDowntime = 64
+  const proof = hexlify(randomBytes(42))
 
   let marketplace
   let token
   let client, host, host1, host2, host3
   let request
+  let slot
 
   beforeEach(async function () {
     await snapshot()
@@ -40,6 +47,11 @@ describe("Marketplace", function () {
 
     request = exampleRequest()
     request.client = client.address
+
+    slot = {
+      request: requestId(request),
+      index: request.content.erasure.totalNodes / 2,
+    }
   })
 
   afterEach(async function () {
@@ -89,9 +101,6 @@ describe("Marketplace", function () {
   })
 
   describe("filling a slot", function () {
-    const proof = hexlify(randomBytes(42))
-    let slot
-
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(marketplace.address, request.ask.reward)
@@ -99,10 +108,6 @@ describe("Marketplace", function () {
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
       await marketplace.deposit(collateral)
-      slot = {
-        request: requestId(request),
-        index: request.content.erasure.totalNodes / 2,
-      }
     })
 
     it("emits event when slot is filled", async function () {
@@ -168,6 +173,61 @@ describe("Marketplace", function () {
       await expect(
         marketplace.fillSlot(slot.request, invalid, proof)
       ).to.be.revertedWith("Invalid slot")
+    })
+  })
+
+  describe("paying out a slot", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, request.ask.reward)
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    async function waitUntilEnd() {
+      const end = (await marketplace.proofEnd(slotId(slot))).toNumber()
+      await advanceTimeTo(end)
+    }
+
+    it("pays the host", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilEnd()
+      const startBalance = await token.balanceOf(host.address)
+      await marketplace.payoutSlot(slot.request, slot.index)
+      const endBalance = await token.balanceOf(host.address)
+      expect(endBalance - startBalance).to.equal(request.ask.reward)
+    })
+
+    it("is only allowed when the slot is filled", async function () {
+      await expect(
+        marketplace.payoutSlot(slot.request, slot.index)
+      ).to.be.revertedWith("Slot empty")
+    })
+
+    it("is only allowed when the contract has ended", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(
+        marketplace.payoutSlot(slot.request, slot.index)
+      ).to.be.revertedWith("Contract not ended")
+    })
+
+    it("can only be done once", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilEnd()
+      await marketplace.payoutSlot(slot.request, slot.index)
+      await expect(
+        marketplace.payoutSlot(slot.request, slot.index)
+      ).to.be.revertedWith("Already paid")
+    })
+
+    it("cannot be filled again", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilEnd()
+      await marketplace.payoutSlot(slot.request, slot.index)
+      await expect(marketplace.fillSlot(slot.request, slot.index, proof)).to.be
+        .reverted
     })
   })
 
