@@ -10,8 +10,6 @@ contract Storage is Collateral, Marketplace {
   uint256 public slashMisses;
   uint256 public slashPercentage;
 
-  mapping(bytes32 => bool) private contractFinished;
-
   constructor(
     IERC20 token,
     uint256 _proofPeriod,
@@ -40,17 +38,6 @@ contract Storage is Collateral, Marketplace {
 
   function getHost(bytes32 id) public view returns (address) {
     return _host(id);
-  }
-
-  function finishContract(bytes32 id) public {
-    require(_host(id) != address(0), "Contract not started");
-    require(!contractFinished[id], "Contract already finished");
-    require(block.timestamp > proofEnd(id), "Contract has not ended yet");
-    contractFinished[id] = true;
-    require(
-      token.transfer(_host(id), _request(id).ask.reward),
-      "Payment failed"
-    );
   }
 
   function missingProofs(bytes32 contractId) public view returns (uint256) {
