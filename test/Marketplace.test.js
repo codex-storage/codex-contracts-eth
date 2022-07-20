@@ -4,6 +4,7 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { now, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
+const { price, pricePerSlot } = require("./price")
 const {
   snapshot,
   revert,
@@ -33,7 +34,7 @@ describe("Marketplace", function () {
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
     for (account of [client, host1, host2, host3]) {
-      await token.mint(account.address, 1000)
+      await token.mint(account.address, 1_000_000_000)
     }
 
     const Marketplace = await ethers.getContractFactory("Marketplace")
@@ -69,7 +70,7 @@ describe("Marketplace", function () {
     })
 
     it("emits event when storage is requested", async function () {
-      await token.approve(marketplace.address, request.ask.reward)
+      await token.approve(marketplace.address, price(request))
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
         .withArgs(requestId(request), askToArray(request.ask))
@@ -77,14 +78,14 @@ describe("Marketplace", function () {
 
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
-      await token.approve(marketplace.address, invalid.ask.reward)
+      await token.approve(marketplace.address, price(invalid))
       await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
         "Invalid client address"
       )
     })
 
     it("rejects request with insufficient payment", async function () {
-      let insufficient = request.ask.reward - 1
+      let insufficient = price(request) - 1
       await token.approve(marketplace.address, insufficient)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "ERC20: insufficient allowance"
@@ -92,7 +93,7 @@ describe("Marketplace", function () {
     })
 
     it("rejects resubmission of request", async function () {
-      await token.approve(marketplace.address, request.ask.reward * 2)
+      await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Request already exists"
@@ -103,7 +104,7 @@ describe("Marketplace", function () {
   describe("filling a slot", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, request.ask.reward)
+      await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
@@ -160,7 +161,7 @@ describe("Marketplace", function () {
     it("is rejected when request is expired", async function () {
       switchAccount(client)
       let expired = { ...request, expiry: now() - hours(1) }
-      await token.approve(marketplace.address, request.ask.reward)
+      await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(expired)
       switchAccount(host)
       await expect(
@@ -179,7 +180,7 @@ describe("Marketplace", function () {
   describe("paying out a slot", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, request.ask.reward)
+      await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
@@ -197,7 +198,7 @@ describe("Marketplace", function () {
       const startBalance = await token.balanceOf(host.address)
       await marketplace.payoutSlot(slot.request, slot.index)
       const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - startBalance).to.equal(request.ask.reward)
+      expect(endBalance - startBalance).to.equal(pricePerSlot(request))
     })
 
     it("is only allowed when the slot is filled", async function () {
@@ -234,7 +235,7 @@ describe("Marketplace", function () {
   describe("fulfilling a request", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, request.ask.reward)
+      await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       await token.approve(marketplace.address, collateral)

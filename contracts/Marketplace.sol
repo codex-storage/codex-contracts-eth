@@ -39,9 +39,10 @@ contract Marketplace is Collateral, Proofs {
 
     _createLock(id, request.expiry);
 
-    funds.received += request.ask.reward;
-    funds.balance += request.ask.reward;
-    transferFrom(msg.sender, request.ask.reward);
+    uint256 amount = price(request);
+    funds.received += amount;
+    funds.balance += amount;
+    transferFrom(msg.sender, amount);
 
     emit StorageRequested(id, request.ask);
   }
@@ -84,7 +85,7 @@ contract Marketplace is Collateral, Proofs {
     Slot storage slot = slots[slotId];
     require(slot.host != address(0), "Slot empty");
     require(!slot.hostPaid, "Already paid");
-    uint256 amount = requests[requestId].ask.reward;
+    uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
     slot.hostPaid = true;
@@ -111,6 +112,14 @@ contract Marketplace is Collateral, Proofs {
     return _end(contractId);
   }
 
+  function price(Request calldata request) private pure returns (uint256) {
+    return request.ask.slots * request.ask.duration * request.ask.reward;
+  }
+
+  function pricePerSlot(Request memory request) private pure returns (uint256) {
+    return request.ask.duration * request.ask.reward;
+  }
+
   struct Request {
     address client;
     Ask ask;
@@ -123,7 +132,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 size; // size of requested storage in number of bytes
     uint256 duration; // how long content should be stored (in seconds)
     uint256 proofProbability; // how often storage proofs are required
-    uint256 reward; // reward that the client will pay (in number of tokens)
+    uint256 reward; // amount of tokens paid per second per slot to hosts
     uint64 slots; // the total number of hosts that store the data set
   }
 
