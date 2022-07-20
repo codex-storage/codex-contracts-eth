@@ -135,7 +135,6 @@ contract Marketplace is Collateral, Proofs {
   struct Erasure {
     uint64 totalChunks; // the total number of chunks in the larger data set
     uint64 totalNodes; // the total number of nodes that store the data set
-    uint64 nodeId; // index of this node in the list of total nodes
   }
 
   struct PoR {
