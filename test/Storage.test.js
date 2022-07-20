@@ -6,6 +6,7 @@ const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
 const { requestId, slotId } = require("./ids")
 const { periodic } = require("./time")
+const { price } = require("./price")
 
 describe("Storage", function () {
   const proof = hexlify(randomBytes(42))
@@ -29,8 +30,8 @@ describe("Storage", function () {
     token = await ethers.getContract("TestToken")
     storage = await ethers.getContract("Storage")
 
-    await token.mint(client.address, 1000)
-    await token.mint(host.address, 1000)
+    await token.mint(client.address, 1_000_000_000)
+    await token.mint(host.address, 1_000_000_000)
 
     collateralAmount = await storage.collateralAmount()
     slashMisses = await storage.slashMisses()
@@ -44,7 +45,7 @@ describe("Storage", function () {
     }
 
     switchAccount(client)
-    await token.approve(storage.address, request.ask.reward)
+    await token.approve(storage.address, price(request))
     await storage.requestStorage(request)
     switchAccount(host)
     await token.approve(storage.address, collateralAmount)
