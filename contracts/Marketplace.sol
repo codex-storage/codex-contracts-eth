@@ -111,8 +111,8 @@ contract Marketplace is Collateral, Proofs {
     emit RequestFulfilled(requestId);
   }
 
-  function _host(bytes32 requestId) internal view returns (address) {
-    return requestState[requestId].host;
+  function _host(bytes32 slotId) internal view returns (address) {
+    return slots[slotId].host;
   }
 
   function _request(bytes32 id) internal view returns (Request storage) {

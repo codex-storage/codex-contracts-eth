@@ -16,7 +16,6 @@ describe("Storage", function () {
   let request
   let collateralAmount, slashMisses, slashPercentage
   let slot
-  let id
 
   function switchAccount(account) {
     token = token.connect(account)
@@ -39,7 +38,6 @@ describe("Storage", function () {
 
     request = exampleRequest()
     request.client = client.address
-    id = requestId(request)
     slot = {
       request: requestId(request),
       index: request.content.erasure.totalNodes / 2,
@@ -61,10 +59,10 @@ describe("Storage", function () {
     expect(retrieved.nonce).to.equal(request.nonce)
   })
 
-  it("can retrieve host that fulfilled request", async function () {
-    expect(await storage.getHost(requestId(request))).to.equal(AddressZero)
-    await storage.fulfillRequest(requestId(request), proof)
-    expect(await storage.getHost(requestId(request))).to.equal(host.address)
+  it("can retrieve host that filled slot", async function () {
+    expect(await storage.getHost(slotId(slot))).to.equal(AddressZero)
+    await storage.fillSlot(slot.request, slot.index, proof)
+    expect(await storage.getHost(slotId(slot))).to.equal(host.address)
   })
 
   describe("ending the contract", function () {
@@ -88,7 +86,7 @@ describe("Storage", function () {
       ;({ periodOf, periodEnd } = periodic(period))
     })
 
-    async function waitUntilProofIsRequired() {
+    async function waitUntilProofIsRequired(id) {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       while (
         !(
@@ -101,9 +99,10 @@ describe("Storage", function () {
     }
 
     it("reduces collateral when too many proofs are missing", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
+      const id = slotId(slot)
+      await storage.fillSlot(slot.request, slot.index, proof)
       for (let i = 0; i < slashMisses; i++) {
-        await waitUntilProofIsRequired()
+        await waitUntilProofIsRequired(id)
         let missedPeriod = periodOf(await currentTime())
         await advanceTime(period)
         await storage.markProofAsMissing(id, missedPeriod)
