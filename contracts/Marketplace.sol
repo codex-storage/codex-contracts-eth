@@ -9,6 +9,7 @@ contract Marketplace is Collateral, Proofs {
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
+  mapping(bytes32 => RequestState) private requestState;
   mapping(bytes32 => Slot) private slots;
 
   constructor(
@@ -65,8 +66,13 @@ contract Marketplace is Collateral, Proofs {
     _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
     _submitProof(slotId, proof);
 
+    RequestState storage state = requestState[requestId];
     slot.host = msg.sender;
+    state.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
+    if (state.slotsFilled == request.content.erasure.totalNodes) {
+      emit RequestFulfilled(requestId);
+    }
   }
 
   function payoutSlot(bytes32 requestId, uint256 slotIndex)
@@ -136,6 +142,10 @@ contract Marketplace is Collateral, Proofs {
     bytes u; // parameters u_1..u_s
     bytes publicKey; // public key
     bytes name; // random name
+  }
+
+  struct RequestState {
+    uint256 slotsFilled;
   }
 
   struct Slot {
