@@ -4,7 +4,7 @@ const { hexlify, randomBytes } = ethers.utils
 const { AddressZero } = ethers.constants
 const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
-const { requestId } = require("./ids")
+const { requestId, slotId } = require("./ids")
 const { periodic } = require("./time")
 
 describe("Storage", function () {
@@ -15,6 +15,7 @@ describe("Storage", function () {
   let client, host
   let request
   let collateralAmount, slashMisses, slashPercentage
+  let slot
   let id
 
   function switchAccount(account) {
@@ -39,6 +40,10 @@ describe("Storage", function () {
     request = exampleRequest()
     request.client = client.address
     id = requestId(request)
+    slot = {
+      request: requestId(request),
+      index: request.content.erasure.totalNodes / 2,
+    }
 
     switchAccount(client)
     await token.approve(storage.address, request.ask.reward)
@@ -62,53 +67,16 @@ describe("Storage", function () {
     expect(await storage.getHost(requestId(request))).to.equal(host.address)
   })
 
-  describe("finishing the contract", function () {
+  describe("ending the contract", function () {
     async function waitUntilEnd() {
-      const end = (await storage.proofEnd(id)).toNumber()
+      const end = (await storage.proofEnd(slotId(slot))).toNumber()
       await advanceTimeTo(end)
     }
 
     it("unlocks the host collateral", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
+      await storage.fillSlot(slot.request, slot.index, proof)
       await waitUntilEnd()
-      await storage.finishContract(id)
       await expect(storage.withdraw()).not.to.be.reverted
-    })
-
-    it("pays the host", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
-      await waitUntilEnd()
-      const startBalance = await token.balanceOf(host.address)
-      await storage.finishContract(id)
-      const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - startBalance).to.equal(request.ask.reward)
-    })
-
-    it("is only allowed when the contract has started", async function () {
-      await expect(storage.finishContract(id)).to.be.revertedWith(
-        "Contract not started"
-      )
-    })
-
-    it("is only allowed when end time has passed", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
-      await expect(storage.finishContract(id)).to.be.revertedWith(
-        "Contract has not ended yet"
-      )
-    })
-
-    it("can only be done once", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
-      await waitUntilEnd()
-      await storage.finishContract(id)
-      await expect(storage.finishContract(id)).to.be.reverted
-    })
-
-    it("can not be restarted", async function () {
-      await storage.fulfillRequest(requestId(request), proof)
-      await waitUntilEnd()
-      await storage.finishContract(id)
-      await expect(storage.fulfillRequest(id, proof)).to.be.reverted
     })
   })
 
