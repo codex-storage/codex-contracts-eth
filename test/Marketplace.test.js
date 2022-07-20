@@ -231,4 +231,24 @@ describe("Marketplace", function () {
     })
   })
 
+  describe("fulfilling a request", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, request.ask.reward)
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("emits event when all slots are filled", async function () {
+      const lastSlot = request.content.erasure.totalNodes - 1
+      for (let i = 0; i < lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await expect(marketplace.fillSlot(slot.request, lastSlot, proof))
+        .to.emit(marketplace, "RequestFulfilled")
+        .withArgs(requestId(request))
+    })
+  })
 })
