@@ -2,8 +2,8 @@ const { ethers } = require("hardhat")
 const { keccak256, defaultAbiCoder } = ethers.utils
 
 function requestId(request) {
-  const Ask = "tuple(uint256, uint256, uint256, uint256)"
-  const Erasure = "tuple(uint64, uint64)"
+  const Ask = "tuple(uint256, uint256, uint256, uint256, int64)"
+  const Erasure = "tuple(uint64)"
   const PoR = "tuple(bytes, bytes, bytes)"
   const Content = "tuple(string, " + Erasure + ", " + PoR + ")"
   const Request =
@@ -12,11 +12,11 @@ function requestId(request) {
 }
 
 function askToArray(ask) {
-  return [ask.size, ask.duration, ask.proofProbability, ask.reward]
+  return [ask.size, ask.duration, ask.proofProbability, ask.reward, ask.slots]
 }
 
 function erasureToArray(erasure) {
-  return [erasure.totalChunks, erasure.totalNodes]
+  return [erasure.totalChunks]
 }
 
 function porToArray(por) {

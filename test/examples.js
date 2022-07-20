@@ -9,12 +9,12 @@ const exampleRequest = () => ({
     duration: hours(10),
     proofProbability: 4, // require a proof roughly once every 4 periods
     reward: 84,
+    slots: 4,
   },
   content: {
     cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
     erasure: {
       totalChunks: 12,
-      totalNodes: 4,
     },
     por: {
       u: Array.from(randomBytes(480)),

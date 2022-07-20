@@ -40,7 +40,7 @@ describe("Storage", function () {
     request.client = client.address
     slot = {
       request: requestId(request),
-      index: request.content.erasure.totalNodes / 2,
+      index: request.ask.slots / 2,
     }
 
     switchAccount(client)

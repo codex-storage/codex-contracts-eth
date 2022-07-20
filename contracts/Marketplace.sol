@@ -54,7 +54,7 @@ contract Marketplace is Collateral, Proofs {
     Request storage request = requests[requestId];
     require(request.client != address(0), "Unknown request");
     require(request.expiry > block.timestamp, "Request expired");
-    require(slotIndex < request.content.erasure.totalNodes, "Invalid slot");
+    require(slotIndex < request.ask.slots, "Invalid slot");
 
     bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
     Slot storage slot = slots[slotId];
@@ -70,7 +70,7 @@ contract Marketplace is Collateral, Proofs {
     slot.host = msg.sender;
     state.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
-    if (state.slotsFilled == request.content.erasure.totalNodes) {
+    if (state.slotsFilled == request.ask.slots) {
       emit RequestFulfilled(requestId);
     }
   }
@@ -124,6 +124,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 duration; // how long content should be stored (in seconds)
     uint256 proofProbability; // how often storage proofs are required
     uint256 reward; // reward that the client will pay (in number of tokens)
+    uint64 slots; // the total number of hosts that store the data set
   }
 
   struct Content {
@@ -134,7 +135,6 @@ contract Marketplace is Collateral, Proofs {
 
   struct Erasure {
     uint64 totalChunks; // the total number of chunks in the larger data set
-    uint64 totalNodes; // the total number of nodes that store the data set
   }
 
   struct PoR {

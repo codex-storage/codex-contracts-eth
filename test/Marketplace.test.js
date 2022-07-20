@@ -50,7 +50,7 @@ describe("Marketplace", function () {
 
     slot = {
       request: requestId(request),
-      index: request.content.erasure.totalNodes / 2,
+      index: request.ask.slots / 2,
     }
   })
 
@@ -169,7 +169,7 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when slot index not in range", async function () {
-      const invalid = request.content.erasure.totalNodes
+      const invalid = request.ask.slots
       await expect(
         marketplace.fillSlot(slot.request, invalid, proof)
       ).to.be.revertedWith("Invalid slot")
@@ -242,7 +242,7 @@ describe("Marketplace", function () {
     })
 
     it("emits event when all slots are filled", async function () {
-      const lastSlot = request.content.erasure.totalNodes - 1
+      const lastSlot = request.ask.slots - 1
       for (let i = 0; i < lastSlot; i++) {
         await marketplace.fillSlot(slot.request, i, proof)
       }
