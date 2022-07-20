@@ -15,7 +15,6 @@ const exampleRequest = () => ({
     erasure: {
       totalChunks: 12,
       totalNodes: 4,
-      nodeId: 3,
     },
     por: {
       u: Array.from(randomBytes(480)),
