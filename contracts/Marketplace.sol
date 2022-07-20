@@ -9,7 +9,6 @@ contract Marketplace is Collateral, Proofs {
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
-  mapping(bytes32 => RequestState) private requestState;
   mapping(bytes32 => Slot) private slots;
 
   constructor(
@@ -86,31 +85,6 @@ contract Marketplace is Collateral, Proofs {
     require(token.transfer(slot.host, amount), "Payment failed");
   }
 
-  function fulfillRequest(bytes32 requestId, bytes calldata proof)
-    public
-    marketplaceInvariant
-  {
-    RequestState storage state = requestState[requestId];
-    require(state.host == address(0), "Request already fulfilled");
-
-    Request storage request = requests[requestId];
-    require(request.client != address(0), "Unknown request");
-    require(request.expiry > block.timestamp, "Request expired");
-
-    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
-    _lock(msg.sender, requestId);
-
-    _expectProofs(
-      requestId,
-      request.ask.proofProbability,
-      request.ask.duration
-    );
-    _submitProof(requestId, proof);
-
-    state.host = msg.sender;
-    emit RequestFulfilled(requestId);
-  }
-
   function _host(bytes32 slotId) internal view returns (address) {
     return slots[slotId].host;
   }
@@ -162,10 +136,6 @@ contract Marketplace is Collateral, Proofs {
     bytes u; // parameters u_1..u_s
     bytes publicKey; // public key
     bytes name; // random name
-  }
-
-  struct RequestState {
-    address host;
   }
 
   struct Slot {
