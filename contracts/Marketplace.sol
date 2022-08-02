@@ -129,11 +129,11 @@ contract Marketplace is Collateral, Proofs {
   }
 
   struct Ask {
-    uint256 size; // size of requested storage in number of bytes
+    uint64 slots; // the number of requested slots
+    uint256 slotSize; // amount of storage per slot (in number of bytes)
     uint256 duration; // how long content should be stored (in seconds)
     uint256 proofProbability; // how often storage proofs are required
     uint256 reward; // amount of tokens paid per second per slot to hosts
-    uint64 slots; // the total number of hosts that store the data set
   }
 
   struct Content {
