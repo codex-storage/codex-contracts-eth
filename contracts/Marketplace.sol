@@ -9,7 +9,7 @@ contract Marketplace is Collateral, Proofs {
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(bytes32 => Request) private requests;
-  mapping(bytes32 => RequestState) private requestState;
+  mapping(bytes32 => RequestContext) private requestContexts;
   mapping(bytes32 => Slot) private slots;
 
   constructor(
@@ -56,6 +56,10 @@ contract Marketplace is Collateral, Proofs {
     require(request.client != address(0), "Unknown request");
     require(request.expiry > block.timestamp, "Request expired");
     require(slotIndex < request.ask.slots, "Invalid slot");
+    RequestContext storage context = requestContexts[requestId];
+    // TODO: in the case of repair, update below require condition by adding
+    // || context.state == RequestState.Started
+    require(context.state == RequestState.New, "Invalid state");
 
     bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
     Slot storage slot = slots[slotId];
@@ -67,11 +71,11 @@ contract Marketplace is Collateral, Proofs {
     _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
     _submitProof(slotId, proof);
 
-    RequestState storage state = requestState[requestId];
     slot.host = msg.sender;
-    state.slotsFilled += 1;
+    context.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
-    if (state.slotsFilled == request.ask.slots) {
+    if (context.slotsFilled == request.ask.slots) {
+      context.state = RequestState.Started;
       emit RequestFulfilled(requestId);
     }
   }
@@ -120,6 +124,10 @@ contract Marketplace is Collateral, Proofs {
     return request.ask.duration * request.ask.reward;
   }
 
+  function state(bytes32 requestId) public view returns (RequestState) {
+    return requestContexts[requestId].state;
+  }
+
   struct Request {
     address client;
     Ask ask;
@@ -152,8 +160,16 @@ contract Marketplace is Collateral, Proofs {
     bytes name; // random name
   }
 
-  struct RequestState {
+  enum RequestState {
+    New,        // [default] waiting to fill slots
+    Started,    // all slots filled, accepting regular proofs
+    Cancelled,  // not enough slots filled before expiry
+    Finished    // successfully completed
+  }
+
+  struct RequestContext {
     uint256 slotsFilled;
+    RequestState state;
   }
 
   struct Slot {
