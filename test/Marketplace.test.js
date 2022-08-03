@@ -251,5 +251,12 @@ describe("Marketplace", function () {
         .to.emit(marketplace, "RequestFulfilled")
         .withArgs(requestId(request))
     })
+    it("sets state when all slots are filled", async function () {
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await expect(await marketplace.state(slot.request)).to.equal(1)
+    })
   })
 })
