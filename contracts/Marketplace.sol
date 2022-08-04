@@ -96,6 +96,25 @@ contract Marketplace is Collateral, Proofs {
     require(token.transfer(slot.host, amount), "Payment failed");
   }
 
+  function withdrawFunds(bytes32 requestId) public marketplaceInvariant {
+    Request memory request = requests[requestId];
+    require(block.timestamp > request.expiry, "Request not yet timed out");
+    require(request.client == msg.sender, "Invalid client address");
+    RequestContext storage context = requestContexts[requestId];
+    require(context.state == RequestState.New, "Invalid state");
+
+    uint256 amount = _price(request);
+    funds.sent += amount;
+    funds.balance -= amount;
+    token.transfer(msg.sender, amount);
+    emit FundsWithdrawn(requestId);
+
+    // Update request state to Cancelled. Handle in the withdraw transaction
+    // as there needs to be someone to pay for the gas to update the state
+    context.state = RequestState.Cancelled;
+    emit RequestCancelled(requestId);
+  }
+
   function _host(bytes32 slotId) internal view returns (address) {
     return slots[slotId].host;
   }
@@ -116,8 +135,20 @@ contract Marketplace is Collateral, Proofs {
     return _end(slotId);
   }
 
+  function _price(
+    uint64 numSlots,
+    uint256 duration,
+    uint256 reward) internal pure returns (uint256) {
+
+    return numSlots * duration * reward;
+  }
+
+  function _price(Request memory request) internal pure returns (uint256) {
+    return _price(request.ask.slots, request.ask.duration, request.ask.reward);
+  }
+
   function price(Request calldata request) private pure returns (uint256) {
-    return request.ask.slots * request.ask.duration * request.ask.reward;
+    return _price(request.ask.slots, request.ask.duration, request.ask.reward);
   }
 
   function pricePerSlot(Request memory request) private pure returns (uint256) {
@@ -164,7 +195,8 @@ contract Marketplace is Collateral, Proofs {
     New,        // [default] waiting to fill slots
     Started,    // all slots filled, accepting regular proofs
     Cancelled,  // not enough slots filled before expiry
-    Finished    // successfully completed
+    Finished,   // successfully completed
+    Failed      // too many nodes have failed to provide proofs, data lost
   }
 
   struct RequestContext {
@@ -184,6 +216,8 @@ contract Marketplace is Collateral, Proofs {
     uint256 indexed slotIndex,
     bytes32 indexed slotId
   );
+  event RequestCancelled(bytes32 requestId);
+  event FundsWithdrawn(bytes32 requestId);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;

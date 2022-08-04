@@ -4,6 +4,7 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { now, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
+const { waitUntilExpired } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
   snapshot,
@@ -257,6 +258,78 @@ describe("Marketplace", function () {
         await marketplace.fillSlot(slot.request, i, proof)
       }
       await expect(await marketplace.state(slot.request)).to.equal(1)
+    })
+    it("fails when all slots are already filled", async function () {
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await expect(
+        marketplace.fillSlot(slot.request, lastSlot, proof)
+      ).to.be.revertedWith("Invalid state")
+    })
+  })
+
+  describe("withdrawing funds", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("rejects withdraw when request not yet timed out", async function () {
+      switchAccount(client)
+      await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
+        "Request not yet timed out"
+      )
+    })
+
+    it("rejects withdraw when wrong account used", async function () {
+      await waitUntilExpired(request.expiry)
+      await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
+        "Invalid client address"
+      )
+    })
+
+    it("rejects withdraw when in wrong state", async function () {
+      // fill all slots, should change state to RequestState.Started
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await waitUntilExpired(request.expiry)
+      switchAccount(client)
+      await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
+        "Invalid state"
+      )
+    })
+
+    it("emits event once funds are withdrawn", async function () {
+      await waitUntilExpired(request.expiry)
+      switchAccount(client)
+      await expect(marketplace.withdrawFunds(slot.request))
+        .to.emit(marketplace, "FundsWithdrawn")
+        .withArgs(requestId(request))
+    })
+
+    it("emits event once request is cancelled", async function () {
+      await waitUntilExpired(request.expiry)
+      switchAccount(client)
+      await expect(marketplace.withdrawFunds(slot.request))
+        .to.emit(marketplace, "RequestCancelled")
+        .withArgs(requestId(request))
+    })
+
+    it("withdraws to the client", async function () {
+      await waitUntilExpired(request.expiry)
+      switchAccount(client)
+      const startBalance = await token.balanceOf(client.address)
+      await marketplace.withdrawFunds(slot.request)
+      const endBalance = await token.balanceOf(client.address)
+      expect(endBalance - startBalance).to.equal(price(request))
     })
   })
 })
