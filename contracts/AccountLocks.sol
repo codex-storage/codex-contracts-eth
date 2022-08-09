@@ -42,6 +42,18 @@ contract AccountLocks {
     lock.unlocked = true;
   }
 
+  /// Extends the locks expiry time. Lock must not have already expired.
+  /// NOTE: We do not need to check that msg.sender is the lock.owner because
+  /// this function is internal, and is only called after all checks have been
+  /// performed in Marketplace.fillSlot.
+  function _extendLockExpiry(bytes32 lockId, uint256 duration) internal {
+    Lock storage lock = locks[lockId];
+    require(lock.owner != address(0), "Lock does not exist");
+    // require(lock.owner == msg.sender, "Only lock creator can extend expiry");
+    require(lock.expiry >= block.timestamp, "Lock already expired");
+    lock.expiry += duration;
+  }
+
   /// Unlocks an account. This will fail if there are any active locks attached
   /// to this account.
   /// Calling this function triggers a cleanup of inactive locks, making this

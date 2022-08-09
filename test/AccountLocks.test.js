@@ -1,7 +1,10 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
+const { hexlify, randomBytes, toHexString } = ethers.utils
+const { advanceTimeTo, snapshot, revert } = require("./evm")
 const { exampleLock } = require("./examples")
-const { now } = require("./time")
+const { now, hours } = require("./time")
+const { waitUntilExpired } = require("./marketplace")
 
 describe("Account Locks", function () {
   let locks
@@ -160,6 +163,44 @@ describe("Account Locks", function () {
         await locks.unlock(id)
       }
       await locks.unlockAccount()
+    })
+  })
+
+  describe("extend lock expiry", function () {
+    let expiry
+    let id
+
+    beforeEach(async function () {
+      await snapshot()
+
+      let lock = exampleLock()
+      id = lock.id
+      expiry = lock.expiry
+      await locks.createLock(id, expiry)
+      let [account] = await ethers.getSigners()
+      await locks.lock(account.address, id)
+    })
+
+    afterEach(async function () {
+      await revert()
+    })
+
+    it("fails when lock id doesn't exist", async function () {
+      let other = exampleLock()
+      await expect(
+        locks.extendLockExpiry(other.id, hours(1))
+      ).to.be.revertedWith("Lock does not exist")
+    })
+
+    it("fails when lock is already expired", async function () {
+      waitUntilExpired(expiry + hours(1))
+      await expect(locks.extendLockExpiry(id, hours(1))).to.be.revertedWith(
+        "Lock already expired"
+      )
+    })
+
+    it("successfully updates lock expiry", async function () {
+      await expect(locks.extendLockExpiry(id, hours(1))).not.to.be.reverted
     })
   })
 })

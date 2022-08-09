@@ -76,6 +76,7 @@ contract Marketplace is Collateral, Proofs {
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
+      _extendLockExpiry(requestId, block.timestamp + request.ask.duration);
       emit RequestFulfilled(requestId);
     }
   }
