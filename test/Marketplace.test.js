@@ -332,4 +332,55 @@ describe("Marketplace", function () {
       expect(endBalance - startBalance).to.equal(price(request))
     })
   })
+
+  describe("contract state", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    const RequestState = {
+      New: 0,
+      Started: 1,
+      Cancelled: 2,
+      Finished: 3,
+      Failed: 4,
+    }
+
+    it("isCancelled is true once request is cancelled", async function () {
+      await expect(await marketplace.isCancelled(slot.request)).to.equal(false)
+      await waitUntilExpired(request.expiry)
+      await expect(await marketplace.isCancelled(slot.request)).to.equal(true)
+    })
+
+    it("state is Cancelled when client withdraws funds", async function () {
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.New
+      )
+      await waitUntilExpired(request.expiry)
+      switchAccount(client)
+      await marketplace.withdrawFunds(slot.request)
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.Cancelled
+      )
+    })
+
+    it("state is Started once all slots are filled", async function () {
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.New
+      )
+      // fill all slots, should change state to RequestState.Started
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.Started
+      )
+    })
+  })
 })

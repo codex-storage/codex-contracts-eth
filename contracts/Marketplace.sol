@@ -116,6 +116,16 @@ contract Marketplace is Collateral, Proofs {
     emit RequestCancelled(requestId);
   }
 
+  function isCancelled(bytes32 requestId) public view returns (bool) {
+    RequestContext storage context = requestContexts[requestId];
+    return
+      context.state == RequestState.Cancelled ||
+      (
+        context.state == RequestState.New &&
+        block.timestamp > requests[requestId].expiry
+      );
+  }
+
   function _host(bytes32 slotId) internal view returns (address) {
     return slots[slotId].host;
   }
