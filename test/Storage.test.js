@@ -111,6 +111,15 @@ describe("Storage", function () {
       const expectedBalance = (collateralAmount * (100 - slashPercentage)) / 100
       expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
     })
+
+    it("fails to mark proof as missing when cancelled", async function () {
+      await storage.fillSlot(slot.request, slot.index, proof)
+      await advanceTimeTo(request.expiry + 1)
+      let missedPeriod = periodOf(await currentTime())
+      await expect(
+        storage.markProofAsMissing(slotId(slot), missedPeriod)
+      ).to.be.revertedWith("Request was cancelled")
+    })
   })
 })
 
