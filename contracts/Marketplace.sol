@@ -72,6 +72,7 @@ contract Marketplace is Collateral, Proofs {
     _submitProof(slotId, proof);
 
     slot.host = msg.sender;
+    slot.requestId = requestId;
     context.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
@@ -119,18 +120,29 @@ contract Marketplace is Collateral, Proofs {
     emit RequestCancelled(requestId);
   }
 
-  /// @notice Rseturn true if the request state is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
+  /// @notice Return true if the request state is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
   /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
   /// @param requestId the id of the request
   /// @return true if request is cancelled
   function isCancelled(bytes32 requestId) public view returns (bool) {
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext memory context = requestContexts[requestId];
     return
       context.state == RequestState.Cancelled ||
       (
         context.state == RequestState.New &&
         block.timestamp > requests[requestId].expiry
       );
+  }
+
+  /// @notice Return true if the request state the slot belongs to is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
+  /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
+  /// @param slotId the id of the slot
+  /// @return true if request is cancelled
+  function isSlotCancelled(bytes32 slotId) public view returns (bool) {
+    Slot memory slot = slots[slotId];
+    require(slot.host != address(0), "Slot empty");
+    require(slot.requestId != 0, "Missing request id");
+    return isCancelled(slot.requestId);
   }
 
   function _host(bytes32 slotId) internal view returns (address) {
@@ -225,6 +237,7 @@ contract Marketplace is Collateral, Proofs {
   struct Slot {
     address host;
     bool hostPaid;
+    bytes32 requestId;
   }
 
   event StorageRequested(bytes32 requestId, Ask ask);
