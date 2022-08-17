@@ -108,8 +108,8 @@ contract Marketplace is Collateral, Proofs {
     return _timeout();
   }
 
-  function proofEnd(bytes32 contractId) public view returns (uint256) {
-    return _end(contractId);
+  function proofEnd(bytes32 slotId) public view returns (uint256) {
+    return _end(slotId);
   }
 
   function price(Request calldata request) private pure returns (uint256) {
