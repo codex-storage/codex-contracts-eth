@@ -65,6 +65,7 @@ contract Storage is Collateral, Marketplace {
   }
 
   function markProofAsMissing(bytes32 slotId, uint256 period) public {
+    require(!isCancelled(slotId), "Request was cancelled");
     _markProofAsMissing(slotId, period);
     if (_missed(slotId) % slashMisses == 0) {
       _slash(_host(slotId), slashPercentage);

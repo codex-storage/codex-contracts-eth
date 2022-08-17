@@ -97,6 +97,9 @@ contract Marketplace is Collateral, Proofs {
     require(token.transfer(slot.host, amount), "Payment failed");
   }
 
+  /// @notice Withdraws storage request funds back to the client that deposited them.
+  /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.
+  /// @param requestId the id of the request
   function withdrawFunds(bytes32 requestId) public marketplaceInvariant {
     Request memory request = requests[requestId];
     require(block.timestamp > request.expiry, "Request not yet timed out");
@@ -116,6 +119,10 @@ contract Marketplace is Collateral, Proofs {
     emit RequestCancelled(requestId);
   }
 
+  /// @notice Rseturn true if the request state is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
+  /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
+  /// @param requestId the id of the request
+  /// @return true if request is cancelled
   function isCancelled(bytes32 requestId) public view returns (bool) {
     RequestContext storage context = requestContexts[requestId];
     return
