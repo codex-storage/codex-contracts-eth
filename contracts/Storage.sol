@@ -32,42 +32,42 @@ contract Storage is Collateral, Marketplace {
     slashPercentage = _slashPercentage;
   }
 
-  function getRequest(bytes32 id) public view returns (Request memory) {
-    return _request(id);
+  function getRequest(bytes32 requestId) public view returns (Request memory) {
+    return _request(requestId);
   }
 
-  function getHost(bytes32 id) public view returns (address) {
-    return _host(id);
+  function getHost(bytes32 requestId) public view returns (address) {
+    return _host(requestId);
   }
 
-  function missingProofs(bytes32 contractId) public view returns (uint256) {
-    return _missed(contractId);
+  function missingProofs(bytes32 slotId) public view returns (uint256) {
+    return _missed(slotId);
   }
 
-  function isProofRequired(bytes32 contractId) public view returns (bool) {
-    return _isProofRequired(contractId);
+  function isProofRequired(bytes32 slotId) public view returns (bool) {
+    return _isProofRequired(slotId);
   }
 
-  function willProofBeRequired(bytes32 contractId) public view returns (bool) {
-    return _willProofBeRequired(contractId);
+  function willProofBeRequired(bytes32 slotId) public view returns (bool) {
+    return _willProofBeRequired(slotId);
   }
 
-  function getChallenge(bytes32 contractId) public view returns (bytes32) {
-    return _getChallenge(contractId);
+  function getChallenge(bytes32 slotId) public view returns (bytes32) {
+    return _getChallenge(slotId);
   }
 
-  function getPointer(bytes32 id) public view returns (uint8) {
-    return _getPointer(id);
+  function getPointer(bytes32 slotId) public view returns (uint8) {
+    return _getPointer(slotId);
   }
 
-  function submitProof(bytes32 contractId, bytes calldata proof) public {
-    _submitProof(contractId, proof);
+  function submitProof(bytes32 slotId, bytes calldata proof) public {
+    _submitProof(slotId, proof);
   }
 
-  function markProofAsMissing(bytes32 contractId, uint256 period) public {
-    _markProofAsMissing(contractId, period);
-    if (_missed(contractId) % slashMisses == 0) {
-      _slash(_host(contractId), slashPercentage);
+  function markProofAsMissing(bytes32 slotId, uint256 period) public {
+    _markProofAsMissing(slotId, period);
+    if (_missed(slotId) % slashMisses == 0) {
+      _slash(_host(slotId), slashPercentage);
     }
   }
 }
