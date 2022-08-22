@@ -124,7 +124,7 @@ contract Marketplace is Collateral, Proofs {
   /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
   /// @param requestId the id of the request
   /// @return true if request is cancelled
-  function isCancelled(bytes32 requestId) public view returns (bool) {
+  function _isCancelled(bytes32 requestId) internal view returns (bool) {
     RequestContext memory context = requestContexts[requestId];
     return
       context.state == RequestState.Cancelled ||
@@ -134,15 +134,23 @@ contract Marketplace is Collateral, Proofs {
       );
   }
 
+  /// @notice Return id of request that slot belongs to
+  /// @dev Returns requestId that is mapped to the slotId
+  /// @param slotId id of the slot
+  /// @return if of the request the slot belongs to
+  function _getRequestIdForSlot(bytes32 slotId) internal view returns (bytes32) {
+    Slot memory slot = _slot(slotId);
+    require(slot.requestId != 0, "Missing request id");
+    return slot.requestId;
+  }
+
   /// @notice Return true if the request state the slot belongs to is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
   /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
   /// @param slotId the id of the slot
   /// @return true if request is cancelled
-  function isSlotCancelled(bytes32 slotId) public view returns (bool) {
-    Slot memory slot = slots[slotId];
-    require(slot.host != address(0), "Slot empty");
-    require(slot.requestId != 0, "Missing request id");
-    return isCancelled(slot.requestId);
+  function _isSlotCancelled(bytes32 slotId) internal view returns (bool) {
+    bytes32 requestId = _getRequestIdForSlot(slotId);
+    return _isCancelled(requestId);
   }
 
   function _host(bytes32 slotId) internal view returns (address) {
@@ -151,6 +159,12 @@ contract Marketplace is Collateral, Proofs {
 
   function _request(bytes32 id) internal view returns (Request storage) {
     return requests[id];
+  }
+
+  function _slot(bytes32 slotId) internal view returns (Slot memory) {
+    Slot memory slot = slots[slotId];
+    require(slot.host != address(0), "Slot empty");
+    return slot;
   }
 
   function proofPeriod() public view returns (uint256) {
