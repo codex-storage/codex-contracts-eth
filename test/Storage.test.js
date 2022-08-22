@@ -7,6 +7,7 @@ const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
 const { requestId, slotId } = require("./ids")
 const { periodic } = require("./time")
 const { price } = require("./price")
+const { waitUntilExpired } = require("./marketplace")
 
 describe("Storage", function () {
   const proof = hexlify(randomBytes(42))
@@ -119,6 +120,25 @@ describe("Storage", function () {
       await expect(
         storage.markProofAsMissing(slotId(slot), missedPeriod)
       ).to.be.revertedWith("Request was cancelled")
+    })
+  })
+  describe("contract state", function () {
+    it("isCancelled is true once request is cancelled", async function () {
+      await expect(await storage.isCancelled(slot.request)).to.equal(false)
+      await waitUntilExpired(request.expiry)
+      await expect(await storage.isCancelled(slot.request)).to.equal(true)
+    })
+
+    it("isSlotCancelled fails when slot is empty", async function () {
+      await expect(storage.isSlotCancelled(slotId(slot))).to.be.revertedWith(
+        "Slot empty"
+      )
+    })
+
+    it("isSlotCancelled is true once request is cancelled", async function () {
+      await storage.fillSlot(slot.request, slot.index, proof)
+      await waitUntilExpired(request.expiry)
+      await expect(await storage.isSlotCancelled(slotId(slot))).to.equal(true)
     })
   })
 })

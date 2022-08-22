@@ -351,26 +351,6 @@ describe("Marketplace", function () {
       Failed: 4,
     }
 
-    it("isCancelled is true once request is cancelled", async function () {
-      await expect(await marketplace.isCancelled(slot.request)).to.equal(false)
-      await waitUntilExpired(request.expiry)
-      await expect(await marketplace.isCancelled(slot.request)).to.equal(true)
-    })
-
-    it("isSlotCancelled fails when slot is empty", async function () {
-      await expect(
-        marketplace.isSlotCancelled(slotId(slot))
-      ).to.be.revertedWith("Slot empty")
-    })
-
-    it("isSlotCancelled is true once request is cancelled", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await waitUntilExpired(request.expiry)
-      await expect(await marketplace.isSlotCancelled(slotId(slot))).to.equal(
-        true
-      )
-    })
-
     it("state is Cancelled when client withdraws funds", async function () {
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.New

@@ -36,6 +36,18 @@ contract Storage is Collateral, Marketplace {
     return _request(requestId);
   }
 
+  function getSlot(bytes32 slotId) public view returns (Slot memory) {
+    return _slot(slotId);
+  }
+
+  function isCancelled(bytes32 requestId) public view returns(bool) {
+    return _isCancelled(requestId);
+  }
+
+  function isSlotCancelled(bytes32 slotId) public view returns (bool) {
+    return _isSlotCancelled(slotId);
+  }
+
   function getHost(bytes32 requestId) public view returns (address) {
     return _host(requestId);
   }
