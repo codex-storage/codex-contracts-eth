@@ -215,7 +215,7 @@ describe("Marketplace", function () {
       ).to.be.revertedWith("Unknown request")
     })
 
-    it("is rejected when request is expired", async function () {
+    it("is rejected when request is expired/cancelled", async function () {
       switchAccount(client)
       let expired = { ...request, expiry: now() - hours(1) }
       await token.approve(marketplace.address, price(request))
@@ -223,7 +223,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await expect(
         marketplace.fillSlot(requestId(expired), slot.index, proof)
-      ).to.be.revertedWith("Request expired")
+      ).to.be.revertedWith("Request cancelled")
     })
 
     it("is rejected when slot index not in range", async function () {
