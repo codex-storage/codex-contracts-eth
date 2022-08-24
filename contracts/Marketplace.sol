@@ -55,10 +55,12 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.Started, "Invalid state");
 
-
     _removeAccountLock(slot.host, requestId);
-    // TODO: burn host's collateral except for repair costs + mark proof
+
+    // TODO: burn host's slot collateral except for repair costs + mark proof
     // missing reward
+    // Slot collateral is not yet implemented as the design decision was
+    // not finalised.
 
     _unexpectProofs(slotId);
 
@@ -66,6 +68,17 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = 0;
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
+
+    Request memory request = _request(requestId);
+    uint256 slotsLost = request.ask.slots - context.slotsFilled;
+    if (slotsLost > request.ask.maxSlotLoss) {
+      context.state = RequestState.Failed;
+      emit RequestFailed(requestId);
+
+      // TODO: burn all remaining slot collateral (note: slot collateral not
+      // yet implemented)
+      // TODO: send client remaining funds
+    }
   }
 
   function fillSlot(
@@ -74,10 +87,10 @@ contract Marketplace is Collateral, Proofs {
     bytes calldata proof
   ) public marketplaceInvariant {
     Request storage request = _request(requestId);
-    // TODO: change below to check !_isCancelled(requestId) instead?
-    require(request.expiry > block.timestamp, "Request expired");
     require(slotIndex < request.ask.slots, "Invalid slot");
     RequestContext storage context = requestContexts[requestId];
+    // TODO: change below to check !_isCancelled(requestId) instead?
+    require(!_isCancelled(requestId), "Request cancelled");
     // TODO: in the case of repair, update below require condition by adding
     // || context.state == RequestState.Started
     require(context.state == RequestState.New, "Invalid state");
@@ -273,6 +286,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 duration; // how long content should be stored (in seconds)
     uint256 proofProbability; // how often storage proofs are required
     uint256 reward; // amount of tokens paid per second per slot to hosts
+    uint64 maxSlotLoss; // Max slots that can be lost without data considered to be lost
   }
 
   struct Content {
@@ -312,6 +326,7 @@ contract Marketplace is Collateral, Proofs {
 
   event StorageRequested(bytes32 requestId, Ask ask);
   event RequestFulfilled(bytes32 indexed requestId);
+  event RequestFailed(bytes32 indexed requestId);
   event SlotFilled(
     bytes32 indexed requestId,
     uint256 indexed slotIndex,
