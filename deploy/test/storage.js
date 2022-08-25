@@ -18,7 +18,7 @@ async function deployStorage({ deployments, getNamedAccounts }) {
     minCollateralThreshold,
   ]
   const { deployer } = await getNamedAccounts()
-  await deployments.deploy("Storage", { args, from: deployer })
+  await deployments.deploy("TestStorage", { args, from: deployer })
 }
 
 async function mine256blocks({ network, ethers }) {
@@ -32,5 +32,5 @@ module.exports = async (environment) => {
   await deployStorage(environment)
 }
 
-module.exports.tags = ["Storage"]
+module.exports.tags = ["TestStorage"]
 module.exports.dependencies = ["TestToken"]
