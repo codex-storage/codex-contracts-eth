@@ -102,22 +102,24 @@ contract Marketplace is Collateral, Proofs {
   /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.
   /// @param requestId the id of the request
   function withdrawFunds(bytes32 requestId) public marketplaceInvariant {
-    Request memory request = requests[requestId];
+    Request storage request = requests[requestId];
     require(block.timestamp > request.expiry, "Request not yet timed out");
     require(request.client == msg.sender, "Invalid client address");
     RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.New, "Invalid state");
 
-    uint256 amount = _price(request);
-    funds.sent += amount;
-    funds.balance -= amount;
-    token.transfer(msg.sender, amount);
-    emit FundsWithdrawn(requestId);
-
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
     emit RequestCancelled(requestId);
+
+    // TODO: To be changed once we start paying out hosts for the time they
+    // fill a slot. The amount that we paid to hosts will then have to be
+    // deducted from the price.
+    uint256 amount = _price(request);
+    funds.sent += amount;
+    funds.balance -= amount;
+    require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
   /// @notice Return true if the request state is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
@@ -262,7 +264,6 @@ contract Marketplace is Collateral, Proofs {
     bytes32 indexed slotId
   );
   event RequestCancelled(bytes32 requestId);
-  event FundsWithdrawn(bytes32 requestId);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;

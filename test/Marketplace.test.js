@@ -4,7 +4,7 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { now, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
-const { waitUntilExpired } = require("./marketplace")
+const { waitUntilExpired, RequestState } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
   snapshot,
@@ -176,6 +176,16 @@ describe("Marketplace", function () {
         marketplace.fillSlot(slot.request, invalid, proof)
       ).to.be.revertedWith("Invalid slot")
     })
+
+    it("fails when all slots are already filled", async function () {
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      await expect(
+        marketplace.fillSlot(slot.request, lastSlot, proof)
+      ).to.be.revertedWith("Invalid state")
+    })
   })
 
   describe("paying out a slot", function () {
@@ -257,16 +267,9 @@ describe("Marketplace", function () {
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.fillSlot(slot.request, i, proof)
       }
-      await expect(await marketplace.state(slot.request)).to.equal(1)
-    })
-    it("fails when all slots are already filled", async function () {
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i <= lastSlot; i++) {
-        await marketplace.fillSlot(slot.request, i, proof)
-      }
-      await expect(
-        marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Invalid state")
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.Started
+      )
     })
   })
 
@@ -307,14 +310,6 @@ describe("Marketplace", function () {
       )
     })
 
-    it("emits event once funds are withdrawn", async function () {
-      await waitUntilExpired(request.expiry)
-      switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request))
-        .to.emit(marketplace, "FundsWithdrawn")
-        .withArgs(requestId(request))
-    })
-
     it("emits event once request is cancelled", async function () {
       await waitUntilExpired(request.expiry)
       switchAccount(client)
@@ -342,14 +337,6 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, collateral)
       await marketplace.deposit(collateral)
     })
-
-    const RequestState = {
-      New: 0,
-      Started: 1,
-      Cancelled: 2,
-      Finished: 3,
-      Failed: 4,
-    }
 
     it("state is Cancelled when client withdraws funds", async function () {
       await expect(await marketplace.state(slot.request)).to.equal(
