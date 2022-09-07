@@ -193,7 +193,7 @@ describe("Account Locks", function () {
     })
 
     it("fails when lock is already expired", async function () {
-      waitUntilExpired(expiry + hours(1))
+      waitUntilExpired(expiry)
       await expect(locks.extendLockExpiry(id, hours(1))).to.be.revertedWith(
         "Lock already expired"
       )
