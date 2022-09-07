@@ -263,7 +263,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 indexed slotIndex,
     bytes32 indexed slotId
   );
-  event RequestCancelled(bytes32 requestId);
+  event RequestCancelled(bytes32 indexed requestId);
 
   modifier marketplaceInvariant() {
     MarketplaceFunds memory oldFunds = funds;
