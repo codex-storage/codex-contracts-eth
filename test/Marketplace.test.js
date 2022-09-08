@@ -11,6 +11,7 @@ const {
   revert,
   ensureMinimumBlockHeight,
   advanceTimeTo,
+  currentTime,
 } = require("./evm")
 
 describe("Marketplace", function () {
@@ -38,7 +39,7 @@ describe("Marketplace", function () {
       await token.mint(account.address, 1_000_000_000)
     }
 
-    const Marketplace = await ethers.getContractFactory("Marketplace")
+    const Marketplace = await ethers.getContractFactory("TestMarketplace")
     marketplace = await Marketplace.deploy(
       token.address,
       collateral,
@@ -338,7 +339,7 @@ describe("Marketplace", function () {
       await marketplace.deposit(collateral)
     })
 
-    it("state is Cancelled when client withdraws funds", async function () {
+    it("changes state to Cancelled when client withdraws funds", async function () {
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.New
       )
@@ -350,7 +351,7 @@ describe("Marketplace", function () {
       )
     })
 
-    it("state is Started once all slots are filled", async function () {
+    it("changes state to Started once all slots are filled", async function () {
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.New
       )
@@ -361,6 +362,43 @@ describe("Marketplace", function () {
       }
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.Started
+      )
+    })
+
+    it("changes state to Cancelled once request is cancelled", async function () {
+      await waitUntilExpired(request.expiry)
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.Cancelled
+      )
+    })
+
+    it("changes isCancelled to true once request is cancelled", async function () {
+      await expect(await marketplace.isCancelled(slot.request)).to.be.false
+      await waitUntilExpired(request.expiry)
+      await expect(await marketplace.isCancelled(slot.request)).to.be.true
+    })
+
+    it("rejects isSlotCancelled when slot is empty", async function () {
+      await expect(
+        marketplace.isSlotCancelled(slotId(slot))
+      ).to.be.revertedWith("Slot empty")
+    })
+
+    it("changes isSlotCancelled to true once request is cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(await marketplace.isSlotCancelled(slotId(slot))).to.be.false
+      await waitUntilExpired(request.expiry)
+      await expect(await marketplace.isSlotCancelled(slotId(slot))).to.be.true
+    })
+
+    it("changes proofEnd to the past when request is cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(
+        await currentTime()
+      )
+      await waitUntilExpired(request.expiry)
+      await expect(await marketplace.proofEnd(slotId(slot))).to.be.lt(
+        await currentTime()
       )
     })
   })

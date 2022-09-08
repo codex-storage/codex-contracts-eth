@@ -40,14 +40,6 @@ contract Storage is Collateral, Marketplace {
     return _slot(slotId);
   }
 
-  function isCancelled(bytes32 requestId) public view returns(bool) {
-    return _isCancelled(requestId);
-  }
-
-  function isSlotCancelled(bytes32 slotId) public view returns (bool) {
-    return _isSlotCancelled(slotId);
-  }
-
   function getHost(bytes32 requestId) public view returns (address) {
     return _host(requestId);
   }
@@ -57,14 +49,23 @@ contract Storage is Collateral, Marketplace {
   }
 
   function isProofRequired(bytes32 slotId) public view returns (bool) {
+    if(!_slotAcceptsProofs(slotId)) {
+      return false;
+    }
     return _isProofRequired(slotId);
   }
 
   function willProofBeRequired(bytes32 slotId) public view returns (bool) {
+    if(!_slotAcceptsProofs(slotId)) {
+      return false;
+    }
     return _willProofBeRequired(slotId);
   }
 
   function getChallenge(bytes32 slotId) public view returns (bytes32) {
+    if(!_slotAcceptsProofs(slotId)) {
+      return bytes32(0);
+    }
     return _getChallenge(slotId);
   }
 
@@ -76,8 +77,10 @@ contract Storage is Collateral, Marketplace {
     _submitProof(slotId, proof);
   }
 
-  function markProofAsMissing(bytes32 slotId, uint256 period) public {
-    require(!isSlotCancelled(slotId), "Request was cancelled");
+  function markProofAsMissing(bytes32 slotId, uint256 period)
+    public
+    slotMustAcceptProofs(slotId)
+  {
     _markProofAsMissing(slotId, period);
     if (_missed(slotId) % slashMisses == 0) {
       _slash(_host(slotId), slashPercentage);
