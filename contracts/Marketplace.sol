@@ -169,6 +169,10 @@ contract Marketplace is Collateral, Proofs {
     return slot;
   }
 
+  function _context(bytes32 requestId) internal view returns (RequestContext storage) {
+    return requestContexts[requestId];
+  }
+
   function proofPeriod() public view returns (uint256) {
     return _period();
   }
@@ -178,6 +182,9 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function proofEnd(bytes32 slotId) public view returns (uint256) {
+    if (!_slotAcceptsProofs(slotId)) {
+      return block.timestamp - 1;
+    }
     return _end(slotId);
   }
 
@@ -202,7 +209,30 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function state(bytes32 requestId) public view returns (RequestState) {
-    return requestContexts[requestId].state;
+    // TODO: add check for _isFinished
+    if (_isCancelled(requestId)) {
+      return RequestState.Cancelled;
+    } else {
+      RequestContext storage context = _context(requestId);
+      return context.state;
+    }
+  }
+
+
+  /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
+  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
+  /// @param requestId id of the request for which to obtain state info
+  function _requestAcceptsProofs(bytes32 requestId) internal view returns (bool) {
+    RequestState s = state(requestId);
+    return s == RequestState.New || s == RequestState.Started;
+  }
+
+  /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
+  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
+  /// @param slotId id of the slot, that is mapped to a request, for which to obtain state info
+  function _slotAcceptsProofs(bytes32 slotId) internal view returns (bool) {
+    bytes32 requestId = _getRequestIdForSlot(slotId);
+    return _requestAcceptsProofs(requestId);
   }
 
   struct Request {
@@ -271,6 +301,15 @@ contract Marketplace is Collateral, Proofs {
     assert(funds.received >= oldFunds.received);
     assert(funds.sent >= oldFunds.sent);
     assert(funds.received == funds.balance + funds.sent);
+  }
+
+  /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.
+  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
+  /// @param slotId id of the slot, that is mapped to a request, for which to obtain state info
+  modifier slotMustAcceptProofs(bytes32 slotId) {
+    bytes32 requestId = _getRequestIdForSlot(slotId);
+    require(_requestAcceptsProofs(requestId), "Slot not accepting proofs");
+    _;
   }
 
   struct MarketplaceFunds {
