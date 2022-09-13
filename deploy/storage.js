@@ -6,6 +6,7 @@ async function deployStorage({ deployments, getNamedAccounts }) {
   const collateralAmount = 100
   const slashMisses = 3
   const slashPercentage = 10
+  const missThreshold = 20
   const args = [
     token.address,
     proofPeriod,
@@ -14,6 +15,7 @@ async function deployStorage({ deployments, getNamedAccounts }) {
     collateralAmount,
     slashMisses,
     slashPercentage,
+    missThreshold,
   ]
   const { deployer } = await getNamedAccounts()
   await deployments.deploy("Storage", { args, from: deployer })

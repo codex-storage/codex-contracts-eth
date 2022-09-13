@@ -47,13 +47,36 @@ contract Marketplace is Collateral, Proofs {
     emit StorageRequested(id, request.ask);
   }
 
+  function _freeSlot(
+    bytes32 slotId
+  ) internal marketplaceInvariant {
+    bytes32 requestId = _getRequestIdForSlot(slotId);
+    RequestContext storage context = requestContexts[requestId];
+    require(context.state == RequestState.Started, "Invalid state");
+    require(!_isCancelled(requestId), "Request cancelled");
+
+    Slot storage slot = _slot(slotId);
+    require(slot.host != address(0), "Slot not filled");
+
+    _removeAccountLock(slot.host, requestId);
+    // TODO: burn host's collateral except for repair costs + mark proof
+    // missing reward
+
+    _unexpectProofs(slotId);
+
+    slot.host = address(0);
+    slot.requestId = 0;
+    context.slotsFilled -= 1;
+    emit SlotFreed(requestId, slotId);
+  }
+
   function fillSlot(
     bytes32 requestId,
     uint256 slotIndex,
     bytes calldata proof
   ) public marketplaceInvariant {
-    Request storage request = requests[requestId];
-    require(request.client != address(0), "Unknown request");
+    Request storage request = _request(requestId);
+    // TODO: change below to check !_isCancelled(requestId) instead?
     require(request.expiry > block.timestamp, "Request expired");
     require(slotIndex < request.ask.slots, "Invalid slot");
     RequestContext storage context = requestContexts[requestId];
@@ -160,11 +183,13 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function _request(bytes32 id) internal view returns (Request storage) {
+    Request storage request = requests[id];
+    require(request.client != address(0), "Unknown request");
     return requests[id];
   }
 
-  function _slot(bytes32 slotId) internal view returns (Slot memory) {
-    Slot memory slot = slots[slotId];
+  function _slot(bytes32 slotId) internal view returns (Slot storage) {
+    Slot storage slot = slots[slotId];
     require(slot.host != address(0), "Slot empty");
     return slot;
   }
@@ -292,8 +317,9 @@ contract Marketplace is Collateral, Proofs {
   event SlotFilled(
     bytes32 indexed requestId,
     uint256 indexed slotIndex,
-    bytes32 indexed slotId
+    bytes32 slotId
   );
+  event SlotFreed(bytes32 indexed requestId, bytes32 slotId);
   event RequestCancelled(bytes32 indexed requestId);
 
   modifier marketplaceInvariant() {

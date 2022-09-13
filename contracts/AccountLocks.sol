@@ -64,6 +64,25 @@ contract AccountLocks {
     require(accountLocks.length == 0, "Account locked");
   }
 
+  /// Removes an account lock
+  function _removeAccountLock(address account, bytes32 lockId) internal {
+    require(accounts[account].locks.length > 0, "Account lock doesn't exist");
+    bytes32[] storage accountLocks = accounts[account].locks;
+    uint256 index = 0;
+    while (true) {
+      if (index >= accountLocks.length) {
+        return;
+      }
+      if (accountLocks[index] == lockId) {
+        accountLocks[index] = accountLocks[accountLocks.length - 1];
+        accountLocks.pop();
+      } else {
+        index++;
+      }
+    }
+
+  }
+
   function removeInactiveLocks(bytes32[] storage lockIds) private {
     uint256 index = 0;
     while (true) {
