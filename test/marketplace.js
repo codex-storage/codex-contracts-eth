@@ -17,4 +17,4 @@ async function waitUntilAllSlotsFilled(contract, numSlots, requestId, proof) {
   }
 }
 
-module.exports = { waitUntilExpired, waitUntilAllSlotsFilled }
+module.exports = { waitUntilExpired, waitUntilAllSlotsFilled, RequestState }
