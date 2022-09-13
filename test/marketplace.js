@@ -10,4 +10,11 @@ async function waitUntilExpired(expiry) {
   await ethers.provider.send("hardhat_mine", [ethers.utils.hexValue(expiry)])
 }
 
-module.exports = { waitUntilExpired, RequestState }
+async function waitUntilAllSlotsFilled(contract, numSlots, requestId, proof) {
+  const lastSlot = numSlots - 1
+  for (let i = 0; i <= lastSlot; i++) {
+    await contract.fillSlot(requestId, i, proof)
+  }
+}
+
+module.exports = { waitUntilExpired, waitUntilAllSlotsFilled }

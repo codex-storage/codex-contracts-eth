@@ -55,8 +55,6 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.Started, "Invalid state");
 
-    _removeAccountLock(slot.host, requestId);
-
     // TODO: burn host's slot collateral except for repair costs + mark proof
     // missing reward
     // Slot collateral is not yet implemented as the design decision was
