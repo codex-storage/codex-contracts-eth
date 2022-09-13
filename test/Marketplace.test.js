@@ -4,7 +4,7 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { now, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
-const { waitUntilExpired, RequestState } = require("./marketplace")
+const { waitUntilExpired, waitUntilAllSlotsFilled, RequestState } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
   snapshot,
@@ -119,13 +119,6 @@ describe("Marketplace", function () {
       // await marketplace.fillSlot(slot.request, slot.index, proof)
     })
 
-    async function waitUntilAllSlotsFilled() {
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i <= lastSlot; i++) {
-        await marketplace.fillSlot(slot.request, i, proof)
-      }
-    }
-
     it("fails to free slot when slot not filled", async function () {
       slot.index = 5
       let nonExistentId = slotId(slot)
@@ -140,19 +133,34 @@ describe("Marketplace", function () {
     })
 
     it("successfully frees slot", async function () {
-      await waitUntilAllSlotsFilled()
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await expect(marketplace.freeSlot(id)).not.to.be.reverted
     })
 
     it("emits event once slot is freed", async function () {
-      await waitUntilAllSlotsFilled()
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await expect(await marketplace.freeSlot(id))
         .to.emit(marketplace, "SlotFreed")
         .withArgs(slot.request, id)
     })
 
     it("cannot get slot once freed", async function () {
-      await waitUntilAllSlotsFilled()
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await marketplace.freeSlot(id)
       await expect(marketplace.slot(id)).to.be.revertedWith("Slot empty")
     })
@@ -410,13 +418,31 @@ describe("Marketplace", function () {
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.New
       )
-      // fill all slots, should change state to RequestState.Started
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i <= lastSlot; i++) {
-        await marketplace.fillSlot(slot.request, i, proof)
-      }
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.Started
+      )
+    })
+
+    it("state is Failed once too many slots are freed", async function () {
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
+      for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
+        slot.index = i
+        let id = slotId(slot)
+        await marketplace.freeSlot(id)
+      }
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.Failed
       )
     })
 
