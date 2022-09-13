@@ -9,6 +9,7 @@ contract Storage is Collateral, Marketplace {
   uint256 public collateralAmount;
   uint256 public slashMisses;
   uint256 public slashPercentage;
+  uint256 public missThreshold;
 
   constructor(
     IERC20 token,
@@ -17,7 +18,8 @@ contract Storage is Collateral, Marketplace {
     uint8 _proofDowntime,
     uint256 _collateralAmount,
     uint256 _slashMisses,
-    uint256 _slashPercentage
+    uint256 _slashPercentage,
+    uint256 _missThreshold
   )
     Marketplace(
       token,
@@ -30,6 +32,7 @@ contract Storage is Collateral, Marketplace {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
+    missThreshold = _missThreshold;
   }
 
   function getRequest(bytes32 requestId) public view returns (Request memory) {
@@ -82,8 +85,12 @@ contract Storage is Collateral, Marketplace {
     slotMustAcceptProofs(slotId)
   {
     _markProofAsMissing(slotId, period);
-    if (_missed(slotId) % slashMisses == 0) {
+    uint256 missed = _missed(slotId);
+    if (missed % slashMisses == 0) {
       _slash(_host(slotId), slashPercentage);
+    }
+    if (missed > missThreshold) {
+      _freeSlot(slotId);
     }
   }
 }

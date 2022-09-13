@@ -63,6 +63,13 @@ contract Proofs {
     markers[id] = uint256(blockhash(block.number - 1)) % period;
   }
 
+  function _unexpectProofs(
+    bytes32 id
+  ) internal {
+    require(ids[id], "Proof id not in use");
+    ids[id] = false;
+  }
+
   function _getPointer(bytes32 id, uint256 proofPeriod)
     internal
     view
@@ -111,7 +118,8 @@ contract Proofs {
     pointer = _getPointer(id, proofPeriod);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
-    isRequired = uint256(challenge) % probability == 0;
+    // TODO: add test for below change
+    isRequired = ids[id] && uint256(challenge) % probability == 0;
   }
 
   function _isProofRequired(bytes32 id, uint256 proofPeriod)
