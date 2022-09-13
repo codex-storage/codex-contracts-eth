@@ -6,7 +6,7 @@ async function deployStorage({ deployments, getNamedAccounts }) {
   const collateralAmount = 100
   const slashMisses = 3
   const slashPercentage = 10
-  const missThreshold = 20
+  const minCollateralThreshold = 40
   const args = [
     token.address,
     proofPeriod,
@@ -15,10 +15,10 @@ async function deployStorage({ deployments, getNamedAccounts }) {
     collateralAmount,
     slashMisses,
     slashPercentage,
-    missThreshold,
+    minCollateralThreshold,
   ]
   const { deployer } = await getNamedAccounts()
-  await deployments.deploy("Storage", { args, from: deployer })
+  await deployments.deploy("TestStorage", { args, from: deployer })
 }
 
 async function mine256blocks({ network, ethers }) {
@@ -32,5 +32,5 @@ module.exports = async (environment) => {
   await deployStorage(environment)
 }
 
-module.exports.tags = ["Storage"]
+module.exports.tags = ["TestStorage"]
 module.exports.dependencies = ["TestToken"]

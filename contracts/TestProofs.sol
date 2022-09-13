@@ -40,6 +40,10 @@ contract TestProofs is Proofs {
     _expectProofs(id, _probability, _duration);
   }
 
+  function unexpectProofs(bytes32 id) public {
+    _unexpectProofs(id);
+  }
+
   function isProofRequired(bytes32 id) public view returns (bool) {
     return _isProofRequired(id);
   }

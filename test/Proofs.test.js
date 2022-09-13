@@ -138,6 +138,13 @@ describe("Proofs", function () {
       expect(await proofs.willProofBeRequired(id)).to.be.false
       expect(await proofs.isProofRequired(id)).to.be.true
     })
+
+    it("proofs won't be required when no longer expected", async function () {
+      expect(await proofs.getPointer(id)).to.be.lt(downtime)
+      expect(await proofs.willProofBeRequired(id)).to.be.true
+      await proofs.unexpectProofs(id)
+      expect(await proofs.willProofBeRequired(id)).to.be.false
+    })
   })
 
   describe("when proofs are required", function () {
@@ -255,6 +262,12 @@ describe("Proofs", function () {
       await expect(
         proofs.markProofAsMissing(id, missedPeriod)
       ).to.be.revertedWith("Proof already marked as missing")
+    })
+
+    it("requires no proofs when no longer expected", async function () {
+      await waitUntilProofIsRequired(id)
+      await proofs.unexpectProofs(id)
+      await expect(await proofs.isProofRequired(id)).to.be.false
     })
   })
 })
