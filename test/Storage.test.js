@@ -28,9 +28,9 @@ describe("Storage", function () {
   beforeEach(async function () {
     ;[client, host] = await ethers.getSigners()
 
-    await deployments.fixture(["TestToken", "TestStorage"])
+    await deployments.fixture(["TestToken", "Storage"])
     token = await ethers.getContract("TestToken")
-    storage = await ethers.getContract("TestStorage")
+    storage = await ethers.getContract("Storage")
 
     await token.mint(client.address, 1_000_000_000)
     await token.mint(host.address, 1_000_000_000)
@@ -210,17 +210,6 @@ describe("Storage", function () {
       }
     }
 
-    async function markProofAsMissing(slotId, onMarkAsMissing) {
-      for (let i = 0; i < slashMisses; i++) {
-        await waitUntilProofIsRequired(slotId)
-        let missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
-        if (i === slashMisses - 1 && typeof onMarkAsMissing === "function") {
-          onMarkAsMissing(missedPeriod)
-        } else await storage.markProofAsMissing(slotId, missedPeriod)
-      }
-    }
-
     it("frees slot when collateral slashed below minimum threshold", async function () {
       const id = slotId(slot)
 
@@ -231,25 +220,23 @@ describe("Storage", function () {
         proof
       )
 
-      while (true) {
-        await markProofAsMissing(id)
-        let balance = await storage.balanceOf(host.address)
-        let slashAmount = await storage.slashAmount(
-          host.address,
-          slashPercentage
-        )
-        if (balance - slashAmount < minCollateralThreshold) {
-          break
+      // max slashes before dropping below collateral threshold
+      const maxSlashes = 10
+      for (let i = 0; i < maxSlashes; i++) {
+        for (let j = 0; j < slashMisses; j++) {
+          await waitUntilProofIsRequired(id)
+          let missedPeriod = periodOf(await currentTime())
+          await advanceTime(period)
+          if (i === maxSlashes - 1 && j === slashMisses - 1) {
+            await expect(
+              await storage.markProofAsMissing(id, missedPeriod)
+            ).to.emit(storage, "SlotFreed")
+            await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
+          } else {
+            await storage.markProofAsMissing(id, missedPeriod)
+          }
         }
       }
-
-      let onMarkAsMissing = async function (missedPeriod) {
-        await expect(
-          await storage.markProofAsMissing(id, missedPeriod)
-        ).to.emit(storage, "SlotFreed")
-      }
-      await markProofAsMissing(id, onMarkAsMissing)
-      await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
     })
   })
 })

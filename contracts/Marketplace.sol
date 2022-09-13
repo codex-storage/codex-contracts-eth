@@ -87,7 +87,6 @@ contract Marketplace is Collateral, Proofs {
     Request storage request = _request(requestId);
     require(slotIndex < request.ask.slots, "Invalid slot");
     RequestContext storage context = requestContexts[requestId];
-    // TODO: change below to check !_isCancelled(requestId) instead?
     require(!_isCancelled(requestId), "Request cancelled");
     // TODO: in the case of repair, update below require condition by adding
     // || context.state == RequestState.Started
@@ -194,7 +193,7 @@ contract Marketplace is Collateral, Proofs {
   function _request(bytes32 id) internal view returns (Request storage) {
     Request storage request = requests[id];
     require(request.client != address(0), "Unknown request");
-    return requests[id];
+    return request;
   }
 
   function _slot(bytes32 slotId) internal view returns (Slot storage) {
