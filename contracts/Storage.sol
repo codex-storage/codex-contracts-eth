@@ -9,7 +9,7 @@ contract Storage is Collateral, Marketplace {
   uint256 public collateralAmount;
   uint256 public slashMisses;
   uint256 public slashPercentage;
-  uint256 public missThreshold;
+  uint256 public minCollateralThreshold;
 
   constructor(
     IERC20 token,
@@ -19,7 +19,7 @@ contract Storage is Collateral, Marketplace {
     uint256 _collateralAmount,
     uint256 _slashMisses,
     uint256 _slashPercentage,
-    uint256 _missThreshold
+    uint256 _minCollateralThreshold
   )
     Marketplace(
       token,
@@ -32,7 +32,7 @@ contract Storage is Collateral, Marketplace {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
-    missThreshold = _missThreshold;
+    minCollateralThreshold = _minCollateralThreshold;
   }
 
   function getRequest(bytes32 requestId) public view returns (Request memory) {
@@ -43,8 +43,8 @@ contract Storage is Collateral, Marketplace {
     return _slot(slotId);
   }
 
-  function getHost(bytes32 requestId) public view returns (address) {
-    return _host(requestId);
+  function getHost(bytes32 slotId) public view returns (address) {
+    return _host(slotId);
   }
 
   function missingProofs(bytes32 slotId) public view returns (uint256) {
@@ -85,12 +85,20 @@ contract Storage is Collateral, Marketplace {
     slotMustAcceptProofs(slotId)
   {
     _markProofAsMissing(slotId, period);
-    uint256 missed = _missed(slotId);
-    if (missed % slashMisses == 0) {
-      _slash(_host(slotId), slashPercentage);
-    }
-    if (missed > missThreshold) {
-      _freeSlot(slotId);
+    address host = _host(slotId);
+    if (_missed(slotId) % slashMisses == 0) {
+
+      uint256 slashAmount = _slashAmount(host, slashPercentage);
+      if (balanceOf(host) - slashAmount < minCollateralThreshold) {
+        // If host has been slashed enough such that the next slashing would
+        // cause the collateral to drop below the minimum threshold, the slot
+        // needs to be freed as the remaining collateral must be used for
+        // repairs and rewards (with any leftover to be burnt).
+        _freeSlot(slotId);
+      }
+      else {
+        _slash(host, slashPercentage);
+      }
     }
   }
 }
