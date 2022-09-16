@@ -87,17 +87,14 @@ contract Storage is Collateral, Marketplace {
     _markProofAsMissing(slotId, period);
     address host = _host(slotId);
     if (_missed(slotId) % slashMisses == 0) {
+        _slash(host, slashPercentage);
 
-      uint256 slashAmount = _slashAmount(host, slashPercentage);
-      if (balanceOf(host) - slashAmount < minCollateralThreshold) {
+      if (balanceOf(host) < minCollateralThreshold) {
         // If host has been slashed enough such that the next slashing would
         // cause the collateral to drop below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
         _freeSlot(slotId);
-      }
-      else {
-        _slash(host, slashPercentage);
       }
     }
   }

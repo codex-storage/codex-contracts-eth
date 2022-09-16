@@ -47,19 +47,11 @@ contract Collateral is AccountLocks {
     assert(token.transfer(msg.sender, amount));
   }
 
-  function _slashAmount(address account, uint256 percentage)
-    internal
-    view
-    returns (uint256)
-  {
-    return (balanceOf(account) * percentage) / 100;
-  }
-
   function _slash(address account, uint256 percentage)
     internal
     collateralInvariant
   {
-    uint256 amount = _slashAmount(account, percentage);
+    uint256 amount = (balanceOf(account) * percentage) / 100;
     funds.slashed += amount;
     subtract(account, amount);
   }

@@ -82,7 +82,7 @@ describe("Storage", function () {
     })
   })
 
-  describe("slashing when missing proofs", function () {
+  describe("missing proofs", function () {
     let period, periodOf, periodEnd
 
     beforeEach(async function () {
@@ -102,17 +102,51 @@ describe("Storage", function () {
       }
     }
 
-    it("reduces collateral when too many proofs are missing", async function () {
-      const id = slotId(slot)
-      await storage.fillSlot(slot.request, slot.index, proof)
-      for (let i = 0; i < slashMisses; i++) {
-        await waitUntilProofIsRequired(id)
-        let missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
-        await storage.markProofAsMissing(id, missedPeriod)
-      }
-      const expectedBalance = (collateralAmount * (100 - slashPercentage)) / 100
-      expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
+    describe("slashing when missing proofs", function () {
+      it("reduces collateral when too many proofs are missing", async function () {
+        const id = slotId(slot)
+        await storage.fillSlot(slot.request, slot.index, proof)
+        for (let i = 0; i < slashMisses; i++) {
+          await waitUntilProofIsRequired(id)
+          let missedPeriod = periodOf(await currentTime())
+          await advanceTime(period)
+          await storage.markProofAsMissing(id, missedPeriod)
+        }
+        const expectedBalance =
+          (collateralAmount * (100 - slashPercentage)) / 100
+        expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
+      })
+    })
+
+    describe("freeing a slot", function () {
+      it("frees slot when collateral slashed below minimum threshold", async function () {
+        const id = slotId(slot)
+
+        await waitUntilAllSlotsFilled(
+          storage,
+          request.ask.slots,
+          slot.request,
+          proof
+        )
+
+        // max slashes before dropping below collateral threshold
+        const maxSlashes = 10
+        for (let i = 0; i < maxSlashes; i++) {
+          for (let j = 0; j < slashMisses; j++) {
+            await waitUntilProofIsRequired(id)
+            let missedPeriod = periodOf(await currentTime())
+            await advanceTime(period)
+            if (i === maxSlashes - 1 && j === slashMisses - 1) {
+              await expect(
+                await storage.markProofAsMissing(id, missedPeriod)
+              ).to.emit(storage, "SlotFreed")
+              await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
+            } else {
+              await storage.markProofAsMissing(id, missedPeriod)
+            }
+          }
+        }
+      })
     })
   })
 
@@ -192,53 +226,7 @@ describe("Storage", function () {
     })
   })
   
-  describe("freeing a slot", function () {
-    beforeEach(async function () {
-      period = (await storage.proofPeriod()).toNumber()
-      ;({ periodOf, periodEnd } = periodic(period))
-    })
 
-    async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-      while (
-        !(
-          (await storage.isProofRequired(id)) &&
-          (await storage.getPointer(id)) < 250
-        )
-      ) {
-        await advanceTime(period)
-      }
-    }
-
-    it("frees slot when collateral slashed below minimum threshold", async function () {
-      const id = slotId(slot)
-
-      await waitUntilAllSlotsFilled(
-        storage,
-        request.ask.slots,
-        slot.request,
-        proof
-      )
-
-      // max slashes before dropping below collateral threshold
-      const maxSlashes = 10
-      for (let i = 0; i < maxSlashes; i++) {
-        for (let j = 0; j < slashMisses; j++) {
-          await waitUntilProofIsRequired(id)
-          let missedPeriod = periodOf(await currentTime())
-          await advanceTime(period)
-          if (i === maxSlashes - 1 && j === slashMisses - 1) {
-            await expect(
-              await storage.markProofAsMissing(id, missedPeriod)
-            ).to.emit(storage, "SlotFreed")
-            await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
-          } else {
-            await storage.markProofAsMissing(id, missedPeriod)
-          }
-        }
-      }
-    })
-  })
 })
 
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
