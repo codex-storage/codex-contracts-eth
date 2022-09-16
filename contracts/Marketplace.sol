@@ -47,38 +47,6 @@ contract Marketplace is Collateral, Proofs {
     emit StorageRequested(id, request.ask);
   }
 
-  function _freeSlot(
-    bytes32 slotId
-  ) internal marketplaceInvariant {
-    Slot storage slot = _slot(slotId);
-    bytes32 requestId = slot.requestId;
-    RequestContext storage context = requestContexts[requestId];
-    require(context.state == RequestState.Started, "Invalid state");
-
-    // TODO: burn host's slot collateral except for repair costs + mark proof
-    // missing reward
-    // Slot collateral is not yet implemented as the design decision was
-    // not finalised.
-
-    _unexpectProofs(slotId);
-
-    slot.host = address(0);
-    slot.requestId = 0;
-    context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slotId);
-
-    Request memory request = _request(requestId);
-    uint256 slotsLost = request.ask.slots - context.slotsFilled;
-    if (slotsLost > request.ask.maxSlotLoss) {
-      context.state = RequestState.Failed;
-      emit RequestFailed(requestId);
-
-      // TODO: burn all remaining slot collateral (note: slot collateral not
-      // yet implemented)
-      // TODO: send client remaining funds
-    }
-  }
-
   function fillSlot(
     bytes32 requestId,
     uint256 slotIndex,
@@ -110,6 +78,38 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Started;
       _extendLockExpiry(requestId, block.timestamp + request.ask.duration);
       emit RequestFulfilled(requestId);
+    }
+  }
+
+  function _freeSlot(
+    bytes32 slotId
+  ) internal marketplaceInvariant {
+    Slot storage slot = _slot(slotId);
+    bytes32 requestId = slot.requestId;
+    RequestContext storage context = requestContexts[requestId];
+    require(context.state == RequestState.Started, "Invalid state");
+
+    // TODO: burn host's slot collateral except for repair costs + mark proof
+    // missing reward
+    // Slot collateral is not yet implemented as the design decision was
+    // not finalised.
+
+    _unexpectProofs(slotId);
+
+    slot.host = address(0);
+    slot.requestId = 0;
+    context.slotsFilled -= 1;
+    emit SlotFreed(requestId, slotId);
+
+    Request memory request = _request(requestId);
+    uint256 slotsLost = request.ask.slots - context.slotsFilled;
+    if (slotsLost > request.ask.maxSlotLoss) {
+      context.state = RequestState.Failed;
+      emit RequestFailed(requestId);
+
+      // TODO: burn all remaining slot collateral (note: slot collateral not
+      // yet implemented)
+      // TODO: send client remaining funds
     }
   }
 
