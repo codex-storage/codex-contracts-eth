@@ -140,6 +140,8 @@ describe("Proofs", function () {
     })
 
     it("will not require proofs when no longer expected", async function () {
+      expect(await proofs.getPointer(id)).to.be.lt(downtime)
+      expect(await proofs.willProofBeRequired(id)).to.be.true
       await proofs.unexpectProofs(id)
       expect(await proofs.willProofBeRequired(id)).to.be.false
     })

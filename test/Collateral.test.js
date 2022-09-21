@@ -110,5 +110,10 @@ describe("Collateral", function () {
       await collateral.unlock(lock.id)
       await expect(collateral.withdraw()).not.to.be.reverted
     })
+
+    it("withdrawal succeeds when account lock has been removed", async function () {
+      await collateral.removeAccountLock(account0.address, lock.id)
+      await expect(collateral.withdraw()).not.to.be.reverted
+    })
   })
 })

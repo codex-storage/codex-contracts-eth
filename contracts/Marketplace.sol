@@ -50,13 +50,11 @@ contract Marketplace is Collateral, Proofs {
   function _freeSlot(
     bytes32 slotId
   ) internal marketplaceInvariant {
-    bytes32 requestId = _getRequestIdForSlot(slotId);
+    Slot storage slot = _slot(slotId);
+    bytes32 requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.Started, "Invalid state");
-    require(!_isCancelled(requestId), "Request cancelled");
 
-    Slot storage slot = _slot(slotId);
-    require(slot.host != address(0), "Slot not filled");
 
     _removeAccountLock(slot.host, requestId);
     // TODO: burn host's collateral except for repair costs + mark proof
