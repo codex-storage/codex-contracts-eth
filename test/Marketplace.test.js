@@ -324,7 +324,12 @@ describe("Marketplace", function () {
     }
 
     it("pays the host", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await waitUntilEnd()
       const startBalance = await token.balanceOf(host.address)
       await marketplace.payoutSlot(slot.request, slot.index)
@@ -332,10 +337,10 @@ describe("Marketplace", function () {
       expect(endBalance - startBalance).to.equal(pricePerSlot(request))
     })
 
-    it("is only allowed when the slot is filled", async function () {
+    it("is only allowed when the contract is finished", async function () {
       await expect(
         marketplace.payoutSlot(slot.request, slot.index)
-      ).to.be.revertedWith("Slot empty")
+      ).to.be.revertedWith("Contract not ended")
     })
 
     it("is only allowed when the contract has ended", async function () {
@@ -346,7 +351,12 @@ describe("Marketplace", function () {
     })
 
     it("can only be done once", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await waitUntilEnd()
       await marketplace.payoutSlot(slot.request, slot.index)
       await expect(
@@ -355,7 +365,12 @@ describe("Marketplace", function () {
     })
 
     it("cannot be filled again", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilAllSlotsFilled(
+        marketplace,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
       await waitUntilEnd()
       await marketplace.payoutSlot(slot.request, slot.index)
       await expect(marketplace.fillSlot(slot.request, slot.index, proof)).to.be

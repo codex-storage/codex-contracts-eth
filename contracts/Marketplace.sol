@@ -104,6 +104,7 @@ contract Marketplace is Collateral, Proofs {
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
+      context.startedAt = block.timestamp;
       _extendLockExpiry(requestId, block.timestamp + request.ask.duration);
       emit RequestFulfilled(requestId);
     }
@@ -146,10 +147,9 @@ contract Marketplace is Collateral, Proofs {
     public
     marketplaceInvariant
   {
+    require(_isFinished(requestId), "Contract not ended");
     bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
-    require(block.timestamp > proofEnd(slotId), "Contract not ended");
-    Slot storage slot = slots[slotId];
-    require(slot.host != address(0), "Slot empty");
+    Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
@@ -193,6 +193,21 @@ contract Marketplace is Collateral, Proofs {
       (
         context.state == RequestState.New &&
         block.timestamp > _request(requestId).expiry
+      );
+  }
+
+  /// @notice Return true if the request state is RequestState.Finished or if the request duration has elapsed and the request was started.
+  /// @dev Handles the case when a request may have been finished, but the state has not yet been updated by a transaction.
+  /// @param requestId the id of the request
+  /// @return true if request is finished
+  function _isFinished(bytes32 requestId) internal view returns (bool) {
+    RequestContext memory context = requestContexts[requestId];
+    Request memory request = _request(requestId);
+    return
+      context.state == RequestState.Finished ||
+      (
+        context.state == RequestState.Started &&
+        block.timestamp > context.startedAt + request.ask.duration
       );
   }
 
@@ -342,6 +357,7 @@ contract Marketplace is Collateral, Proofs {
   struct RequestContext {
     uint256 slotsFilled;
     RequestState state;
+    uint256 startedAt;
   }
 
   struct Slot {

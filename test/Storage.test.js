@@ -193,8 +193,7 @@ describe("Storage", function () {
       await advanceTimeTo(request.expiry + 1)
       await expect(await storage.willProofBeRequired(id)).to.be.false
     })
-
-  
+ 
 
     it("does not require proofs once cancelled", async function () {
       const id = slotId(slot)
@@ -286,8 +285,40 @@ describe("Storage", function () {
       await markProofAsMissing(id, onMarkAsMissing)
       await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
     })
-  })  
+  })
+  describe("contract state", function () {
+    it("isCancelled is true once request is cancelled", async function () {
+      await expect(await storage.isCancelled(slot.request)).to.equal(false)
+      await waitUntilExpired(request.expiry)
+      await expect(await storage.isCancelled(slot.request)).to.equal(true)
+    })
 
+    it("isSlotCancelled fails when slot is empty", async function () {
+      await expect(storage.isSlotCancelled(slotId(slot))).to.be.revertedWith(
+        "Slot empty"
+      )
+    })
+
+    it("isSlotCancelled is true once request is cancelled", async function () {
+      await storage.fillSlot(slot.request, slot.index, proof)
+      await waitUntilExpired(request.expiry)
+      await expect(await storage.isSlotCancelled(slotId(slot))).to.equal(true)
+    })
+
+    it("isFinished is true once started and contract duration lapses", async function () {
+      await expect(await storage.isFinished(slot.request)).to.be.false
+      // fill all slots, should change state to RequestState.Started
+      await waitUntilAllSlotsFilled(
+        storage,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
+      await expect(await storage.isFinished(slot.request)).to.be.false
+      advanceTime(request.ask.duration + 1)
+      await expect(await storage.isFinished(slot.request)).to.be.true
+    })
+  })
 })
 
 // TODO: implement checking of actual proofs of storage, instead of dummy bool
