@@ -118,6 +118,7 @@ contract Proofs {
     pointer = _getPointer(id, proofPeriod);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
+    // TODO: add test for below change
     isRequired = ids[id] && uint256(challenge) % probability == 0;
   }
 

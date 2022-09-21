@@ -51,6 +51,12 @@ contract Collateral is AccountLocks {
     internal
     collateralInvariant
   {
+    // TODO: perhaps we need to add a minCollateral parameter so that
+    // a host's collateral can't drop below a certain amount, possibly
+    // preventing malicious behaviour when collateral drops too low for it
+    // to matter that it will be lost. Also, we need collateral to be high
+    // enough to cover repair costs in case of repair as well as marked
+    // proofs as missing fees.
     uint256 amount = (balanceOf(account) * percentage) / 100;
     funds.slashed += amount;
     subtract(account, amount);
