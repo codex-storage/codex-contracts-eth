@@ -51,14 +51,9 @@ contract Marketplace is Collateral, Proofs {
     bytes32 requestId,
     uint256 slotIndex,
     bytes calldata proof
-  ) public marketplaceInvariant {
+  ) public requestMustAcceptProofs(requestId) marketplaceInvariant {
     Request storage request = _request(requestId);
     require(slotIndex < request.ask.slots, "Invalid slot");
-    RequestContext storage context = requestContexts[requestId];
-    require(!_isCancelled(requestId), "Request cancelled");
-    // TODO: in the case of repair, update below require condition by adding
-    // || context.state == RequestState.Started
-    require(context.state == RequestState.New, "Invalid state");
 
     bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
     Slot storage slot = slots[slotId];
@@ -72,6 +67,7 @@ contract Marketplace is Collateral, Proofs {
 
     slot.host = msg.sender;
     slot.requestId = requestId;
+    RequestContext storage context = requestContexts[requestId];
     context.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
@@ -83,11 +79,10 @@ contract Marketplace is Collateral, Proofs {
 
   function _freeSlot(
     bytes32 slotId
-  ) internal marketplaceInvariant {
+  ) internal slotMustAcceptProofs(slotId) marketplaceInvariant {
     Slot storage slot = _slot(slotId);
     bytes32 requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
-    require(context.state == RequestState.Started, "Invalid state");
 
     // TODO: burn host's slot collateral except for repair costs + mark proof
     // missing reward
@@ -101,9 +96,11 @@ contract Marketplace is Collateral, Proofs {
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
 
-    Request memory request = _request(requestId);
+    Request storage request = _request(requestId);
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
-    if (slotsLost > request.ask.maxSlotLoss) {
+    if (slotsLost > request.ask.maxSlotLoss &&
+        context.state == RequestState.Started) {
+
       context.state = RequestState.Failed;
       emit RequestFailed(requestId);
 
@@ -158,12 +155,12 @@ contract Marketplace is Collateral, Proofs {
   /// @param requestId the id of the request
   /// @return true if request is cancelled
   function _isCancelled(bytes32 requestId) internal view returns (bool) {
-    RequestContext memory context = requestContexts[requestId];
+    RequestContext storage context = _context(requestId);
     return
       context.state == RequestState.Cancelled ||
       (
         context.state == RequestState.New &&
-        block.timestamp > requests[requestId].expiry
+        block.timestamp > _request(requestId).expiry
       );
   }
 
@@ -346,6 +343,14 @@ contract Marketplace is Collateral, Proofs {
   modifier slotMustAcceptProofs(bytes32 slotId) {
     bytes32 requestId = _getRequestIdForSlot(slotId);
     require(_requestAcceptsProofs(requestId), "Slot not accepting proofs");
+    _;
+  }
+
+  /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.
+  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
+  /// @param requestId id of the request, for which to obtain state info
+  modifier requestMustAcceptProofs(bytes32 requestId) {
+    require(_requestAcceptsProofs(requestId), "Request not accepting proofs");
     _;
   }
 

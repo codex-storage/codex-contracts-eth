@@ -25,7 +25,7 @@ contract TestMarketplace is Marketplace {
   function isSlotCancelled(bytes32 slotId) public view returns (bool) {
     return _isSlotCancelled(slotId);
   }
-  
+
   function freeSlot(bytes32 slotId) public {
     _freeSlot(slotId);
   }

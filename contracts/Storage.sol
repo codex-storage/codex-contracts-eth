@@ -90,8 +90,7 @@ contract Storage is Collateral, Marketplace {
         _slash(host, slashPercentage);
 
       if (balanceOf(host) < minCollateralThreshold) {
-        // If host has been slashed enough such that the next slashing would
-        // cause the collateral to drop below the minimum threshold, the slot
+        // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
         _freeSlot(slotId);
