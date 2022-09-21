@@ -21,7 +21,7 @@ contract TestAccountLocks is AccountLocks {
     _unlockAccount();
   }
 
-  function extendLockExpiry(bytes32 lockId, uint256 expiry) public {
-    _extendLockExpiry(lockId, expiry);
+  function extendLockExpiryTo(bytes32 lockId, uint256 expiry) public {
+    _extendLockExpiryTo(lockId, expiry);
   }
 }

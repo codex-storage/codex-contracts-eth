@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { hexlify, randomBytes, toHexString } = ethers.utils
-const { advanceTimeTo, snapshot, revert } = require("./evm")
+const { advanceTimeTo, snapshot, revert, advanceTime } = require("./evm")
 const { exampleLock } = require("./examples")
 const { now, hours } = require("./time")
 const { waitUntilExpired } = require("./marketplace")
@@ -188,7 +188,7 @@ describe("Account Locks", function () {
     it("fails when lock id doesn't exist", async function () {
       let other = exampleLock()
       await expect(
-        locks.extendLockExpiry(other.id, hours(1))
+        locks.extendLockExpiryTo(other.id, now() + hours(1))
       ).to.be.revertedWith("Lock does not exist")
     })
 
@@ -200,7 +200,16 @@ describe("Account Locks", function () {
     })
 
     it("successfully updates lock expiry", async function () {
-      await expect(locks.extendLockExpiry(id, hours(1))).not.to.be.reverted
+      await expect(locks.extendLockExpiryTo(id, now() + hours(1))).not.to.be
+        .reverted
+    })
+
+    it("unlocks account after expiry", async function () {
+      await expect(locks.extendLockExpiryTo(id, now() + hours(1))).not.to.be
+        .reverted
+      await expect(locks.unlockAccount()).to.be.revertedWith("Account locked")
+      advanceTime(hours(1))
+      await expect(locks.unlockAccount()).not.to.be.reverted
     })
   })
 })
