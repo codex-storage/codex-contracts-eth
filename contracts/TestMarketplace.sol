@@ -33,4 +33,13 @@ contract TestMarketplace is Marketplace {
   function slot(bytes32 slotId) public view returns (Slot memory) {
     return _slot(slotId);
   }
+
+  function testAcceptsProofs(bytes32 slotId)
+    public
+    view
+    slotAcceptsProofs(slotId)
+  // solhint-disable-next-line no-empty-blocks
+  {
+
+  }
 }

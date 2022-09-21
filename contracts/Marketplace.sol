@@ -47,38 +47,6 @@ contract Marketplace is Collateral, Proofs {
     emit StorageRequested(id, request.ask);
   }
 
-  function _freeSlot(
-    bytes32 slotId
-  ) internal marketplaceInvariant {
-    Slot storage slot = _slot(slotId);
-    bytes32 requestId = slot.requestId;
-    RequestContext storage context = requestContexts[requestId];
-    require(context.state == RequestState.Started, "Invalid state");
-
-    // TODO: burn host's slot collateral except for repair costs + mark proof
-    // missing reward
-    // Slot collateral is not yet implemented as the design decision was
-    // not finalised.
-
-    _unexpectProofs(slotId);
-
-    slot.host = address(0);
-    slot.requestId = 0;
-    context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slotId);
-
-    Request memory request = _request(requestId);
-    uint256 slotsLost = request.ask.slots - context.slotsFilled;
-    if (slotsLost > request.ask.maxSlotLoss) {
-      context.state = RequestState.Failed;
-      emit RequestFailed(requestId);
-
-      // TODO: burn all remaining slot collateral (note: slot collateral not
-      // yet implemented)
-      // TODO: send client remaining funds
-    }
-  }
-
   function fillSlot(
     bytes32 requestId,
     uint256 slotIndex,
@@ -94,18 +62,20 @@ contract Marketplace is Collateral, Proofs {
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
     _lock(msg.sender, requestId);
 
-    _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
+    _expectProofs(slotId, requestId, request.ask.proofProbability, request.ask.duration);
     _submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.requestId = requestId;
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
-      _extendLockExpiry(requestId, block.timestamp + request.ask.duration);
+      context.endsAt = block.timestamp + request.ask.duration;
+      _extendLockExpiryTo(requestId, context.endsAt);
+      _extendProofEndTo(slotId, context.endsAt);
       emit RequestFulfilled(requestId);
     }
   }
@@ -148,6 +118,9 @@ contract Marketplace is Collateral, Proofs {
     marketplaceInvariant
   {
     require(_isFinished(requestId), "Contract not ended");
+    RequestContext storage context = _context(requestId);
+    context.state = RequestState.Finished;
+
     bytes32 slotId = keccak256(abi.encode(requestId, slotIndex));
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
@@ -165,7 +138,7 @@ contract Marketplace is Collateral, Proofs {
     Request storage request = requests[requestId];
     require(block.timestamp > request.expiry, "Request not yet timed out");
     require(request.client == msg.sender, "Invalid client address");
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _context(requestId);
     require(context.state == RequestState.New, "Invalid state");
 
     // Update request state to Cancelled. Handle in the withdraw transaction
@@ -201,13 +174,12 @@ contract Marketplace is Collateral, Proofs {
   /// @param requestId the id of the request
   /// @return true if request is finished
   function _isFinished(bytes32 requestId) internal view returns (bool) {
-    RequestContext memory context = requestContexts[requestId];
-    Request memory request = _request(requestId);
+    RequestContext memory context = _context(requestId);
     return
       context.state == RequestState.Finished ||
       (
         context.state == RequestState.Started &&
-        block.timestamp > context.startedAt + request.ask.duration
+        block.timestamp > context.endsAt
       );
   }
 
@@ -234,8 +206,8 @@ contract Marketplace is Collateral, Proofs {
     return slots[slotId].host;
   }
 
-  function _request(bytes32 id) internal view returns (Request storage) {
-    Request storage request = requests[id];
+  function _request(bytes32 requestId) internal view returns (Request storage) {
+    Request storage request = requests[requestId];
     require(request.client != address(0), "Unknown request");
     return request;
   }
@@ -259,6 +231,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function proofEnd(bytes32 slotId) public view returns (uint256) {
+    Slot memory slot = _slot(slotId);
     uint256 end = _end(slotId);
     if (!_slotAcceptsProofs(slotId)) {
       return end < block.timestamp ? end : block.timestamp - 1;
@@ -290,6 +263,8 @@ contract Marketplace is Collateral, Proofs {
     // TODO: add check for _isFinished
     if (_isCancelled(requestId)) {
       return RequestState.Cancelled;
+    else if (_isFinished(requestId) {
+      return RequestState.Finished;
     } else {
       RequestContext storage context = _context(requestId);
       return context.state;
@@ -358,6 +333,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 slotsFilled;
     RequestState state;
     uint256 startedAt;
+    uint256 endsAt;
   }
 
   struct Slot {
@@ -383,6 +359,15 @@ contract Marketplace is Collateral, Proofs {
     assert(funds.received >= oldFunds.received);
     assert(funds.sent >= oldFunds.sent);
     assert(funds.received == funds.balance + funds.sent);
+  }
+
+  function acceptsProofs(bytes32 requestId) private view {
+    RequestState s = state(requestId);
+    require(s == RequestState.New || s == RequestState.Started, "Invalid state");
+    // must test these states separately as they handle cases where the state hasn't
+    // yet been updated by a transaction
+    require(!_isCancelled(requestId), "Request cancelled");
+    require(!_isFinished(requestId), "Request finished");
   }
 
   /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.

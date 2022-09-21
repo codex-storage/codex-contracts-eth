@@ -8,7 +8,11 @@ const { advanceTime, advanceTimeTo, currentTime, mine } = require("./evm")
 const { requestId, slotId } = require("./ids")
 const { periodic } = require("./time")
 const { price } = require("./price")
-const { waitUntilExpired, waitUntilAllSlotsFilled } = require("./marketplace")
+const {
+  waitUntilCancelled,
+  waitUntilStarted,
+  waitUntilFinished,
+} = require("./marketplace")
 
 describe("Storage", function () {
   const proof = hexlify(randomBytes(42))
@@ -70,14 +74,9 @@ describe("Storage", function () {
   })
 
   describe("ending the contract", function () {
-    async function waitUntilEnd() {
-      const end = (await storage.proofEnd(slotId(slot))).toNumber()
-      await advanceTimeTo(end)
-    }
-
     it("unlocks the host collateral", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilEnd()
+      await waitUntilFinished(storage, slotId(slot))
       await expect(storage.withdraw()).not.to.be.reverted
     })
   })
@@ -178,7 +177,7 @@ describe("Storage", function () {
 
     it("fails to mark proof as missing when cancelled", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await advanceTimeTo(request.expiry + 1)
+      await waitUntilCancelled(request.expiry)
       let missedPeriod = periodOf(await currentTime())
       await expect(
         storage.markProofAsMissing(slotId(slot), missedPeriod)
@@ -258,12 +257,7 @@ describe("Storage", function () {
     it("frees slot when collateral slashed below minimum threshold", async function () {
       const id = slotId(slot)
 
-      await waitUntilAllSlotsFilled(
-        storage,
-        request.ask.slots,
-        slot.request,
-        proof
-      )
+      await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
 
       while (true) {
         await markProofAsMissing(id)
@@ -289,7 +283,7 @@ describe("Storage", function () {
   describe("contract state", function () {
     it("isCancelled is true once request is cancelled", async function () {
       await expect(await storage.isCancelled(slot.request)).to.equal(false)
-      await waitUntilExpired(request.expiry)
+      await waitUntilCancelled(request.expiry)
       await expect(await storage.isCancelled(slot.request)).to.equal(true)
     })
 
@@ -301,19 +295,14 @@ describe("Storage", function () {
 
     it("isSlotCancelled is true once request is cancelled", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilExpired(request.expiry)
+      await waitUntilCancelled(request.expiry)
       await expect(await storage.isSlotCancelled(slotId(slot))).to.equal(true)
     })
 
     it("isFinished is true once started and contract duration lapses", async function () {
       await expect(await storage.isFinished(slot.request)).to.be.false
       // fill all slots, should change state to RequestState.Started
-      await waitUntilAllSlotsFilled(
-        storage,
-        request.ask.slots,
-        slot.request,
-        proof
-      )
+      await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
       await expect(await storage.isFinished(slot.request)).to.be.false
       advanceTime(request.ask.duration + 1)
       await expect(await storage.isFinished(slot.request)).to.be.true

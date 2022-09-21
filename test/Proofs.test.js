@@ -10,10 +10,11 @@ const {
   advanceTime,
   advanceTimeTo,
 } = require("./evm")
-const { periodic } = require("./time")
+const { periodic, hours, now, minutes } = require("./time")
 
 describe("Proofs", function () {
   const id = hexlify(randomBytes(32))
+  const endId = hexlify(randomBytes(32))
   const period = 30 * 60
   const timeout = 5
   const downtime = 64
@@ -35,20 +36,20 @@ describe("Proofs", function () {
   })
 
   it("calculates an end time based on duration", async function () {
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     let end = (await currentTime()) + duration
-    expect((await proofs.end(id)).toNumber()).to.be.closeTo(end, 1)
+    expect((await proofs.end(endId)).toNumber()).to.be.closeTo(end, 1)
   })
 
   it("does not allow ids to be reused", async function () {
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     await expect(
-      proofs.expectProofs(id, probability, duration)
+      proofs.expectProofs(id, endId, probability, duration)
     ).to.be.revertedWith("Proof id already in use")
   })
 
   it("requires proofs with an agreed upon probability", async function () {
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     let amount = 0
     for (let i = 0; i < 100; i++) {
       if (await proofs.isProofRequired(id)) {
@@ -63,7 +64,7 @@ describe("Proofs", function () {
   it("requires no proofs in the start period", async function () {
     const startPeriod = Math.floor((await currentTime()) / period)
     const probability = 1
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     while (Math.floor((await currentTime()) / period) == startPeriod) {
       expect(await proofs.isProofRequired(id)).to.be.false
       await advanceTime(Math.floor(period / 10))
@@ -72,14 +73,14 @@ describe("Proofs", function () {
 
   it("requires no proofs in the end period", async function () {
     const probability = 1
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     await advanceTime(duration)
     expect(await proofs.isProofRequired(id)).to.be.false
   })
 
   it("requires no proofs after the end time", async function () {
     const probability = 1
-    await proofs.expectProofs(id, probability, duration)
+    await proofs.expectProofs(id, endId, probability, duration)
     await advanceTime(duration + timeout)
     expect(await proofs.isProofRequired(id)).to.be.false
   })
@@ -89,7 +90,7 @@ describe("Proofs", function () {
     let id2 = hexlify(randomBytes(32))
     let id3 = hexlify(randomBytes(32))
     for (let id of [id1, id2, id3]) {
-      await proofs.expectProofs(id, probability, duration)
+      await proofs.expectProofs(id, endId, probability, duration)
     }
     let req1, req2, req3
     while (req1 === req2 && req2 === req3) {
@@ -118,7 +119,7 @@ describe("Proofs", function () {
     }
 
     beforeEach(async function () {
-      await proofs.expectProofs(id, probability, duration)
+      await proofs.expectProofs(id, endId, probability, duration)
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
     })
@@ -151,7 +152,7 @@ describe("Proofs", function () {
     const proof = hexlify(randomBytes(42))
 
     beforeEach(async function () {
-      await proofs.expectProofs(id, probability, duration)
+      await proofs.expectProofs(id, endId, probability, duration)
     })
 
     async function waitUntilProofIsRequired(id) {
@@ -268,6 +269,89 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(id)
       await proofs.unexpectProofs(id)
       await expect(await proofs.isProofRequired(id)).to.be.false
+    })
+  })
+
+  describe("extend proof end", function () {
+    const proof = hexlify(randomBytes(42))
+
+    beforeEach(async function () {
+      await proofs.expectProofs(id, endId, probability, duration)
+    })
+
+    async function waitUntilProofIsRequired(id) {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      while (
+        !(
+          (await proofs.isProofRequired(id)) &&
+          (await proofs.getPointer(id)) < 250
+        )
+      ) {
+        await advanceTime(period)
+      }
+    }
+
+    async function isProofRequiredBefore(id, ending) {
+      let start = periodOf(await currentTime())
+      let end = periodOf(ending)
+      let periods = end - start
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      for (let i = 0; i < periods; i++) {
+        if (await proofs.isProofRequired(id)) {
+          return true
+        }
+        await advanceTime(period)
+      }
+      return false
+    }
+
+    it("can't extend if proof doesn't exist", async function () {
+      let ending = (await currentTime()) + duration
+      const otherId = hexlify(randomBytes(32))
+      await expect(
+        proofs.extendProofEndTo(otherId, ending + 1)
+      ).to.be.revertedWith("endId for given id doesn't exist")
+    })
+
+    it("can't extend already lapsed proof ending", async function () {
+      let ending = (await currentTime()) + duration
+      await waitUntilProofIsRequired(id)
+      await advanceTimeTo(ending + 1)
+      await expect(proofs.extendProofEndTo(id, ending + 1)).to.be.revertedWith(
+        "Proof already ended"
+      )
+    })
+
+    it("requires no proofs when ending has not been extended", async function () {
+      let ending = (await currentTime()) + duration
+      await expect(await isProofRequiredBefore(id, ending)).to.be.true
+      let endingExtended = ending + hours(1)
+      await advanceTimeTo(periodEnd(periodOf(endingExtended) + 1))
+      await expect(await isProofRequiredBefore(id, endingExtended)).to.be.false
+    })
+
+    it("requires proofs when ending has been extended", async function () {
+      let ending = (await currentTime()) + duration
+      await expect(await isProofRequiredBefore(id, ending)).to.be.true
+      let endingExtended = ending + hours(1)
+      await proofs.extendProofEndTo(id, endingExtended)
+      await expect(await isProofRequiredBefore(id, endingExtended)).to.be.true
+    })
+
+    it("no longer requires proofs after extension lapsed", async function () {
+      async function expectNoProofsForPeriods(id, periods) {
+        await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+        for (let i = 0; i < periods; i++) {
+          await expect(await proofs.isProofRequired(id)).to.be.false
+          await advanceTime(period)
+        }
+      }
+
+      let ending = (await currentTime()) + duration
+      let endingExtended = ending + hours(1)
+      await proofs.extendProofEndTo(id, endingExtended)
+      await advanceTimeTo(periodEnd(periodOf(endingExtended) + 1))
+      await expectNoProofsForPeriods(id, 100)
     })
   })
 })
