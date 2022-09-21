@@ -103,7 +103,6 @@ describe("Marketplace", function () {
     })
   })
 
-
   describe("filling a slot", function () {
     beforeEach(async function () {
       switchAccount(client)
@@ -161,7 +160,7 @@ describe("Marketplace", function () {
       ).to.be.revertedWith("Unknown request")
     })
 
-    it("is rejected when request is expired/cancelled", async function () {
+    it("is rejected when request is cancelled", async function () {
       switchAccount(client)
       let expired = { ...request, expiry: now() - hours(1) }
       await token.approve(marketplace.address, price(request))
@@ -169,7 +168,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await expect(
         marketplace.fillSlot(requestId(expired), slot.index, proof)
-      ).to.be.revertedWith("Request cancelled")
+      ).to.be.revertedWith("Request not accepting proofs")
     })
 
     it("is rejected when slot index not in range", async function () {
@@ -186,7 +185,7 @@ describe("Marketplace", function () {
       }
       await expect(
         marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Invalid state")
+      ).to.be.revertedWith("Slot already filled")
     })
   })
 
@@ -210,11 +209,6 @@ describe("Marketplace", function () {
       await expect(marketplace.freeSlot(nonExistentId)).to.be.revertedWith(
         "Slot empty"
       )
-    })
-
-    it("fails to free slot when not started", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(marketplace.freeSlot(id)).to.be.revertedWith("Invalid state")
     })
 
     it("successfully frees slot", async function () {
@@ -442,6 +436,20 @@ describe("Marketplace", function () {
       }
       await expect(await marketplace.state(slot.request)).to.equal(
         RequestState.Failed
+      )
+    })
+
+    it("does not change state to Failed if too many slots freed but contract not started", async function () {
+      for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
+        slot.index = i
+        let id = slotId(slot)
+        await marketplace.freeSlot(id)
+      }
+      await expect(await marketplace.state(slot.request)).to.equal(
+        RequestState.New
       )
     })
 

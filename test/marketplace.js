@@ -11,8 +11,7 @@ async function waitUntilExpired(expiry) {
 }
 
 async function waitUntilAllSlotsFilled(contract, numSlots, requestId, proof) {
-  const lastSlot = numSlots - 1
-  for (let i = 0; i <= lastSlot; i++) {
+  for (let i = 0; i < numSlots; i++) {
     await contract.fillSlot(requestId, i, proof)
   }
 }
