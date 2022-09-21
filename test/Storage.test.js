@@ -233,13 +233,6 @@ describe("Storage", function () {
       ;({ periodOf, periodEnd } = periodic(period))
     })
 
-    async function waitUntilAllSlotsFilled() {
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i <= lastSlot; i++) {
-        await storage.fillSlot(slot.request, i, proof)
-      }
-    }
-
     async function waitUntilProofIsRequired(id) {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       while (
@@ -266,7 +259,12 @@ describe("Storage", function () {
     it("frees slot when collateral slashed below minimum threshold", async function () {
       const id = slotId(slot)
 
-      await waitUntilAllSlotsFilled()
+      await waitUntilAllSlotsFilled(
+        storage,
+        request.ask.slots,
+        slot.request,
+        proof
+      )
 
       while (true) {
         await markProofAsMissing(id)
