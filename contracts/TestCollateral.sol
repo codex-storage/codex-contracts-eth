@@ -23,8 +23,4 @@ contract TestCollateral is Collateral {
   function unlock(bytes32 id) public {
     _unlock(id);
   }
-
-  function removeAccountLock(address account, bytes32 lockId) public {
-    _removeAccountLock(account, lockId);
-  }
 }

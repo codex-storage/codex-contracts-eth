@@ -55,10 +55,10 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.Started, "Invalid state");
 
-
-    _removeAccountLock(slot.host, requestId);
-    // TODO: burn host's collateral except for repair costs + mark proof
+    // TODO: burn host's slot collateral except for repair costs + mark proof
     // missing reward
+    // Slot collateral is not yet implemented as the design decision was
+    // not finalised.
 
     _unexpectProofs(slotId);
 
@@ -66,6 +66,17 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = 0;
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
+
+    Request memory request = _request(requestId);
+    uint256 slotsLost = request.ask.slots - context.slotsFilled;
+    if (slotsLost > request.ask.maxSlotLoss) {
+      context.state = RequestState.Failed;
+      emit RequestFailed(requestId);
+
+      // TODO: burn all remaining slot collateral (note: slot collateral not
+      // yet implemented)
+      // TODO: send client remaining funds
+    }
   }
 
   function fillSlot(
