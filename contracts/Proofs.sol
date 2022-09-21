@@ -34,7 +34,7 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(bytes32 id) internal view returns (uint256) {
+    function _end(bytes32 id) internal view returns (uint256) {
     return ends[id];
   }
 
