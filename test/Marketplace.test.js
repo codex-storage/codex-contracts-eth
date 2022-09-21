@@ -103,6 +103,61 @@ describe("Marketplace", function () {
     })
   })
 
+  describe("freeing a slot", function () {
+    var id
+    beforeEach(async function () {
+      slot.index = 0
+      id = slotId(slot)
+
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+
+      // await marketplace.fillSlot(slot.request, slot.index, proof)
+    })
+
+    async function waitUntilAllSlotsFilled() {
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i <= lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+    }
+
+    it("fails to free slot when slot not filled", async function () {
+      slot.index = 5
+      let nonExistentId = slotId(slot)
+      await expect(marketplace.freeSlot(nonExistentId)).to.be.revertedWith(
+        "Slot empty"
+      )
+    })
+
+    it("fails to free slot when not started", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(marketplace.freeSlot(id)).to.be.revertedWith("Invalid state")
+    })
+
+    it("successfully frees slot", async function () {
+      await waitUntilAllSlotsFilled()
+      await expect(marketplace.freeSlot(id)).not.to.be.reverted
+    })
+
+    it("emits event once slot is freed", async function () {
+      await waitUntilAllSlotsFilled()
+      await expect(await marketplace.freeSlot(id))
+        .to.emit(marketplace, "SlotFreed")
+        .withArgs(slot.request, id)
+    })
+
+    it("cannot get slot once freed", async function () {
+      await waitUntilAllSlotsFilled()
+      await marketplace.freeSlot(id)
+      await expect(marketplace.slot(id)).to.be.revertedWith("Slot empty")
+    })
+  })
+
   describe("filling a slot", function () {
     beforeEach(async function () {
       switchAccount(client)

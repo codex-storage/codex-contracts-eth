@@ -32,6 +32,7 @@ contract Storage is Collateral, Marketplace {
     collateralAmount = _collateralAmount;
     slashMisses = _slashMisses;
     slashPercentage = _slashPercentage;
+    minCollateralThreshold = _minCollateralThreshold;
   }
 
   function getRequest(bytes32 requestId) public view returns (Request memory) {
