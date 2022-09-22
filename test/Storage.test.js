@@ -32,9 +32,9 @@ describe("Storage", function () {
   beforeEach(async function () {
     ;[client, host] = await ethers.getSigners()
 
-    await deployments.fixture(["TestToken", "TestStorage"])
+    await deployments.fixture(["TestToken", "Storage"])
     token = await ethers.getContract("TestToken")
-    storage = await ethers.getContract("TestStorage")
+    storage = await ethers.getContract("Storage")
 
     await token.mint(client.address, 1_000_000_000)
     await token.mint(host.address, 1_000_000_000)
@@ -44,7 +44,7 @@ describe("Storage", function () {
     slashPercentage = await storage.slashPercentage()
     minCollateralThreshold = await storage.minCollateralThreshold()
 
-    request = exampleRequest()
+    request = await exampleRequest()
     request.client = client.address
     slot = {
       request: requestId(request),
@@ -121,12 +121,7 @@ describe("Storage", function () {
       it("frees slot when collateral slashed below minimum threshold", async function () {
         const id = slotId(slot)
 
-        await waitUntilAllSlotsFilled(
-          storage,
-          request.ask.slots,
-          slot.request,
-          proof
-        )
+        await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
 
         // max slashes before dropping below collateral threshold
         const maxSlashes = 10
@@ -192,7 +187,6 @@ describe("Storage", function () {
       await advanceTimeTo(request.expiry + 1)
       await expect(await storage.willProofBeRequired(id)).to.be.false
     })
- 
 
     it("does not require proofs once cancelled", async function () {
       const id = slotId(slot)
@@ -223,89 +217,6 @@ describe("Storage", function () {
       await advanceTimeTo(request.expiry + 1)
       const challenge2 = await storage.getChallenge(id)
       expect(BigNumber.from(challenge2).isZero())
-    })
-  })
-  describe("freeing a slot", function () {
-    beforeEach(async function () {
-      period = (await storage.proofPeriod()).toNumber()
-      ;({ periodOf, periodEnd } = periodic(period))
-    })
-
-    async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-      while (
-        !(
-          (await storage.isProofRequired(id)) &&
-          (await storage.getPointer(id)) < 250
-        )
-      ) {
-        await advanceTime(period)
-      }
-    }
-
-    async function markProofAsMissing(slotId, onMarkAsMissing) {
-      for (let i = 0; i < slashMisses; i++) {
-        await waitUntilProofIsRequired(slotId)
-        let missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
-        if (i === slashMisses - 1 && typeof onMarkAsMissing === "function") {
-          onMarkAsMissing(missedPeriod)
-        } else await storage.markProofAsMissing(slotId, missedPeriod)
-      }
-    }
-
-    it("frees slot when collateral slashed below minimum threshold", async function () {
-      const id = slotId(slot)
-
-      await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
-
-      while (true) {
-        await markProofAsMissing(id)
-        let balance = await storage.balanceOf(host.address)
-        let slashAmount = await storage.slashAmount(
-          host.address,
-          slashPercentage
-        )
-        if (balance - slashAmount < minCollateralThreshold) {
-          break
-        }
-      }
-
-      let onMarkAsMissing = async function (missedPeriod) {
-        await expect(
-          await storage.markProofAsMissing(id, missedPeriod)
-        ).to.emit(storage, "SlotFreed")
-      }
-      await markProofAsMissing(id, onMarkAsMissing)
-      await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
-    })
-  })
-  describe("contract state", function () {
-    it("isCancelled is true once request is cancelled", async function () {
-      await expect(await storage.isCancelled(slot.request)).to.equal(false)
-      await waitUntilCancelled(request.expiry)
-      await expect(await storage.isCancelled(slot.request)).to.equal(true)
-    })
-
-    it("isSlotCancelled fails when slot is empty", async function () {
-      await expect(storage.isSlotCancelled(slotId(slot))).to.be.revertedWith(
-        "Slot empty"
-      )
-    })
-
-    it("isSlotCancelled is true once request is cancelled", async function () {
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilCancelled(request.expiry)
-      await expect(await storage.isSlotCancelled(slotId(slot))).to.equal(true)
-    })
-
-    it("isFinished is true once started and contract duration lapses", async function () {
-      await expect(await storage.isFinished(slot.request)).to.be.false
-      // fill all slots, should change state to RequestState.Started
-      await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
-      await expect(await storage.isFinished(slot.request)).to.be.false
-      advanceTime(request.ask.duration + 1)
-      await expect(await storage.isFinished(slot.request)).to.be.true
     })
   })
 })

@@ -49,7 +49,6 @@ contract AccountLocks {
   function _extendLockExpiryTo(bytes32 lockId, uint256 expiry) internal {
     Lock storage lock = locks[lockId];
     require(lock.owner != address(0), "Lock does not exist");
-    // require(lock.owner == msg.sender, "Only lock creator can extend expiry");
     require(lock.expiry >= block.timestamp, "Lock already expired");
     lock.expiry = expiry;
   }

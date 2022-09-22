@@ -97,7 +97,7 @@ describe("Collateral", function () {
     beforeEach(async function () {
       await token.approve(collateral.address, 42)
       await collateral.deposit(42)
-      lock = exampleLock()
+      lock = await exampleLock()
       await collateral.createLock(lock.id, lock.expiry)
       await collateral.lock(account0.address, lock.id)
     })

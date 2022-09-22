@@ -232,7 +232,7 @@ contract Marketplace is Collateral, Proofs {
 
   function proofEnd(bytes32 slotId) public view returns (uint256) {
     Slot memory slot = _slot(slotId);
-    uint256 end = _end(slotId);
+    uint256 end = _end(slot.requestId);
     if (!_slotAcceptsProofs(slotId)) {
       return end < block.timestamp ? end : block.timestamp - 1;
     }
@@ -263,7 +263,7 @@ contract Marketplace is Collateral, Proofs {
     // TODO: add check for _isFinished
     if (_isCancelled(requestId)) {
       return RequestState.Cancelled;
-    else if (_isFinished(requestId) {
+    } else if (_isFinished(requestId)) {
       return RequestState.Finished;
     } else {
       RequestContext storage context = _context(requestId);
@@ -359,15 +359,6 @@ contract Marketplace is Collateral, Proofs {
     assert(funds.received >= oldFunds.received);
     assert(funds.sent >= oldFunds.sent);
     assert(funds.received == funds.balance + funds.sent);
-  }
-
-  function acceptsProofs(bytes32 requestId) private view {
-    RequestState s = state(requestId);
-    require(s == RequestState.New || s == RequestState.Started, "Invalid state");
-    // must test these states separately as they handle cases where the state hasn't
-    // yet been updated by a transaction
-    require(!_isCancelled(requestId), "Request cancelled");
-    require(!_isFinished(requestId), "Request finished");
   }
 
   /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.

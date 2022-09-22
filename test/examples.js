@@ -1,35 +1,41 @@
 const { ethers } = require("hardhat")
-const { now, hours } = require("./time")
+const { hours } = require("./time")
+const { currentTime } = require("./evm")
 const { hexlify, randomBytes } = ethers.utils
 
-const exampleRequest = () => ({
-  client: hexlify(randomBytes(20)),
-  ask: {
-    slots: 4,
-    slotSize: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
-    duration: hours(10),
-    proofProbability: 4, // require a proof roughly once every 4 periods
-    reward: 84,
-    maxSlotLoss: 2,
-  },
-  content: {
-    cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
-    erasure: {
-      totalChunks: 12,
+const exampleRequest = async () => {
+  const now = await currentTime()
+  return {
+    client: hexlify(randomBytes(20)),
+    ask: {
+      slots: 4,
+      slotSize: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
+      duration: hours(10),
+      proofProbability: 4, // require a proof roughly once every 4 periods
+      reward: 84,
+      maxSlotLoss: 2,
     },
-    por: {
-      u: Array.from(randomBytes(480)),
-      publicKey: Array.from(randomBytes(96)),
-      name: Array.from(randomBytes(512)),
+    content: {
+      cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
+      erasure: {
+        totalChunks: 12,
+      },
+      por: {
+        u: Array.from(randomBytes(480)),
+        publicKey: Array.from(randomBytes(96)),
+        name: Array.from(randomBytes(512)),
+      },
     },
-  },
-  expiry: now() + hours(1),
-  nonce: hexlify(randomBytes(32)),
-})
-
-const exampleLock = () => ({
-  id: hexlify(randomBytes(32)),
-  expiry: now() + hours(1),
-})
+    expiry: now + hours(1),
+    nonce: hexlify(randomBytes(32)),
+  }
+}
+const exampleLock = async () => {
+  const now = await currentTime()
+  return {
+    id: hexlify(randomBytes(32)),
+    expiry: now + hours(1),
+  }
+}
 
 module.exports = { exampleRequest, exampleLock }

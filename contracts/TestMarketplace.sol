@@ -37,7 +37,7 @@ contract TestMarketplace is Marketplace {
   function testAcceptsProofs(bytes32 slotId)
     public
     view
-    slotAcceptsProofs(slotId)
+    slotMustAcceptProofs(slotId)
   // solhint-disable-next-line no-empty-blocks
   {
 

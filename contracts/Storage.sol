@@ -82,6 +82,7 @@ contract Storage is Collateral, Marketplace {
 
   function markProofAsMissing(bytes32 slotId, uint256 period)
     public
+    slotMustAcceptProofs(slotId)
   {
     _markProofAsMissing(slotId, period);
     address host = _host(slotId);
