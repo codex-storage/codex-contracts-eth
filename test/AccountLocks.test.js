@@ -1,10 +1,16 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { hexlify, randomBytes, toHexString } = ethers.utils
-const { advanceTimeTo, snapshot, revert, advanceTime } = require("./evm")
+const {
+  advanceTimeTo,
+  snapshot,
+  revert,
+  advanceTime,
+  currentTime,
+} = require("./evm")
 const { exampleLock } = require("./examples")
-const { now, hours } = require("./time")
-const { waitUntilExpired } = require("./marketplace")
+const { hours } = require("./time")
+const { waitUntilCancelled } = require("./marketplace")
 
 describe("Account Locks", function () {
   let locks
@@ -16,12 +22,12 @@ describe("Account Locks", function () {
 
   describe("creating a lock", function () {
     it("allows creation of a lock with an expiry time", async function () {
-      let { id, expiry } = exampleLock()
+      let { id, expiry } = await exampleLock()
       await locks.createLock(id, expiry)
     })
 
     it("fails to create a lock with an existing id", async function () {
-      let { id, expiry } = exampleLock()
+      let { id, expiry } = await exampleLock()
       await locks.createLock(id, expiry)
       await expect(locks.createLock(id, expiry + 1)).to.be.revertedWith(
         "Lock already exists"
@@ -33,7 +39,7 @@ describe("Account Locks", function () {
     let lock
 
     beforeEach(async function () {
-      lock = exampleLock()
+      lock = await exampleLock()
       await locks.createLock(lock.id, lock.expiry)
     })
 
@@ -44,7 +50,7 @@ describe("Account Locks", function () {
 
     it("fails to lock account when lock does not exist", async function () {
       let [account] = await ethers.getSigners()
-      let nonexistent = exampleLock().id
+      let nonexistent = (await exampleLock()).id
       await expect(locks.lock(account.address, nonexistent)).to.be.revertedWith(
         "Lock does not exist"
       )
@@ -55,7 +61,7 @@ describe("Account Locks", function () {
     let lock
 
     beforeEach(async function () {
-      lock = exampleLock()
+      lock = await exampleLock()
       await locks.createLock(lock.id, lock.expiry)
     })
 
@@ -64,7 +70,7 @@ describe("Account Locks", function () {
     })
 
     it("fails to unlock a lock that does not exist", async function () {
-      let nonexistent = exampleLock().id
+      let nonexistent = (await exampleLock()).id
       await expect(locks.unlock(nonexistent)).to.be.revertedWith(
         "Lock does not exist"
       )
@@ -85,7 +91,7 @@ describe("Account Locks", function () {
 
     it("unlocks an account whose locks have been unlocked", async function () {
       let [account] = await ethers.getSigners()
-      let lock = exampleLock()
+      let lock = await exampleLock()
       await locks.createLock(lock.id, lock.expiry)
       await locks.lock(account.address, lock.id)
       await locks.unlock(lock.id)
@@ -94,7 +100,7 @@ describe("Account Locks", function () {
 
     it("unlocks an account whose locks have expired", async function () {
       let [account] = await ethers.getSigners()
-      let lock = { ...exampleLock(), expiry: now() }
+      let lock = { ...(await exampleLock()), expiry: currentTime() }
       await locks.createLock(lock.id, lock.expiry)
       await locks.lock(account.address, lock.id)
       await locks.unlockAccount()
@@ -102,7 +108,7 @@ describe("Account Locks", function () {
 
     it("unlocks multiple accounts tied to the same lock", async function () {
       let [account0, account1] = await ethers.getSigners()
-      let lock = exampleLock()
+      let lock = await exampleLock()
       await locks.createLock(lock.id, lock.expiry)
       await locks.lock(account0.address, lock.id)
       await locks.lock(account1.address, lock.id)
@@ -113,7 +119,7 @@ describe("Account Locks", function () {
 
     it("fails to unlock when some locks are still locked", async function () {
       let [account] = await ethers.getSigners()
-      let [lock1, lock2] = [exampleLock(), exampleLock()]
+      let [lock1, lock2] = [await exampleLock(), await exampleLock()]
       await locks.createLock(lock1.id, lock1.expiry)
       await locks.createLock(lock2.id, lock2.expiry)
       await locks.lock(account.address, lock1.id)
@@ -133,7 +139,7 @@ describe("Account Locks", function () {
     })
 
     async function addLock() {
-      let { id, expiry } = exampleLock()
+      let { id, expiry } = await exampleLock()
       await locks.createLock(id, expiry)
       await locks.lock(account.address, id)
       return id
@@ -168,15 +174,18 @@ describe("Account Locks", function () {
 
   describe("extend lock expiry", function () {
     let expiry
+    let newExpiry
     let id
 
     beforeEach(async function () {
       await snapshot()
 
-      let lock = exampleLock()
+      let lock = await exampleLock()
       id = lock.id
       expiry = lock.expiry
       await locks.createLock(id, expiry)
+      newExpiry = (await currentTime()) + hours(1)
+
       let [account] = await ethers.getSigners()
       await locks.lock(account.address, id)
     })
@@ -186,30 +195,21 @@ describe("Account Locks", function () {
     })
 
     it("fails when lock id doesn't exist", async function () {
-      let other = exampleLock()
+      let other = await exampleLock()
       await expect(
-        locks.extendLockExpiryTo(other.id, now() + hours(1))
+        locks.extendLockExpiryTo(other.id, newExpiry)
       ).to.be.revertedWith("Lock does not exist")
     })
 
     it("fails when lock is already expired", async function () {
-      waitUntilExpired(expiry)
-      await expect(locks.extendLockExpiry(id, hours(1))).to.be.revertedWith(
+      await waitUntilCancelled(expiry)
+      await expect(locks.extendLockExpiryTo(id, newExpiry)).to.be.revertedWith(
         "Lock already expired"
       )
     })
 
     it("successfully updates lock expiry", async function () {
-      await expect(locks.extendLockExpiryTo(id, now() + hours(1))).not.to.be
-        .reverted
-    })
-
-    it("unlocks account after expiry", async function () {
-      await expect(locks.extendLockExpiryTo(id, now() + hours(1))).not.to.be
-        .reverted
-      await expect(locks.unlockAccount()).to.be.revertedWith("Account locked")
-      advanceTime(hours(1))
-      await expect(locks.unlockAccount()).not.to.be.reverted
+      await expect(locks.extendLockExpiryTo(id, newExpiry)).not.to.be.reverted
     })
   })
 })

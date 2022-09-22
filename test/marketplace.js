@@ -25,9 +25,18 @@ async function waitUntilFailed(contract, slot, maxSlotLoss) {
   }
 }
 
+const RequestState = {
+  New: 0,
+  Started: 1,
+  Cancelled: 2,
+  Finished: 3,
+  Failed: 4,
+}
+
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
+  RequestState,
 }
