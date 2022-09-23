@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
 
@@ -62,20 +63,19 @@ contract Marketplace is Collateral, Proofs {
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
     _lock(msg.sender, requestId);
 
-    _expectProofs(slotId, requestId, request.ask.proofProbability, request.ask.duration);
+    _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
     _submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
+    context.endsAt = block.timestamp + request.ask.duration;
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
-      context.endsAt = block.timestamp + request.ask.duration;
       _extendLockExpiryTo(requestId, context.endsAt);
-      _extendProofEndTo(slotId, context.endsAt);
       emit RequestFulfilled(requestId);
     }
   }
@@ -105,6 +105,7 @@ contract Marketplace is Collateral, Proofs {
         context.state == RequestState.Started) {
 
       context.state = RequestState.Failed;
+      context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -232,11 +233,16 @@ contract Marketplace is Collateral, Proofs {
 
   function proofEnd(bytes32 slotId) public view returns (uint256) {
     Slot memory slot = _slot(slotId);
-    uint256 end = _end(slot.requestId);
-    if (!_slotAcceptsProofs(slotId)) {
-      return end < block.timestamp ? end : block.timestamp - 1;
+    uint256 end = _end(slotId);
+    RequestContext storage context = _context(slot.requestId);
+    if (_slotAcceptsProofs(slotId)) {
+      return end;
+    } else {
+      // Calculate the earliest ending between a slot and a request.
+      // Request endings are set, for eg, when a request fails.
+      uint256 earliestEnd = Math.min(end, context.endsAt);
+      return Math.min(earliestEnd, block.timestamp - 1);
     }
-    return end;
   }
 
   function _price(
@@ -260,7 +266,6 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function state(bytes32 requestId) public view returns (RequestState) {
-    // TODO: add check for _isFinished
     if (_isCancelled(requestId)) {
       return RequestState.Cancelled;
     } else if (_isFinished(requestId)) {

@@ -76,7 +76,7 @@ describe("Storage", function () {
   describe("ending the contract", function () {
     it("unlocks the host collateral", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilFinished(storage, slotId(slot))
+      await waitUntilFinished(storage, slot)
       await expect(storage.withdraw()).not.to.be.reverted
     })
   })
@@ -121,7 +121,7 @@ describe("Storage", function () {
       it("frees slot when collateral slashed below minimum threshold", async function () {
         const id = slotId(slot)
 
-        await waitUntilStarted(storage, request.ask.slots, slot.request, proof)
+        await waitUntilStarted(storage, request, slot, proof)
 
         // max slashes before dropping below collateral threshold
         const maxSlashes = 10
@@ -172,7 +172,7 @@ describe("Storage", function () {
 
     it("fails to mark proof as missing when cancelled", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilCancelled(request.expiry)
+      await waitUntilCancelled(request)
       let missedPeriod = periodOf(await currentTime())
       await expect(
         storage.markProofAsMissing(slotId(slot), missedPeriod)
