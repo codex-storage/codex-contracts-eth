@@ -20,7 +20,6 @@ contract Proofs {
   mapping(bytes32 => bool) private ids;
   mapping(bytes32 => uint256) private starts;
   mapping(bytes32 => uint256) private ends;
-  mapping(bytes32 => bytes32) private idEnds;
   mapping(bytes32 => uint256) private probabilities;
   mapping(bytes32 => uint256) private markers;
   mapping(bytes32 => uint256) private missed;
@@ -35,21 +34,10 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(bytes32 endId) internal view returns (uint256) {
-    uint256 end = ends[endId];
+  function _end(bytes32 id) internal view returns (uint256) {
+    uint256 end = ends[id];
     require(end > 0, "Proof ending doesn't exist");
-    return ends[endId];
-  }
-
-  function _endId(bytes32 id) internal view returns (bytes32) {
-    bytes32 endId = idEnds[id];
-    require(endId > 0, "endId for given id doesn't exist");
-    return endId;
-  }
-
-  function _endFromId(bytes32 id) internal view returns (uint256) {
-    bytes32 endId = _endId(id);
-    return _end(endId);
+    return ends[id];
   }
 
   function _missed(bytes32 id) internal view returns (uint256) {
@@ -67,22 +55,19 @@ contract Proofs {
   /// @notice Informs the contract that proofs should be expected for id
   /// @dev Requires that the id is not already in use
   /// @param id identifies the proof expectation, typically a slot id
-  /// @param endId Identifies the id of the proof expectation ending. Typically a request id. Different from id because the proof ending is shared amongst many ids.
   /// @param probability The probability that a proof should be expected
   /// @param duration Duration, from now, for which proofs should be expected
   function _expectProofs(
     bytes32 id, // typically slot id
-    bytes32 endId, // typically request id, used so that the ending is global for all slots
     uint256 probability,
     uint256 duration
   ) internal {
     require(!ids[id], "Proof id already in use");
     ids[id] = true;
     starts[id] = block.timestamp;
-    ends[endId] = block.timestamp + duration;
+    ends[id] = block.timestamp + duration;
     probabilities[id] = probability;
     markers[id] = uint256(blockhash(block.number - 1)) % period;
-    idEnds[id] = endId;
   }
 
   function _unexpectProofs(
@@ -134,14 +119,13 @@ contract Proofs {
     if (proofPeriod <= periodOf(starts[id])) {
       return (false, 0);
     }
-    uint256 end = _endFromId(id);
+    uint256 end = _end(id);
     if (proofPeriod >= periodOf(end)) {
       return (false, 0);
     }
     pointer = _getPointer(id, proofPeriod);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
-    // TODO: add test for below change
     isRequired = ids[id] && uint256(challenge) % probability == 0;
   }
 
@@ -183,20 +167,6 @@ contract Proofs {
     require(!missing[id][missedPeriod], "Proof already marked as missing");
     missing[id][missedPeriod] = true;
     missed[id] += 1;
-  }
-
-  /// @notice Extends the proof end time
-  /// @dev The id must have a mapping to an end id, the end must exist, and the end must not have elapsed yet
-  /// @param id the id of the proofs to extend. Typically a slot id, the id is mapped to an endId.
-  /// @param ending the new end time (in seconds)
-  function _extendProofEndTo(bytes32 id, uint256 ending) internal {
-    bytes32 endId = _endId(id);
-    uint256 end = ends[endId];
-    // TODO: create type aliases for id and endId so that _end() can return
-    // EndId storage and we don't need to replicate the below require here
-    require (end > 0, "Proof ending doesn't exist");
-    require (block.timestamp <= end, "Proof already ended");
-    ends[endId] = ending;
   }
 
   event ProofSubmitted(bytes32 id, bytes proof);

@@ -10,7 +10,6 @@ const {
 } = require("./evm")
 const { exampleLock } = require("./examples")
 const { hours } = require("./time")
-const { waitUntilCancelled } = require("./marketplace")
 
 describe("Account Locks", function () {
   let locks
@@ -202,7 +201,7 @@ describe("Account Locks", function () {
     })
 
     it("fails when lock is already expired", async function () {
-      await waitUntilCancelled(expiry)
+      await advanceTimeTo(expiry)
       await expect(locks.extendLockExpiryTo(id, newExpiry)).to.be.revertedWith(
         "Lock already expired"
       )

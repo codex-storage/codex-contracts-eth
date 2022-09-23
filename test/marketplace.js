@@ -1,24 +1,26 @@
 const { advanceTimeTo } = require("./evm")
 const { slotId } = require("./ids")
 
-async function waitUntilCancelled(expiry) {
-  await advanceTimeTo(expiry + 1)
+async function waitUntilCancelled(request) {
+  await advanceTimeTo(request.expiry + 1)
 }
 
-async function waitUntilStarted(contract, numSlots, requestId, proof) {
-  const lastSlot = numSlots - 1
-  for (let i = 0; i <= lastSlot; i++) {
-    await contract.fillSlot(requestId, i, proof)
+async function waitUntilStarted(contract, request, slot, proof) {
+  const lastSlotIdx = request.ask.slots - 1
+  for (let i = 0; i <= lastSlotIdx; i++) {
+    await contract.fillSlot(slot.request, i, proof)
   }
+  return { ...slot, index: lastSlotIdx }
 }
 
-async function waitUntilFinished(contract, slotId) {
-  const end = (await contract.proofEnd(slotId)).toNumber()
+async function waitUntilFinished(contract, lastSlot) {
+  const lastSlotId = slotId(lastSlot)
+  const end = (await contract.proofEnd(lastSlotId)).toNumber()
   await advanceTimeTo(end + 1)
 }
 
-async function waitUntilFailed(contract, slot, maxSlotLoss) {
-  for (let i = 0; i <= maxSlotLoss; i++) {
+async function waitUntilFailed(contract, request, slot) {
+  for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
     slot.index = i
     let id = slotId(slot)
     await contract.freeSlot(id)
