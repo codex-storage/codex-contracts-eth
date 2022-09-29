@@ -35,58 +35,59 @@ contract Storage is Collateral, Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function getRequest(bytes32 requestId) public view returns (Request memory) {
+  function getRequest(RequestId requestId) public view returns (Request memory) {
     return _request(requestId);
   }
 
-  function getSlot(bytes32 slotId) public view returns (Slot memory) {
+  function getSlot(SlotId slotId) public view returns (Slot memory) {
     return _slot(slotId);
   }
 
-  function getHost(bytes32 slotId) public view returns (address) {
+  function getHost(SlotId slotId) public view returns (address) {
     return _host(slotId);
   }
 
-  function missingProofs(bytes32 slotId) public view returns (uint256) {
-    return _missed(slotId);
+  function missingProofs(SlotId slotId) public view returns (uint256) {
+    return _missed(_toProofId(slotId));
   }
 
-  function isProofRequired(bytes32 slotId) public view returns (bool) {
+  function isProofRequired(SlotId slotId) public view returns (bool) {
     if(!_slotAcceptsProofs(slotId)) {
       return false;
     }
-    return _isProofRequired(slotId);
+    return _isProofRequired(_toProofId(slotId));
   }
 
-  function willProofBeRequired(bytes32 slotId) public view returns (bool) {
+  function willProofBeRequired(SlotId slotId) public view returns (bool) {
     if(!_slotAcceptsProofs(slotId)) {
       return false;
     }
-    return _willProofBeRequired(slotId);
+    return _willProofBeRequired(_toProofId(slotId));
   }
 
-  function getChallenge(bytes32 slotId) public view returns (bytes32) {
+  function getChallenge(SlotId slotId) public view returns (bytes32) {
     if(!_slotAcceptsProofs(slotId)) {
       return bytes32(0);
     }
-    return _getChallenge(slotId);
+    return _getChallenge(_toProofId(slotId));
   }
 
-  function getPointer(bytes32 slotId) public view returns (uint8) {
-    return _getPointer(slotId);
+  function getPointer(SlotId slotId) public view returns (uint8) {
+    return _getPointer(_toProofId(slotId));
   }
 
-  function submitProof(bytes32 slotId, bytes calldata proof) public {
-    _submitProof(slotId, proof);
+  function submitProof(SlotId slotId, bytes calldata proof) public {
+    _submitProof(_toProofId(slotId), proof);
   }
 
-  function markProofAsMissing(bytes32 slotId, uint256 period)
+  function markProofAsMissing(SlotId slotId, uint256 period)
     public
     slotMustAcceptProofs(slotId)
   {
-    _markProofAsMissing(slotId, period);
+    ProofId proofId = _toProofId(slotId);
+    _markProofAsMissing(proofId, period);
     address host = _host(slotId);
-    if (_missed(slotId) % slashMisses == 0) {
+    if (_missed(_toProofId(slotId)) % slashMisses == 0) {
         _slash(host, slashPercentage);
 
       if (balanceOf(host) < minCollateralThreshold) {

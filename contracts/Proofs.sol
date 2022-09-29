@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.8;
 
 contract Proofs {
+  type ProofId is bytes32;
+
   uint256 private immutable period;
   uint256 private immutable timeout;
   uint8 private immutable downtime;
@@ -17,15 +19,15 @@ contract Proofs {
     downtime = __downtime;
   }
 
-  mapping(bytes32 => bool) private ids;
-  mapping(bytes32 => uint256) private starts;
-  mapping(bytes32 => uint256) private ends;
-  mapping(bytes32 => bytes32) private idEnds;
-  mapping(bytes32 => uint256) private probabilities;
-  mapping(bytes32 => uint256) private markers;
-  mapping(bytes32 => uint256) private missed;
-  mapping(bytes32 => mapping(uint256 => bool)) private received;
-  mapping(bytes32 => mapping(uint256 => bool)) private missing;
+  mapping(ProofId => bool) private ids;
+  mapping(ProofId => uint256) private starts;
+  mapping(EndId => uint256) private ends;
+  mapping(ProofId => EndId) private idEnds;
+  mapping(ProofId => uint256) private probabilities;
+  mapping(ProofId => uint256) private markers;
+  mapping(ProofId => uint256) private missed;
+  mapping(ProofId => mapping(uint256 => bool)) private received;
+  mapping(ProofId => mapping(uint256 => bool)) private missing;
 
   function _period() internal view returns (uint256) {
     return period;
@@ -35,24 +37,24 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(bytes32 endId) internal view returns (uint256) {
+  function _end(ProofId id) internal view returns (uint256) {
     uint256 end = ends[endId];
     require(end > 0, "Proof ending doesn't exist");
     return ends[endId];
   }
 
-  function _endId(bytes32 id) internal view returns (bytes32) {
-    bytes32 endId = idEnds[id];
+  function _endId(ProofId id) internal view returns (EndId) {
+    EndId endId = idEnds[id];
     require(endId > 0, "endId for given id doesn't exist");
     return endId;
   }
 
-  function _endFromId(bytes32 id) internal view returns (uint256) {
-    bytes32 endId = _endId(id);
+  function _endFromId(ProofId id) internal view returns (uint256) {
+    EndId endId = _endId(id);
     return _end(endId);
   }
 
-  function _missed(bytes32 id) internal view returns (uint256) {
+  function _missed(ProofId id) internal view returns (uint256) {
     return missed[id];
   }
 
@@ -70,8 +72,8 @@ contract Proofs {
   /// @param endId Identifies the id of the proof expectation ending. Typically a request id. Different from id because the proof ending is shared amongst many ids.
   /// @param probability The probability that a proof should be expected
   function _expectProofs(
-    bytes32 id, // typically slot id
-    bytes32 endId, // typically request id, used so that the ending is global for all slots
+    ProofId id, // typically slot id
+    EndId endId, // typically request id, used so that the ending is global for all slots
     uint256 probability
   ) internal {
     require(!ids[id], "Proof id already in use");
@@ -83,25 +85,25 @@ contract Proofs {
   }
 
   function _unexpectProofs(
-    bytes32 id
+    ProofId id
   ) internal {
     require(ids[id], "Proof id not in use");
     ids[id] = false;
   }
 
-  function _getPointer(bytes32 id, uint256 proofPeriod)
+  function _getPointer(ProofId id, uint256 proofPeriod)
     internal
     view
     returns (uint8)
   {
     uint256 blockNumber = block.number % 256;
     uint256 periodNumber = proofPeriod % 256;
-    uint256 idOffset = uint256(id) % 256;
+    uint256 idOffset = uint256(ProofId.unwrap(id)) % 256;
     uint256 pointer = (blockNumber + periodNumber + idOffset) % 256;
     return uint8(pointer);
   }
 
-  function _getPointer(bytes32 id) internal view returns (uint8) {
+  function _getPointer(ProofId id) internal view returns (uint8) {
     return _getPointer(id, currentPeriod());
   }
 
@@ -111,7 +113,7 @@ contract Proofs {
     return keccak256(abi.encode(hash));
   }
 
-  function _getChallenge(bytes32 id, uint256 proofPeriod)
+  function _getChallenge(ProofId id, uint256 proofPeriod)
     internal
     view
     returns (bytes32)
@@ -119,11 +121,11 @@ contract Proofs {
     return _getChallenge(_getPointer(id, proofPeriod));
   }
 
-  function _getChallenge(bytes32 id) internal view returns (bytes32) {
+  function _getChallenge(ProofId id) internal view returns (bytes32) {
     return _getChallenge(id, currentPeriod());
   }
 
-  function _getProofRequirement(bytes32 id, uint256 proofPeriod)
+  function _getProofRequirement(ProofId id, uint256 proofPeriod)
     internal
     view
     returns (bool isRequired, uint8 pointer)
@@ -141,7 +143,7 @@ contract Proofs {
     isRequired = ids[id] && uint256(challenge) % probability == 0;
   }
 
-  function _isProofRequired(bytes32 id, uint256 proofPeriod)
+  function _isProofRequired(ProofId id, uint256 proofPeriod)
     internal
     view
     returns (bool)
@@ -152,25 +154,25 @@ contract Proofs {
     return isRequired && pointer >= downtime;
   }
 
-  function _isProofRequired(bytes32 id) internal view returns (bool) {
+  function _isProofRequired(ProofId id) internal view returns (bool) {
     return _isProofRequired(id, currentPeriod());
   }
 
-  function _willProofBeRequired(bytes32 id) internal view returns (bool) {
+  function _willProofBeRequired(ProofId id) internal view returns (bool) {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, currentPeriod());
     return isRequired && pointer < downtime;
   }
 
-  function _submitProof(bytes32 id, bytes calldata proof) internal {
+  function _submitProof(ProofId id, bytes calldata proof) internal {
     require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
     require(!received[id][currentPeriod()], "Proof already submitted");
     received[id][currentPeriod()] = true;
     emit ProofSubmitted(id, proof);
   }
 
-  function _markProofAsMissing(bytes32 id, uint256 missedPeriod) internal {
+  function _markProofAsMissing(ProofId id, uint256 missedPeriod) internal {
     uint256 periodEnd = (missedPeriod + 1) * period;
     require(periodEnd < block.timestamp, "Period has not ended yet");
     require(block.timestamp < periodEnd + timeout, "Validation timed out");
@@ -192,5 +194,5 @@ contract Proofs {
     ends[endId] = ending;
   }
 
-  event ProofSubmitted(bytes32 id, bytes proof);
+  event ProofSubmitted(ProofId id, bytes proof);
 }

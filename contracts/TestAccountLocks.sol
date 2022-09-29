@@ -5,15 +5,15 @@ import "./AccountLocks.sol";
 
 // exposes internal functions for testing
 contract TestAccountLocks is AccountLocks {
-  function createLock(bytes32 id, uint256 expiry) public {
+  function createLock(LockId id, uint256 expiry) public {
     _createLock(id, expiry);
   }
 
-  function lock(address account, bytes32 id) public {
+  function lock(address account, LockId id) public {
     _lock(account, id);
   }
 
-  function unlock(bytes32 id) public {
+  function unlock(LockId id) public {
     _unlock(id);
   }
 
@@ -21,7 +21,7 @@ contract TestAccountLocks is AccountLocks {
     _unlockAccount();
   }
 
-  function extendLockExpiryTo(bytes32 lockId, uint256 expiry) public {
+  function extendLockExpiryTo(LockId lockId, uint256 expiry) public {
     _extendLockExpiryTo(lockId, expiry);
   }
 }
