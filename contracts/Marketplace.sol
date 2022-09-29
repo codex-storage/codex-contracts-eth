@@ -75,7 +75,7 @@ contract Marketplace is Collateral, Proofs {
     ProofId proofId = _toProofId(slotId);
     _expectProofs(
       proofId,
-      requestId,
+      _toEndId(requestId),
       request.ask.proofProbability);
     _submitProof(proofId, proof);
 
@@ -117,7 +117,7 @@ contract Marketplace is Collateral, Proofs {
         context.state == RequestState.Started) {
 
       context.state = RequestState.Failed;
-      _setProofEnd(requestId, block.timestamp - 1);
+      _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
@@ -254,7 +254,7 @@ contract Marketplace is Collateral, Proofs {
     return _timeout();
   }
 
-  function proofEnd(bytes32 slotId) public view returns (uint256) {
+  function proofEnd(SlotId slotId) public view returns (uint256) {
     Slot memory slot = _slot(slotId);
     uint256 end = _end(_toEndId(slot.requestId));
     if (_slotAcceptsProofs(slotId)) {
@@ -337,11 +337,13 @@ contract Marketplace is Collateral, Proofs {
     return ProofId.wrap(SlotId.unwrap(slotId));
   }
 
+  function _toEndId(RequestId requestId) internal pure returns (EndId) {
+    return EndId.wrap(RequestId.unwrap(requestId));
+  }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
     return RequestId.unwrap(a) != bytes32(b);
   }
-
 
   struct Request {
     address client;

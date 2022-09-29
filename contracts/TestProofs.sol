@@ -24,7 +24,7 @@ contract TestProofs is Proofs {
     return _timeout();
   }
 
-  function end(ProofId id) public view returns (uint256) {
+  function end(EndId id) public view returns (uint256) {
     return _end(id);
   }
 
@@ -68,7 +68,7 @@ contract TestProofs is Proofs {
     _markProofAsMissing(id, _period);
   }
 
-  function setProofEnd(bytes32 id, uint256 ending) public {
+  function setProofEnd(EndId id, uint256 ending) public {
     _setProofEnd(id, ending);
   }
 }
