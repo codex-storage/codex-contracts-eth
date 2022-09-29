@@ -212,10 +212,12 @@ describe("Marketplace", function () {
   })
 
   describe("proof end", function () {
+    var requestTime
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
+      requestTime = await currentTime()
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
       await marketplace.deposit(collateral)
@@ -236,11 +238,11 @@ describe("Marketplace", function () {
       }
     })
 
-    it("sets proof end time to the request duration once filled", async function () {
+    it("sets the proof end time to now + duration", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(
-        (await currentTime()) + request.ask.duration
-      )
+      await expect(
+        (await marketplace.proofEnd(slotId(slot))).toNumber()
+      ).to.be.closeTo(requestTime + request.ask.duration, 1)
     })
 
     it("sets proof end time to the past once failed", async function () {
@@ -258,15 +260,14 @@ describe("Marketplace", function () {
       await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(now - 1)
     })
 
-    it("sets proof end time to the past once finished", async function () {
+    it("checks that proof end time is in the past once finished", async function () {
       const lastSlot = await waitUntilStarted(marketplace, request, slot, proof)
-      await waitUntilFinished(marketplace, lastSlot) // sets proofEnd to block.timestamp - 1
+      await waitUntilFinished(marketplace, lastSlot)
       const now = await currentTime()
-      // the proof end time is set to block.timestamp - 1 when the contract is
-      // finished. in the process of calling currentTime and proofEnd,
+      // in the process of calling currentTime and proofEnd,
       // block.timestamp has advanced by 1, so the expected proof end time will
-      // be block.timestamp - 2.
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(now - 2)
+      // be block.timestamp - 1.
+      await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(now - 1)
     })
   })
 
