@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.8;
 
 /// Implements account locking. The main goal of this design is to allow
 /// unlocking of multiple accounts in O(1). To achieve this we keep a list of
@@ -8,14 +8,16 @@ pragma solidity ^0.8.0;
 /// this operation does not become too expensive in gas costs, a maximum amount
 /// of active locks per account is enforced.
 contract AccountLocks {
+  type LockId is bytes32;
+
   uint256 public constant MAX_LOCKS_PER_ACCOUNT = 128;
 
-  mapping(bytes32 => Lock) private locks;
+  mapping(LockId => Lock) private locks;
   mapping(address => Account) private accounts;
 
   /// Creates a lock that can be used to lock accounts. The id needs to be
   /// unique and collision resistant. The expiry time is given in unix time.
-  function _createLock(bytes32 id, uint256 expiry) internal {
+  function _createLock(LockId id, uint256 expiry) internal {
     require(locks[id].owner == address(0), "Lock already exists");
     locks[id] = Lock(msg.sender, expiry, false);
   }
@@ -24,9 +26,9 @@ contract AccountLocks {
   /// can the account be unlocked again.
   /// Calling this function triggers a cleanup of inactive locks, making this
   /// an O(N) operation, where N = MAX_LOCKS_PER_ACCOUNT.
-  function _lock(address account, bytes32 lockId) internal {
+  function _lock(address account, LockId lockId) internal {
     require(locks[lockId].owner != address(0), "Lock does not exist");
-    bytes32[] storage accountLocks = accounts[account].locks;
+    LockId[] storage accountLocks = accounts[account].locks;
     removeInactiveLocks(accountLocks);
     require(accountLocks.length < MAX_LOCKS_PER_ACCOUNT, "Max locks reached");
     accountLocks.push(lockId);
@@ -35,7 +37,7 @@ contract AccountLocks {
   /// Unlocks a lock, thereby freeing any accounts that are attached to this
   /// lock. This is an O(1) operation. Only the party that created the lock is
   /// allowed to unlock it.
-  function _unlock(bytes32 lockId) internal {
+  function _unlock(LockId lockId) internal {
     Lock storage lock = locks[lockId];
     require(lock.owner != address(0), "Lock does not exist");
     require(lock.owner == msg.sender, "Only lock creator can unlock");
@@ -46,7 +48,7 @@ contract AccountLocks {
   /// NOTE: We do not need to check that msg.sender is the lock.owner because
   /// this function is internal, and is only called after all checks have been
   /// performed in Marketplace.fillSlot.
-  function _extendLockExpiryTo(bytes32 lockId, uint256 expiry) internal {
+  function _extendLockExpiryTo(LockId lockId, uint256 expiry) internal {
     Lock storage lock = locks[lockId];
     require(lock.owner != address(0), "Lock does not exist");
     require(lock.expiry >= block.timestamp, "Lock already expired");
@@ -58,12 +60,12 @@ contract AccountLocks {
   /// Calling this function triggers a cleanup of inactive locks, making this
   /// an O(N) operation, where N = MAX_LOCKS_PER_ACCOUNT.
   function _unlockAccount() internal {
-    bytes32[] storage accountLocks = accounts[msg.sender].locks;
+    LockId[] storage accountLocks = accounts[msg.sender].locks;
     removeInactiveLocks(accountLocks);
     require(accountLocks.length == 0, "Account locked");
   }
 
-  function removeInactiveLocks(bytes32[] storage lockIds) private {
+  function removeInactiveLocks(LockId[] storage lockIds) private {
     uint256 index = 0;
     while (true) {
       if (index >= lockIds.length) {
@@ -89,6 +91,6 @@ contract AccountLocks {
   }
 
   struct Account {
-    bytes32[] locks;
+    LockId[] locks;
   }
 }
