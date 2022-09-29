@@ -3,6 +3,7 @@ pragma solidity ^0.8.8;
 
 contract Proofs {
   type ProofId is bytes32;
+  type EndId is bytes32;
 
   uint256 private immutable period;
   uint256 private immutable timeout;
@@ -37,7 +38,7 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(ProofId id) internal view returns (uint256) {
+  function _end(EndId endId) internal view returns (uint256) {
     uint256 end = ends[endId];
     require(end > 0, "Proof ending doesn't exist");
     return ends[endId];
@@ -45,7 +46,7 @@ contract Proofs {
 
   function _endId(ProofId id) internal view returns (EndId) {
     EndId endId = idEnds[id];
-    require(endId > 0, "endId for given id doesn't exist");
+    require(EndId.unwrap(endId) > 0, "endId for given id doesn't exist");
     return endId;
   }
 
@@ -187,7 +188,7 @@ contract Proofs {
   /// @dev Can only be set once
   /// @param endId the endId of the proofs to extend (typically a request id).
   /// @param ending the new end time (in seconds)
-  function _setProofEnd(bytes32 endId, uint256 ending) internal {
+  function _setProofEnd(EndId endId, uint256 ending) internal {
     // TODO: create type aliases for id and endId so that _end() can return
     // EndId storage and we don't need to replicate the below require here
     require (ends[endId] == 0 || ending < block.timestamp, "End exists or must be past");
