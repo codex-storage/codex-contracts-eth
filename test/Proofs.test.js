@@ -14,6 +14,7 @@ const { periodic, hours, minutes } = require("./time")
 
 describe("Proofs", function () {
   const id = hexlify(randomBytes(32))
+  const endId = hexlify(randomBytes(32))
   const period = 30 * 60
   const timeout = 5
   const downtime = 64
@@ -34,80 +35,80 @@ describe("Proofs", function () {
     await revert()
   })
 
-  it("calculates an end time based on duration", async function () {
-    await proofs.expectProofs(id, probability, duration)
-    let end = (await currentTime()) + duration
-    expect((await proofs.end(id)).toNumber()).to.be.closeTo(end, 1)
-  })
+  describe("general", function () {
+    beforeEach(async function () {
+      await proofs.setProofEnd(endId, (await currentTime()) + duration)
+    })
 
-  it("does not allow ids to be reused", async function () {
-    await proofs.expectProofs(id, probability, duration)
-    await expect(
-      proofs.expectProofs(id, probability, duration)
-    ).to.be.revertedWith("Proof id already in use")
-  })
+    it("does not allow ids to be reused", async function () {
+      await proofs.expectProofs(id, endId, probability)
+      await expect(
+        proofs.expectProofs(id, endId, probability)
+      ).to.be.revertedWith("Proof id already in use")
+    })
 
-  it("requires proofs with an agreed upon probability", async function () {
-    await proofs.expectProofs(id, probability, duration)
-    let amount = 0
-    for (let i = 0; i < 100; i++) {
-      if (await proofs.isProofRequired(id)) {
-        amount += 1
+    it("requires proofs with an agreed upon probability", async function () {
+      await proofs.expectProofs(id, endId, probability)
+      let amount = 0
+      for (let i = 0; i < 100; i++) {
+        if (await proofs.isProofRequired(id)) {
+          amount += 1
+        }
+        await advanceTime(period)
       }
-      await advanceTime(period)
-    }
-    let expected = 100 / probability
-    expect(amount).to.be.closeTo(expected, expected / 2)
-  })
+      let expected = 100 / probability
+      expect(amount).to.be.closeTo(expected, expected / 2)
+    })
 
-  it("requires no proofs in the start period", async function () {
-    const startPeriod = Math.floor((await currentTime()) / period)
-    const probability = 1
-    await proofs.expectProofs(id, probability, duration)
-    while (Math.floor((await currentTime()) / period) == startPeriod) {
+    it("requires no proofs in the start period", async function () {
+      const startPeriod = Math.floor((await currentTime()) / period)
+      const probability = 1
+      await proofs.expectProofs(id, endId, probability)
+      while (Math.floor((await currentTime()) / period) == startPeriod) {
+        expect(await proofs.isProofRequired(id)).to.be.false
+        await advanceTime(Math.floor(period / 10))
+      }
+    })
+
+    it("requires no proofs in the end period", async function () {
+      const probability = 1
+      await proofs.expectProofs(id, endId, probability)
+      await advanceTime(duration)
       expect(await proofs.isProofRequired(id)).to.be.false
-      await advanceTime(Math.floor(period / 10))
-    }
-  })
+    })
 
-  it("requires no proofs in the end period", async function () {
-    const probability = 1
-    await proofs.expectProofs(id, probability, duration)
-    await advanceTime(duration)
-    expect(await proofs.isProofRequired(id)).to.be.false
-  })
+    it("requires no proofs after the end time", async function () {
+      const probability = 1
+      await proofs.expectProofs(id, endId, probability)
+      await advanceTime(duration + timeout)
+      expect(await proofs.isProofRequired(id)).to.be.false
+    })
 
-  it("requires no proofs after the end time", async function () {
-    const probability = 1
-    await proofs.expectProofs(id, probability, duration)
-    await advanceTime(duration + timeout)
-    expect(await proofs.isProofRequired(id)).to.be.false
-  })
+    it("requires proofs for different ids at different times", async function () {
+      let id1 = hexlify(randomBytes(32))
+      let id2 = hexlify(randomBytes(32))
+      let id3 = hexlify(randomBytes(32))
+      for (let id of [id1, id2, id3]) {
+        await proofs.expectProofs(id, endId, probability)
+      }
+      let req1, req2, req3
+      while (req1 === req2 && req2 === req3) {
+        req1 = await proofs.isProofRequired(id1)
+        req2 = await proofs.isProofRequired(id2)
+        req3 = await proofs.isProofRequired(id3)
+        await advanceTime(period)
+      }
+    })
 
-  it("requires proofs for different ids at different times", async function () {
-    let id1 = hexlify(randomBytes(32))
-    let id2 = hexlify(randomBytes(32))
-    let id3 = hexlify(randomBytes(32))
-    for (let id of [id1, id2, id3]) {
-      await proofs.expectProofs(id, probability, duration)
-    }
-    let req1, req2, req3
-    while (req1 === req2 && req2 === req3) {
-      req1 = await proofs.isProofRequired(id1)
-      req2 = await proofs.isProofRequired(id2)
-      req3 = await proofs.isProofRequired(id3)
-      await advanceTime(period)
-    }
-  })
-
-  it("moves pointer one block at a time", async function () {
-    await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-    for (let i = 0; i < 256; i++) {
-      let previous = await proofs.getPointer(id)
-      await mine()
-      let current = await proofs.getPointer(id)
-      expect(current).to.equal((previous + 1) % 256)
-    }
+    it("moves pointer one block at a time", async function () {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      for (let i = 0; i < 256; i++) {
+        let previous = await proofs.getPointer(id)
+        await mine()
+        let current = await proofs.getPointer(id)
+        expect(current).to.equal((previous + 1) % 256)
+      }
+    })
   })
 
   describe("when proof requirement is upcoming", function () {
@@ -118,7 +119,8 @@ describe("Proofs", function () {
     }
 
     beforeEach(async function () {
-      await proofs.expectProofs(id, probability, duration)
+      await proofs.setProofEnd(endId, (await currentTime()) + duration)
+      await proofs.expectProofs(id, endId, probability)
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
     })
@@ -151,7 +153,8 @@ describe("Proofs", function () {
     const proof = hexlify(randomBytes(42))
 
     beforeEach(async function () {
-      await proofs.expectProofs(id, probability, duration)
+      await proofs.setProofEnd(endId, (await currentTime()) + duration)
+      await proofs.expectProofs(id, endId, probability)
     })
 
     async function waitUntilProofIsRequired(id) {
@@ -268,6 +271,37 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(id)
       await proofs.unexpectProofs(id)
       await expect(await proofs.isProofRequired(id)).to.be.false
+    })
+  })
+
+  describe("set proof end", function () {
+    const proof = hexlify(randomBytes(42))
+
+    it("fails to get proof end when proof ending doesn't exist", async function () {
+      await expect(proofs.end(endId)).to.be.revertedWith(
+        "Proof ending doesn't exist"
+      )
+    })
+
+    it("sets proof end when proof ending doesn't already exist", async function () {
+      let ending = (await currentTime()) + duration
+      await expect(proofs.setProofEnd(endId, ending)).not.to.be.reverted
+      await expect(await proofs.end(endId)).to.equal(ending)
+    })
+
+    it("sets proof end when proof ending exists and ending set to past", async function () {
+      // let ending = (await currentTime()) + duration
+      // await proofs.setProofEnd(endId, ending)
+      let past = (await currentTime()) - 1
+      await expect(proofs.setProofEnd(endId, past)).not.to.be.reverted
+    })
+
+    it("fails when proof ending already exists and ending set to future", async function () {
+      let ending = (await currentTime()) + duration
+      await proofs.setProofEnd(endId, ending)
+      await expect(proofs.setProofEnd(endId, ending)).to.be.revertedWith(
+        "End exists or must be past"
+      )
     })
   })
 })

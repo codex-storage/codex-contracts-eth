@@ -37,6 +37,11 @@ contract Marketplace is Collateral, Proofs {
     require(requests[id].client == address(0), "Request already exists");
 
     requests[id] = request;
+    RequestContext storage context = _context(id);
+    // set contract end time to `duration` from now (time request was created)
+    context.endsAt = block.timestamp + request.ask.duration;
+    _setProofEnd(id, context.endsAt);
+
 
     _createLock(id, request.expiry);
 
@@ -63,14 +68,13 @@ contract Marketplace is Collateral, Proofs {
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
     _lock(msg.sender, requestId);
 
-    _expectProofs(slotId, request.ask.proofProbability, request.ask.duration);
+    _expectProofs(slotId, requestId, request.ask.proofProbability);
     _submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    context.endsAt = block.timestamp + request.ask.duration;
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -105,6 +109,7 @@ contract Marketplace is Collateral, Proofs {
         context.state == RequestState.Started) {
 
       context.state = RequestState.Failed;
+      _setProofEnd(requestId, block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
@@ -233,15 +238,11 @@ contract Marketplace is Collateral, Proofs {
 
   function proofEnd(bytes32 slotId) public view returns (uint256) {
     Slot memory slot = _slot(slotId);
-    uint256 end = _end(slotId);
-    RequestContext storage context = _context(slot.requestId);
+    uint256 end = _end(slot.requestId);
     if (_slotAcceptsProofs(slotId)) {
       return end;
     } else {
-      // Calculate the earliest ending between a slot and a request.
-      // Request endings are set, for eg, when a request fails.
-      uint256 earliestEnd = Math.min(end, context.endsAt);
-      return Math.min(earliestEnd, block.timestamp - 1);
+      return Math.min(end, block.timestamp - 1);
     }
   }
 
@@ -275,7 +276,6 @@ contract Marketplace is Collateral, Proofs {
       return context.state;
     }
   }
-
 
   /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
   /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.

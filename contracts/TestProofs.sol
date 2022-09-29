@@ -34,10 +34,10 @@ contract TestProofs is Proofs {
 
   function expectProofs(
     bytes32 id,
-    uint256 _probability,
-    uint256 _duration
+    bytes32 endId,
+    uint256 _probability
   ) public {
-    _expectProofs(id, _probability, _duration);
+    _expectProofs(id, endId, _probability);
   }
 
   function unexpectProofs(bytes32 id) public {
@@ -66,5 +66,9 @@ contract TestProofs is Proofs {
 
   function markProofAsMissing(bytes32 id, uint256 _period) public {
     _markProofAsMissing(id, _period);
+  }
+
+  function setProofEnd(bytes32 id, uint256 ending) public {
+    _setProofEnd(id, ending);
   }
 }
