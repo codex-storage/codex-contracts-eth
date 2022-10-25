@@ -9,7 +9,7 @@ const {
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
-  RequestState
+  RequestState,
 } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {

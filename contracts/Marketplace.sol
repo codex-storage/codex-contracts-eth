@@ -97,9 +97,11 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _freeSlot(
-    SlotId slotId
-  ) internal slotMustAcceptProofs(slotId) marketplaceInvariant {
+  function _freeSlot(SlotId slotId)
+    internal
+    slotMustAcceptProofs(slotId)
+    marketplaceInvariant
+  {
     Slot storage slot = _slot(slotId);
     RequestId requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
@@ -131,6 +133,7 @@ contract Marketplace is Collateral, Proofs {
       // TODO: send client remaining funds
     }
   }
+
   function payoutSlot(RequestId requestId, uint256 slotIndex)
     public
     marketplaceInvariant
@@ -180,10 +183,8 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     return
       context.state == RequestState.Cancelled ||
-      (
-        context.state == RequestState.New &&
-        block.timestamp > _request(requestId).expiry
-      );
+      (context.state == RequestState.New &&
+        block.timestamp > _request(requestId).expiry);
   }
 
   /// @notice Return true if the request state is RequestState.Finished or if the request duration has elapsed and the request was started.
@@ -194,10 +195,8 @@ contract Marketplace is Collateral, Proofs {
     RequestContext memory context = _context(requestId);
     return
       context.state == RequestState.Finished ||
-      (
-        context.state == RequestState.Started &&
-        block.timestamp > context.endsAt
-      );
+      (context.state == RequestState.Started &&
+        block.timestamp > context.endsAt);
   }
 
   /// @notice Return id of request that slot belongs to
@@ -272,8 +271,8 @@ contract Marketplace is Collateral, Proofs {
   function _price(
     uint64 numSlots,
     uint256 duration,
-    uint256 reward) internal pure returns (uint256) {
-
+    uint256 reward
+  ) internal pure returns (uint256) {
     return numSlots * duration * reward;
   }
 
@@ -311,7 +310,11 @@ contract Marketplace is Collateral, Proofs {
   /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
   /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
   /// @param requestId id of the request for which to obtain state info
-  function _requestAcceptsProofs(RequestId requestId) internal view returns (bool) {
+  function _requestAcceptsProofs(RequestId requestId)
+    internal
+    view
+    returns (bool)
+  {
     RequestState s = state(requestId);
     return s == RequestState.New || s == RequestState.Started;
   }
@@ -324,9 +327,7 @@ contract Marketplace is Collateral, Proofs {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
 
-  function _toSlotId(
-    RequestId requestId,
-    uint256 slotIndex)
+  function _toSlotId(RequestId requestId, uint256 slotIndex)
     internal
     pure
     returns (SlotId)
@@ -353,11 +354,6 @@ contract Marketplace is Collateral, Proofs {
   function _toProofId(SlotId slotId) internal pure returns (ProofId) {
     return ProofId.wrap(SlotId.unwrap(slotId));
   }
-
-  function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
-    return RequestId.unwrap(a) != bytes32(b);
-  }
-
 
   struct Request {
     address client;
@@ -393,11 +389,11 @@ contract Marketplace is Collateral, Proofs {
   }
 
   enum RequestState {
-    New,        // [default] waiting to fill slots
-    Started,    // all slots filled, accepting regular proofs
-    Cancelled,  // not enough slots filled before expiry
-    Finished,   // successfully completed
-    Failed      // too many nodes have failed to provide proofs, data lost
+    New, // [default] waiting to fill slots
+    Started, // all slots filled, accepting regular proofs
+    Cancelled, // not enough slots filled before expiry
+    Finished, // successfully completed
+    Failed // too many nodes have failed to provide proofs, data lost
   }
 
   struct RequestContext {
