@@ -76,7 +76,7 @@ describe("Storage", function () {
   describe("ending the contract", function () {
     it("unlocks the host collateral", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilFinished(storage, slot)
+      await waitUntilFinished(storage, slot.request)
       await expect(storage.withdraw()).not.to.be.reverted
     })
   })

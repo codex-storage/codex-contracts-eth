@@ -13,9 +13,8 @@ async function waitUntilStarted(contract, request, slot, proof) {
   return { ...slot, index: lastSlotIdx }
 }
 
-async function waitUntilFinished(contract, lastSlot) {
-  const lastSlotId = slotId(lastSlot)
-  const end = (await contract.proofEnd(lastSlotId)).toNumber()
+async function waitUntilFinished(contract, requestId) {
+  const end = (await contract.requestEnd(requestId)).toNumber()
   await advanceTimeTo(end + 1)
 }
 
