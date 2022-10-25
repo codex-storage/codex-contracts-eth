@@ -84,12 +84,6 @@ describe("Marketplace", function () {
         .withArgs(requestId(request), askToArray(request.ask))
     })
 
-    it("adds request to list of active requests", async function () {
-      await token.approve(marketplace.address, price(request))
-      await marketplace.requestStorage(request)
-      expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
-    })
-
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
       await token.approve(marketplace.address, price(invalid))
@@ -638,6 +632,47 @@ describe("Marketplace", function () {
           marketplace.testAcceptsProofs(slotId(slot))
         ).to.be.revertedWith("Slot empty")
       })
+    })
+  })
+
+  describe("list of active requests", function () {
+    beforeEach(async function () {
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+    })
+
+    it("adds request to list when requesting storage", async function () {
+      await marketplace.requestStorage(request)
+      expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
+    })
+
+    it("removes request from list when funds are withdrawn", async function () {
+      await marketplace.requestStorage(request)
+      await waitUntilCancelled(request)
+      await marketplace.withdrawFunds(requestId(request))
+      expect(await marketplace.myRequests()).to.deep.equal([])
+    })
+
+    it("removes request from list when request fails", async function () {
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await waitUntilStarted(marketplace, request, slot, proof)
+      await waitUntilFailed(marketplace, request, slot)
+      switchAccount(client)
+      expect(await marketplace.myRequests()).to.deep.equal([])
+    })
+
+    it("removes request from list when request finishes", async function () {
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      const lastSlot = await waitUntilStarted(marketplace, request, slot, proof)
+      await waitUntilFinished(marketplace, lastSlot)
+      await marketplace.payoutSlot(slot.request, slot.index)
+      switchAccount(client)
+      expect(await marketplace.myRequests()).to.deep.equal([])
     })
   })
 })

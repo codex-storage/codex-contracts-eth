@@ -3,10 +3,13 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
 
 contract Marketplace is Collateral, Proofs {
+  using EnumerableSet for EnumerableSet.Bytes32Set;
+
   type RequestId is bytes32;
   type SlotId is bytes32;
 
@@ -15,7 +18,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  mapping(address => RequestId[]) private activeRequests;
+  mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
 
   constructor(
     IERC20 _token,
@@ -32,7 +35,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    return activeRequests[msg.sender];
+    return _toRequestIds(activeRequests[msg.sender].values());
   }
 
   function requestStorage(Request calldata request)
@@ -50,6 +53,7 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
+    activeRequests[request.client].add(RequestId.unwrap(id));
 
     _createLock(_toLockId(id), request.expiry);
 
@@ -126,6 +130,7 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
+      activeRequests[request.client].remove(RequestId.unwrap(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -140,7 +145,9 @@ contract Marketplace is Collateral, Proofs {
   {
     require(_isFinished(requestId), "Contract not ended");
     RequestContext storage context = _context(requestId);
+    Request storage request = _request(requestId);
     context.state = RequestState.Finished;
+    activeRequests[request.client].remove(RequestId.unwrap(requestId));
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
@@ -164,6 +171,7 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
+    activeRequests[request.client].remove(RequestId.unwrap(requestId));
     emit RequestCancelled(requestId);
 
     // TODO: To be changed once we start paying out hosts for the time they
@@ -325,6 +333,17 @@ contract Marketplace is Collateral, Proofs {
     returns (RequestId)
   {
     return RequestId.wrap(keccak256(abi.encode(request)));
+  }
+
+  function _toRequestIds(bytes32[] memory array)
+    private
+    pure
+    returns (RequestId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
   }
 
   function _toSlotId(RequestId requestId, uint256 slotIndex)
