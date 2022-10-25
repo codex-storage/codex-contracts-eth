@@ -345,6 +345,15 @@ contract Marketplace is Collateral, Proofs {
     return RequestId.unwrap(a) != bytes32(b);
   }
 
+  function _toProofId(SlotId slotId) internal pure returns (ProofId) {
+    return ProofId.wrap(SlotId.unwrap(slotId));
+  }
+
+  function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
+    return RequestId.unwrap(a) != bytes32(b);
+  }
+
+
   struct Request {
     address client;
     Ask ask;
