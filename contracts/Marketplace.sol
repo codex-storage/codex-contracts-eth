@@ -15,6 +15,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
+  mapping(address => RequestId[]) private activeRequests;
 
   constructor(
     IERC20 _token,
@@ -28,6 +29,10 @@ contract Marketplace is Collateral, Proofs {
     marketplaceInvariant
   {
     collateral = _collateral;
+  }
+
+  function myRequests() public view returns (RequestId[] memory) {
+    return activeRequests[msg.sender];
   }
 
   function requestStorage(Request calldata request)

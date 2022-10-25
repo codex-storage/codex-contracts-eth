@@ -84,6 +84,12 @@ describe("Marketplace", function () {
         .withArgs(requestId(request), askToArray(request.ask))
     })
 
+    it("adds request to list of active requests", async function () {
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
+    })
+
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
       await token.approve(marketplace.address, price(invalid))
