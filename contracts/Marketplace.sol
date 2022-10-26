@@ -267,13 +267,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function proofEnd(SlotId slotId) public view returns (uint256) {
-    Slot memory slot = _slot(slotId);
-    uint256 end = _end(_toEndId(slot.requestId));
-    if (_slotAcceptsProofs(slotId)) {
-      return end;
-    } else {
-      return Math.min(end, block.timestamp - 1);
-    }
+    return requestEnd(_slot(slotId).requestId);
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
