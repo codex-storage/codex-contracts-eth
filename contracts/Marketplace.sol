@@ -268,7 +268,7 @@ contract Marketplace is Collateral, Proofs {
 
   function proofEnd(SlotId slotId) public view returns (uint256) {
     Slot memory slot = _slot(slotId);
-    uint256 end = requestEnd(slot.requestId);
+    uint256 end = _end(_toEndId(slot.requestId));
     if (_slotAcceptsProofs(slotId)) {
       return end;
     } else {
@@ -277,7 +277,12 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
-    return _end(_toEndId(requestId));
+    uint256 end = _end(_toEndId(requestId));
+    if(_requestAcceptsProofs(requestId)) {
+      return end;
+    } else {
+      return Math.min(end, block.timestamp - 1);
+    }
   }
 
   function _price(

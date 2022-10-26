@@ -271,6 +271,72 @@ describe("Marketplace", function () {
     })
   })
 
+  describe("request end", function () {
+    var requestTime
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      requestTime = await currentTime()
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("shares request end time for all slots in request", async function () {
+      const lastSlot = request.ask.slots - 1
+      for (let i = 0; i < lastSlot; i++) {
+        await marketplace.fillSlot(slot.request, i, proof)
+      }
+      advanceTime(minutes(10))
+      await marketplace.fillSlot(slot.request, lastSlot, proof)
+      let slot0 = { ...slot, index: 0 }
+      let end = await marketplace.requestEnd(requestId(request))
+      for (let i = 1; i <= lastSlot; i++) {
+        let sloti = { ...slot, index: i }
+        await expect((await marketplace.proofEnd(slotId(sloti))) === end)
+      }
+    })
+
+    it("sets the request end time to now + duration", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(
+        (await marketplace.requestEnd(requestId(request))).toNumber()
+      ).to.be.closeTo(requestTime + request.ask.duration, 1)
+    })
+
+    it("sets request end time to the past once failed", async function () {
+      await waitUntilStarted(marketplace, request, slot, proof)
+      await waitUntilFailed(marketplace, request, slot)
+      let slot0 = { ...slot, index: request.ask.maxSlotLoss + 1 }
+      const now = await currentTime()
+      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
+        now - 1
+      )
+    })
+
+    it("sets request end time to the past once cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      const now = await currentTime()
+      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
+        now - 1
+      )
+    })
+
+    it("checks that request end time is in the past once finished", async function () {
+      await waitUntilStarted(marketplace, request, slot, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      const now = await currentTime()
+      // in the process of calling currentTime and proofEnd,
+      // block.timestamp has advanced by 1, so the expected proof end time will
+      // be block.timestamp - 1.
+      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
+        now - 1
+      )
+    })
+  })
+
   describe("freeing a slot", function () {
     var id
     beforeEach(async function () {
