@@ -6,11 +6,9 @@ async function waitUntilCancelled(request) {
 }
 
 async function waitUntilStarted(contract, request, slot, proof) {
-  const lastSlotIdx = request.ask.slots - 1
-  for (let i = 0; i <= lastSlotIdx; i++) {
+  for (let i = 0; i < request.ask.slots; i++) {
     await contract.fillSlot(slot.request, i, proof)
   }
-  return { ...slot, index: lastSlotIdx }
 }
 
 async function waitUntilFinished(contract, requestId) {
