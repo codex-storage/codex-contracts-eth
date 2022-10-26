@@ -82,10 +82,7 @@ contract Marketplace is Collateral, Proofs {
     _lock(msg.sender, lockId);
 
     ProofId proofId = _toProofId(slotId);
-    _expectProofs(
-      proofId,
-      _toEndId(requestId),
-      request.ask.proofProbability);
+    _expectProofs(proofId, _toEndId(requestId), request.ask.proofProbability);
     _submitProof(proofId, proof);
 
     slot.host = msg.sender;
@@ -124,9 +121,10 @@ contract Marketplace is Collateral, Proofs {
 
     Request storage request = _request(requestId);
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
-    if (slotsLost > request.ask.maxSlotLoss &&
-        context.state == RequestState.Started) {
-
+    if (
+      slotsLost > request.ask.maxSlotLoss &&
+      context.state == RequestState.Started
+    ) {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
@@ -272,7 +270,7 @@ contract Marketplace is Collateral, Proofs {
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
     uint256 end = _end(_toEndId(requestId));
-    if(_requestAcceptsProofs(requestId)) {
+    if (_requestAcceptsProofs(requestId)) {
       return end;
     } else {
       return Math.min(end, block.timestamp - 1);
