@@ -19,6 +19,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
+  mapping(address => EnumerableSet.Bytes32Set) private activeSlots;
 
   constructor(
     IERC20 _token,
@@ -36,6 +37,10 @@ contract Marketplace is Collateral, Proofs {
 
   function myRequests() public view returns (RequestId[] memory) {
     return _toRequestIds(activeRequests[msg.sender].values());
+  }
+
+  function mySlots() public view returns (SlotId[] memory) {
+    return _toSlotIds(activeSlots[msg.sender].values());
   }
 
   function requestStorage(Request calldata request)
@@ -89,6 +94,7 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
+    activeSlots[request.client].add(SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -340,6 +346,17 @@ contract Marketplace is Collateral, Proofs {
     private
     pure
     returns (RequestId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  function _toSlotIds(bytes32[] memory array)
+    private
+    pure
+    returns (SlotId[] memory result)
   {
     // solhint-disable-next-line no-inline-assembly
     assembly {
