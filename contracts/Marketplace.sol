@@ -3,10 +3,13 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
 
 contract Marketplace is Collateral, Proofs {
+  using EnumerableSet for EnumerableSet.Bytes32Set;
+
   type RequestId is bytes32;
   type SlotId is bytes32;
 
@@ -15,6 +18,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
+  mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
 
   constructor(
     IERC20 _token,
@@ -28,6 +32,10 @@ contract Marketplace is Collateral, Proofs {
     marketplaceInvariant
   {
     collateral = _collateral;
+  }
+
+  function myRequests() public view returns (RequestId[] memory) {
+    return _toRequestIds(activeRequests[msg.sender].values());
   }
 
   function requestStorage(Request calldata request)
@@ -45,6 +53,7 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
+    activeRequests[request.client].add(RequestId.unwrap(id));
 
     _createLock(_toLockId(id), request.expiry);
 
@@ -73,10 +82,7 @@ contract Marketplace is Collateral, Proofs {
     _lock(msg.sender, lockId);
 
     ProofId proofId = _toProofId(slotId);
-    _expectProofs(
-      proofId,
-      _toEndId(requestId),
-      request.ask.proofProbability);
+    _expectProofs(proofId, _toEndId(requestId), request.ask.proofProbability);
     _submitProof(proofId, proof);
 
     slot.host = msg.sender;
@@ -92,9 +98,11 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _freeSlot(
-    SlotId slotId
-  ) internal slotMustAcceptProofs(slotId) marketplaceInvariant {
+  function _freeSlot(SlotId slotId)
+    internal
+    slotMustAcceptProofs(slotId)
+    marketplaceInvariant
+  {
     Slot storage slot = _slot(slotId);
     RequestId requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
@@ -113,12 +121,14 @@ contract Marketplace is Collateral, Proofs {
 
     Request storage request = _request(requestId);
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
-    if (slotsLost > request.ask.maxSlotLoss &&
-        context.state == RequestState.Started) {
-
+    if (
+      slotsLost > request.ask.maxSlotLoss &&
+      context.state == RequestState.Started
+    ) {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
+      activeRequests[request.client].remove(RequestId.unwrap(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -126,13 +136,16 @@ contract Marketplace is Collateral, Proofs {
       // TODO: send client remaining funds
     }
   }
+
   function payoutSlot(RequestId requestId, uint256 slotIndex)
     public
     marketplaceInvariant
   {
     require(_isFinished(requestId), "Contract not ended");
     RequestContext storage context = _context(requestId);
+    Request storage request = _request(requestId);
     context.state = RequestState.Finished;
+    activeRequests[request.client].remove(RequestId.unwrap(requestId));
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
@@ -156,6 +169,7 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
+    activeRequests[request.client].remove(RequestId.unwrap(requestId));
     emit RequestCancelled(requestId);
 
     // TODO: To be changed once we start paying out hosts for the time they
@@ -175,10 +189,8 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     return
       context.state == RequestState.Cancelled ||
-      (
-        context.state == RequestState.New &&
-        block.timestamp > _request(requestId).expiry
-      );
+      (context.state == RequestState.New &&
+        block.timestamp > _request(requestId).expiry);
   }
 
   /// @notice Return true if the request state is RequestState.Finished or if the request duration has elapsed and the request was started.
@@ -189,10 +201,8 @@ contract Marketplace is Collateral, Proofs {
     RequestContext memory context = _context(requestId);
     return
       context.state == RequestState.Finished ||
-      (
-        context.state == RequestState.Started &&
-        block.timestamp > context.endsAt
-      );
+      (context.state == RequestState.Started &&
+        block.timestamp > context.endsAt);
   }
 
   /// @notice Return id of request that slot belongs to
@@ -255,9 +265,12 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function proofEnd(SlotId slotId) public view returns (uint256) {
-    Slot memory slot = _slot(slotId);
-    uint256 end = _end(_toEndId(slot.requestId));
-    if (_slotAcceptsProofs(slotId)) {
+    return requestEnd(_slot(slotId).requestId);
+  }
+
+  function requestEnd(RequestId requestId) public view returns (uint256) {
+    uint256 end = _end(_toEndId(requestId));
+    if (_requestAcceptsProofs(requestId)) {
       return end;
     } else {
       return Math.min(end, block.timestamp - 1);
@@ -267,8 +280,8 @@ contract Marketplace is Collateral, Proofs {
   function _price(
     uint64 numSlots,
     uint256 duration,
-    uint256 reward) internal pure returns (uint256) {
-
+    uint256 reward
+  ) internal pure returns (uint256) {
     return numSlots * duration * reward;
   }
 
@@ -306,7 +319,11 @@ contract Marketplace is Collateral, Proofs {
   /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
   /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
   /// @param requestId id of the request for which to obtain state info
-  function _requestAcceptsProofs(RequestId requestId) internal view returns (bool) {
+  function _requestAcceptsProofs(RequestId requestId)
+    internal
+    view
+    returns (bool)
+  {
     RequestState s = state(requestId);
     return s == RequestState.New || s == RequestState.Started;
   }
@@ -319,9 +336,18 @@ contract Marketplace is Collateral, Proofs {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
 
-  function _toSlotId(
-    RequestId requestId,
-    uint256 slotIndex)
+  function _toRequestIds(bytes32[] memory array)
+    private
+    pure
+    returns (RequestId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  function _toSlotId(RequestId requestId, uint256 slotIndex)
     internal
     pure
     returns (SlotId)
@@ -379,11 +405,11 @@ contract Marketplace is Collateral, Proofs {
   }
 
   enum RequestState {
-    New,        // [default] waiting to fill slots
-    Started,    // all slots filled, accepting regular proofs
-    Cancelled,  // not enough slots filled before expiry
-    Finished,   // successfully completed
-    Failed      // too many nodes have failed to provide proofs, data lost
+    New, // [default] waiting to fill slots
+    Started, // all slots filled, accepting regular proofs
+    Cancelled, // not enough slots filled before expiry
+    Finished, // successfully completed
+    Failed // too many nodes have failed to provide proofs, data lost
   }
 
   struct RequestContext {
