@@ -121,7 +121,7 @@ describe("Storage", function () {
       it("frees slot when collateral slashed below minimum threshold", async function () {
         const id = slotId(slot)
 
-        await waitUntilStarted(storage, request, slot, proof)
+        await waitUntilStarted(storage, request, proof)
 
         // max slashes before dropping below collateral threshold
         const maxSlashes = 10
