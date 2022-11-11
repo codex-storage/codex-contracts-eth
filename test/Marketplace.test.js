@@ -731,4 +731,47 @@ describe("Marketplace", function () {
       expect(await marketplace.myRequests()).to.deep.equal([])
     })
   })
+
+  describe("list of active slots", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("adds slot to list when filling slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      expect(await marketplace.mySlots()).to.deep.equal([
+        slotId(slot),
+        slotId(slot1),
+      ])
+    })
+
+    it("removes request from list when slot is freed", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.mySlots()).to.deep.equal([slotId(slot1)])
+    })
+
+    it("removes all slots from list when request fails", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFailed(marketplace, request, slot)
+      let expectedLength = request.ask.slots - (request.ask.maxSlotLoss + 1)
+      expect((await marketplace.mySlots()).length).to.equal(expectedLength)
+    })
+
+    it("removes slots from list when request finishes", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.payoutSlot(slot.request, slot.index)
+      expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+    })
+  })
 })
