@@ -1,13 +1,13 @@
 const { advanceTimeTo } = require("./evm")
-const { slotId } = require("./ids")
+const { slotId, requestId } = require("./ids")
 
 async function waitUntilCancelled(request) {
   await advanceTimeTo(request.expiry + 1)
 }
 
-async function waitUntilStarted(contract, request, slot, proof) {
+async function waitUntilStarted(contract, request, proof) {
   for (let i = 0; i < request.ask.slots; i++) {
-    await contract.fillSlot(slot.request, i, proof)
+    await contract.fillSlot(requestId(request), i, proof)
   }
 }
 
