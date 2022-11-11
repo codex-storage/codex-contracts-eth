@@ -94,7 +94,7 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    activeSlots[request.client].add(SlotId.unwrap(slotId));
+    activeSlots[slot.host].add(SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -108,6 +108,7 @@ contract Marketplace is Collateral, Proofs {
     internal
     slotMustAcceptProofs(slotId)
     marketplaceInvariant
+    // TODO: restrict senders that can call this function
   {
     Slot storage slot = _slot(slotId);
     RequestId requestId = slot.requestId;
@@ -120,6 +121,7 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
+    activeSlots[slot.host].remove(SlotId.unwrap(slotId));
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -135,6 +137,9 @@ contract Marketplace is Collateral, Proofs {
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       activeRequests[request.client].remove(RequestId.unwrap(requestId));
+      // NOTE: not removing any remaining active slots for the host as listing
+      // values of enumerable set could be too expensive (copies from storage to
+      // memory)
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -155,6 +160,7 @@ contract Marketplace is Collateral, Proofs {
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
+    activeSlots[slot.host].remove(SlotId.unwrap(slotId));
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
