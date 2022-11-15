@@ -19,7 +19,8 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
-  mapping(address => EnumerableSet.Bytes32Set) private activeSlots;
+  mapping(address => mapping(uint8 => EnumerableSet.Bytes32Set)) private activeSlots;
+  mapping(address => uint8) private activeSlotsIdx;
 
   constructor(
     IERC20 _token,
@@ -40,7 +41,25 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function mySlots() public view returns (SlotId[] memory) {
-    return _toSlotIds(activeSlots[msg.sender].values());
+    EnumerableSet.Bytes32Set storage slotIds = _activeSlotsForHost(msg.sender);
+    return _toSlotIds(slotIds.values());
+  }
+
+  function _activeSlotsForHost(address host)
+    internal
+    view
+    returns (EnumerableSet.Bytes32Set storage)
+  {
+    mapping(uint8 => EnumerableSet.Bytes32Set) storage active = activeSlots[host];
+    uint8 idx = activeSlotsIdx[host];
+    return active[idx];
+  }
+
+  /// @notice Clears active slots for a host
+  /// @dev Because there are no efficient ways to clear an EnumerableSet, an index is updated that points to a new instance.
+  /// @param host address of the host for which to clear the active slots
+  function _clearActiveSlots(address host) internal {
+    activeSlotsIdx[host] = activeSlotsIdx[host] + 1;
   }
 
   function requestStorage(Request calldata request)
@@ -94,7 +113,7 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    activeSlots[slot.host].add(SlotId.unwrap(slotId));
+    _activeSlotsForHost(slot.host).add(SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -121,7 +140,8 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
-    activeSlots[slot.host].remove(SlotId.unwrap(slotId));
+    address slotHost = slot.host;
+    _activeSlotsForHost(slotHost).remove(SlotId.unwrap(slotId));
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -137,9 +157,7 @@ contract Marketplace is Collateral, Proofs {
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       activeRequests[request.client].remove(RequestId.unwrap(requestId));
-      // NOTE: not removing any remaining active slots for the host as listing
-      // values of enumerable set could be too expensive (copies from storage to
-      // memory)
+      _clearActiveSlots(slotHost);
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -160,7 +178,7 @@ contract Marketplace is Collateral, Proofs {
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    activeSlots[slot.host].remove(SlotId.unwrap(slotId));
+    _activeSlotsForHost(slot.host).remove(SlotId.unwrap(slotId));
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;

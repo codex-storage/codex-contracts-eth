@@ -763,8 +763,7 @@ describe("Marketplace", function () {
     it("removes all slots from list when request fails", async function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFailed(marketplace, request, slot)
-      let expectedLength = request.ask.slots - (request.ask.maxSlotLoss + 1)
-      expect((await marketplace.mySlots()).length).to.equal(expectedLength)
+      expect((await marketplace.mySlots())).to.deep.equal([])
     })
 
     it("removes slots from list when request finishes", async function () {
