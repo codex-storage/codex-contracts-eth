@@ -41,6 +41,10 @@ contract Marketplace is Collateral, Proofs {
     return _toRequestIds(activeRequests[msg.sender].values());
   }
 
+  function allRequests() public view returns(RequestId[] memory) {
+    return _toRequestIds(activeSlots.keys());
+  }
+
   function mySlots(RequestId requestId)
     public
     view
@@ -365,6 +369,17 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function _toRequestIds(bytes32[] memory array)
+    private
+    pure
+    returns (RequestId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  function _toRequestIds(SetMap.Key[] memory array)
     private
     pure
     returns (RequestId[] memory result)

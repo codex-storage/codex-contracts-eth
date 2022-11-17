@@ -14,6 +14,7 @@ library SetMap {
                   mapping(uint8 =>
                           EnumerableSet.Bytes32Set))) _values;
     mapping(Key => uint8) _index;
+    EnumerableSet.Bytes32Set _keys;
   }
 
   /// @notice Returns the EnumerableSet.Bytes32 containing the values for a key
@@ -50,6 +51,28 @@ library SetMap {
     return _set(map, key, addr).values();
   }
 
+  function _toKeys(bytes32[] memory array)
+    private
+    pure
+    returns (Key[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  /// @notice Lists all keys for an AddressSetMap
+  /// @param map AddressSetMap to list keys
+  /// @return bytes32[] array of bytes32 values
+  function keys(AddressSetMap storage map)
+    internal
+    view
+    returns (Key[] memory)
+  {
+    return _toKeys(map._keys.values());
+  }
+
   /// @notice Adds a single value to an AddressSetMap
   /// @param map AddressSetMap to add the value to
   /// @param key key of the value to be added
@@ -64,6 +87,7 @@ library SetMap {
     internal
     returns (bool)
   {
+    map._keys.add(Key.unwrap(key));
     return _set(map, key, addr).add(value);
   }
 
@@ -81,7 +105,12 @@ library SetMap {
     internal
     returns (bool)
   {
-    return _set(map, key, addr).remove(value);
+    EnumerableSet.Bytes32Set storage set = _set(map, key, addr);
+    bool success = set.remove(value);
+    if (success && set.length() == 0) {
+      map._keys.remove(Key.unwrap(key));
+    }
+    return success;
   }
 
   /// @notice Clears values for a key.
