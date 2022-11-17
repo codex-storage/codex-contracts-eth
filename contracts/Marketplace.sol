@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
-import "./ActiveSlots.sol";
+import "./libs/SetMap.sol";
 
-contract Marketplace is Collateral, Proofs, ActiveSlots {
+contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
+  using SetMap for SetMap.AddressSetMap;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
@@ -20,6 +21,7 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
+  SetMap.AddressSetMap private activeSlots;
 
   constructor(
     IERC20 _token,
@@ -30,7 +32,6 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
   )
     Collateral(_token)
     Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
-    ActiveSlots()
     marketplaceInvariant
   {
     collateral = _collateral;
@@ -45,10 +46,9 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
     view
     returns (SlotId[] memory)
   {
-    EnumerableSet.Bytes32Set
-      storage
-      slotIds = _activeSlotsForHost(msg.sender, RequestId.unwrap(requestId));
-    return _toSlotIds(slotIds.values());
+    bytes32[] memory slotIds = activeSlots.values(_toSetMapKey(requestId),
+                                                 msg.sender);
+    return _toSlotIds(slotIds);
   }
 
   function _equals(RequestId a, RequestId b) internal pure returns (bool) {
@@ -106,8 +106,9 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
-                        .add(SlotId.unwrap(slotId));
+    activeSlots.add(_toSetMapKey(requestId),
+                    slot.host,
+                    SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -134,8 +135,9 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
 
     _unexpectProofs(_toProofId(slotId));
 
-    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
-                        .remove(SlotId.unwrap(slotId));
+    activeSlots.remove(_toSetMapKey(requestId),
+                       slot.host,
+                       SlotId.unwrap(slotId));
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -151,7 +153,7 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       activeRequests[request.client].remove(RequestId.unwrap(requestId));
-      _clearActiveSlots(RequestId.unwrap(requestId));
+      activeSlots.clear(_toSetMapKey(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -172,8 +174,9 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
-                        .remove(SlotId.unwrap(slotId));
+    activeSlots.remove(_toSetMapKey(requestId),
+                       slot.host,
+                       SlotId.unwrap(slotId));
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
@@ -401,6 +404,14 @@ contract Marketplace is Collateral, Proofs, ActiveSlots {
 
   function _toEndId(RequestId requestId) internal pure returns (EndId) {
     return EndId.wrap(RequestId.unwrap(requestId));
+  }
+
+  function _toSetMapKey(RequestId requestId)
+    internal
+    pure
+    returns (SetMap.Key)
+  {
+    return SetMap.Key.wrap(RequestId.unwrap(requestId));
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
