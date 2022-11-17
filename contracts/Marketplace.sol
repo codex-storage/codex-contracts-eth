@@ -7,14 +7,11 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
 
-import "hardhat/console.sol";
-
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
-  type ActiveSlotId is bytes32;
 
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
@@ -22,7 +19,10 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
-  mapping(RequestId => mapping(ActiveSlotId => EnumerableSet.Bytes32Set)) private activeSlots;
+  mapping(RequestId =>
+          mapping(address =>
+                  mapping(uint8 =>
+                          EnumerableSet.Bytes32Set))) private activeSlots;
   mapping(RequestId => uint8) private activeSlotsIdx;
 
   constructor(
@@ -59,10 +59,8 @@ contract Marketplace is Collateral, Proofs {
     view
     returns (EnumerableSet.Bytes32Set storage)
   {
-    mapping(ActiveSlotId => EnumerableSet.Bytes32Set) storage activeForReq =
-      activeSlots[requestId];
-    ActiveSlotId id = _toActiveSlotId(host, requestId);
-    return activeForReq[id];
+    uint8 id = activeSlotsIdx[requestId];
+    return activeSlots[requestId][host][id];
   }
 
   /// @notice Clears active slots for a request
@@ -407,17 +405,6 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId)
   {
     return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
-  }
-
-  function _toActiveSlotId(address host, RequestId requestId)
-    internal
-    view
-    returns (ActiveSlotId)
-  {
-    uint8 activeSlotIdx = activeSlotsIdx[requestId];
-    return ActiveSlotId.wrap(
-      keccak256(abi.encode(host, activeSlotIdx))
-    );
   }
 
   function _toLockId(RequestId requestId) internal pure returns (LockId) {
