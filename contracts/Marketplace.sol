@@ -10,6 +10,8 @@ import "./libs/SetMap.sol";
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
+  using EnumerableSet for EnumerableSet.AddressSet;
+  using SetMap for SetMap.Bytes32SetMap;
   using SetMap for SetMap.AddressSetMap;
 
   type RequestId is bytes32;
@@ -20,8 +22,9 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
-  SetMap.AddressSetMap private activeSlots;
+  // mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
+  SetMap.AddressSetMap private activeRequests;
+  SetMap.Bytes32SetMap private activeSlots;
 
   constructor(
     IERC20 _token,
@@ -38,11 +41,12 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    return _toRequestIds(activeRequests[msg.sender].values());
+    SetMap.AddressSetMapKey key = _toAddressSetMapKey(msg.sender);
+    return _toRequestIds(activeRequests.values(key));
   }
 
   function allRequests() public view returns(RequestId[] memory) {
-    return _toRequestIds(activeSlots.keys());
+    return _toRequestIds(activeRequests.values());
   }
 
   function mySlots(RequestId requestId)
@@ -50,8 +54,8 @@ contract Marketplace is Collateral, Proofs {
     view
     returns (SlotId[] memory)
   {
-    bytes32[] memory slotIds = activeSlots.values(_toSetMapKey(requestId),
-                                                 msg.sender);
+    bytes32[] memory slotIds =
+      activeSlots.values(_toBytes32SetMapKey(requestId), msg.sender);
     return _toSlotIds(slotIds);
   }
 
@@ -74,7 +78,8 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
-    activeRequests[request.client].add(RequestId.unwrap(id));
+    activeRequests.add(_toAddressSetMapKey(request.client),
+                       RequestId.unwrap(id));
 
     _createLock(_toLockId(id), request.expiry);
 
@@ -110,7 +115,7 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    activeSlots.add(_toSetMapKey(requestId),
+    activeSlots.add(_toBytes32SetMapKey(requestId),
                     slot.host,
                     SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
@@ -139,7 +144,7 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
-    activeSlots.remove(_toSetMapKey(requestId),
+    activeSlots.remove(_toBytes32SetMapKey(requestId),
                        slot.host,
                        SlotId.unwrap(slotId));
     slot.host = address(0);
@@ -156,8 +161,9 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
-      activeRequests[request.client].remove(RequestId.unwrap(requestId));
-      activeSlots.clear(_toSetMapKey(requestId));
+      activeRequests.remove(_toAddressSetMapKey(request.client),
+                            RequestId.unwrap(requestId));
+      activeSlots.clear(_toBytes32SetMapKey(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -174,11 +180,12 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
-    activeRequests[request.client].remove(RequestId.unwrap(requestId));
+    activeRequests.remove(_toAddressSetMapKey(request.client),
+                          RequestId.unwrap(requestId));
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    activeSlots.remove(_toSetMapKey(requestId),
+    activeSlots.remove(_toBytes32SetMapKey(requestId),
                        slot.host,
                        SlotId.unwrap(slotId));
     uint256 amount = pricePerSlot(requests[requestId]);
@@ -201,7 +208,8 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    activeRequests[request.client].remove(RequestId.unwrap(requestId));
+    activeRequests.remove(_toAddressSetMapKey(request.client),
+                          RequestId.unwrap(requestId));
     emit RequestCancelled(requestId);
 
     // TODO: To be changed once we start paying out hosts for the time they
@@ -379,7 +387,7 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _toRequestIds(SetMap.Key[] memory array)
+  function _toRequestIds(SetMap.Bytes32SetMapKey[] memory array)
     private
     pure
     returns (RequestId[] memory result)
@@ -421,12 +429,20 @@ contract Marketplace is Collateral, Proofs {
     return EndId.wrap(RequestId.unwrap(requestId));
   }
 
-  function _toSetMapKey(RequestId requestId)
+  function _toBytes32SetMapKey(RequestId requestId)
     internal
     pure
-    returns (SetMap.Key)
+    returns (SetMap.Bytes32SetMapKey)
   {
-    return SetMap.Key.wrap(RequestId.unwrap(requestId));
+    return SetMap.Bytes32SetMapKey.wrap(RequestId.unwrap(requestId));
+  }
+
+  function _toAddressSetMapKey(address addr)
+    internal
+    pure
+    returns (SetMap.AddressSetMapKey)
+  {
+    return SetMap.AddressSetMapKey.wrap(addr);
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
