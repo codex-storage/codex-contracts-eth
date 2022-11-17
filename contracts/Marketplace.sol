@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
+import "./ActiveSlots.sol";
 
-contract Marketplace is Collateral, Proofs {
+contract Marketplace is Collateral, Proofs, ActiveSlots {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   type RequestId is bytes32;
@@ -19,11 +20,6 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private activeRequests;
-  mapping(RequestId =>
-          mapping(address =>
-                  mapping(uint8 =>
-                          EnumerableSet.Bytes32Set))) private activeSlots;
-  mapping(RequestId => uint8) private activeSlotsIdx;
 
   constructor(
     IERC20 _token,
@@ -34,6 +30,7 @@ contract Marketplace is Collateral, Proofs {
   )
     Collateral(_token)
     Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
+    ActiveSlots()
     marketplaceInvariant
   {
     collateral = _collateral;
@@ -46,28 +43,12 @@ contract Marketplace is Collateral, Proofs {
   function mySlots(RequestId requestId)
     public
     view
-    returns (SlotId[] memory) 
+    returns (SlotId[] memory)
   {
-    EnumerableSet.Bytes32Set storage slotIds = _activeSlotsForHost(msg.sender,
-                                                                   requestId);
+    EnumerableSet.Bytes32Set
+      storage
+      slotIds = _activeSlotsForHost(msg.sender, RequestId.unwrap(requestId));
     return _toSlotIds(slotIds.values());
-  }
-
-
-  function _activeSlotsForHost(address host, RequestId requestId)
-    internal
-    view
-    returns (EnumerableSet.Bytes32Set storage)
-  {
-    uint8 id = activeSlotsIdx[requestId];
-    return activeSlots[requestId][host][id];
-  }
-
-  /// @notice Clears active slots for a request
-  /// @dev Because there are no efficient ways to clear an EnumerableSet, an index is updated that points to a new instance.
-  /// @param requestId request for which to clear the active slots
-  function _clearActiveSlots(RequestId requestId) internal {
-    activeSlotsIdx[requestId]++;
   }
 
   function _equals(RequestId a, RequestId b) internal pure returns (bool) {
@@ -125,7 +106,8 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    _activeSlotsForHost(slot.host, requestId).add(SlotId.unwrap(slotId));
+    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
+                        .add(SlotId.unwrap(slotId));
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -152,7 +134,8 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
-    _activeSlotsForHost(slot.host, requestId).remove(SlotId.unwrap(slotId));
+    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
+                        .remove(SlotId.unwrap(slotId));
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -168,7 +151,7 @@ contract Marketplace is Collateral, Proofs {
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       activeRequests[request.client].remove(RequestId.unwrap(requestId));
-      _clearActiveSlots(requestId);
+      _clearActiveSlots(RequestId.unwrap(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -189,7 +172,8 @@ contract Marketplace is Collateral, Proofs {
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    _activeSlotsForHost(slot.host, requestId).remove(SlotId.unwrap(slotId));
+    _activeSlotsForHost(slot.host, RequestId.unwrap(requestId))
+                        .remove(SlotId.unwrap(slotId));
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
