@@ -11,11 +11,10 @@ library SetMap {
 
   struct Bytes32SetMap {
     mapping(Bytes32SetMapKey =>
-          mapping(address =>
-                  mapping(uint8 =>
-                          EnumerableSet.Bytes32Set))) _values;
+            mapping(address =>
+                    mapping(uint8 =>
+                            EnumerableSet.Bytes32Set))) _values;
     mapping(Bytes32SetMapKey => uint8) _index;
-    EnumerableSet.Bytes32Set _keys;
   }
 
   /// @notice Returns the EnumerableSet.Bytes32 containing the values for a key
@@ -52,28 +51,6 @@ library SetMap {
     return _set(map, key, addr).values();
   }
 
-  function _toKeys(bytes32[] memory array)
-    private
-    pure
-    returns (Bytes32SetMapKey[] memory result)
-  {
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      result := array
-    }
-  }
-
-  /// @notice Lists all keys for an Bytes32SetMap
-  /// @param map Bytes32SetMap to list keys
-  /// @return bytes32[] array of bytes32 values
-  function keys(Bytes32SetMap storage map)
-    internal
-    view
-    returns (Bytes32SetMapKey[] memory)
-  {
-    return _toKeys(map._keys.values());
-  }
-
   /// @notice Adds a single value to an Bytes32SetMap
   /// @param map Bytes32SetMap to add the value to
   /// @param key key of the value to be added
@@ -88,7 +65,6 @@ library SetMap {
     internal
     returns (bool)
   {
-    map._keys.add(Bytes32SetMapKey.unwrap(key));
     return _set(map, key, addr).add(value);
   }
 
@@ -106,12 +82,7 @@ library SetMap {
     internal
     returns (bool)
   {
-    EnumerableSet.Bytes32Set storage set = _set(map, key, addr);
-    bool success = set.remove(value);
-    if (success && set.length() == 0) {
-      map._keys.remove(Bytes32SetMapKey.unwrap(key));
-    }
-    return success;
+    return _set(map, key, addr).remove(value);
   }
 
   /// @notice Clears values for a key.
@@ -126,6 +97,20 @@ library SetMap {
     map._index[key]++;
   }
 
+  /// @notice Returns the length of values for a key and address.
+  /// @param map Bytes32SetMap for which to get length of values
+  /// @param key key for which to get the length of values
+  /// @param addr address for which to get the length of values
+  function length(Bytes32SetMap storage map,
+                  Bytes32SetMapKey key,
+                  address addr)
+    internal
+    view
+    returns (uint256)
+  {
+    return _set(map, key, addr).length();
+  }
+
   type AddressSetMapKey is address;
 
   struct AddressSetMap {
@@ -133,11 +118,9 @@ library SetMap {
             mapping(uint8 =>
                     EnumerableSet.Bytes32Set)) _values;
     mapping(AddressSetMapKey => uint8) _index;
-    EnumerableSet.AddressSet _keys;
-    EnumerableSet.Bytes32Set _allValues;
   }
 
-  /// @notice Returns the EnumerableSet.AddressSet containing the values for a
+  /// @notice Returns the EnumerableSet.Bytes32Set containing the values for a
   ///         key in an AddressSetMap.
   /// @dev This is used internally to the library only. `.values()` should only
   ///      be called on its return value in a view/pure function.
@@ -154,18 +137,6 @@ library SetMap {
     return map._values[key][id];
   }
 
-  /// @notice Lists all values contained in an AddressSetMap, regardless of
-  ///         the key.
-  /// @param map AddressSetMap to list values
-  /// @return bytes32[] array of bytes32 values
-  function values(AddressSetMap storage map)
-    internal
-    view
-    returns (bytes32[] memory)
-  {
-    return map._allValues.values();
-  }
-
   /// @notice Lists all values for a key in an AddressSetMap
   /// @param map AddressSetMap to list values
   /// @param key key of the values to be listed
@@ -176,28 +147,6 @@ library SetMap {
     returns (bytes32[] memory)
   {
     return _set(map, key).values();
-  }
-
-  function _toAddressSetMapKeys(address[] memory array)
-    private
-    pure
-    returns (AddressSetMapKey[] memory result)
-  {
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      result := array
-    }
-  }
-
-  /// @notice Lists all keys for an Bytes32SetMap.
-  /// @param map AddressSetMap to list keys.
-  /// @return bytes32[] array of bytes32 values.
-  function keys(AddressSetMap storage map)
-    internal
-    view
-    returns (AddressSetMapKey[] memory)
-  {
-    return _toAddressSetMapKeys(map._keys.values());
   }
 
   /// @notice Adds a single value to an AddressSetMap
@@ -212,8 +161,6 @@ library SetMap {
     internal
     returns (bool)
   {
-    map._keys.add(AddressSetMapKey.unwrap(key));
-    map._allValues.add(value);
     return _set(map, key).add(value);
   }
 
@@ -229,13 +176,7 @@ library SetMap {
     internal
     returns (bool)
   {
-    EnumerableSet.Bytes32Set storage set = _set(map, key);
-    bool success = set.remove(value);
-    if (success && set.length() == 0) {
-      map._keys.remove(AddressSetMapKey.unwrap(key));
-    }
-    map._allValues.remove(value);
-    return success;
+    return _set(map, key).remove(value);
   }
 
   /// @notice Clears values for a key.
@@ -244,6 +185,124 @@ library SetMap {
   /// @param map AddressSetMap for which to clear values
   /// @param key key for which to clear values
   function clear(AddressSetMap storage map, AddressSetMapKey key)
+    internal
+  {
+    map._index[key]++;
+  }
+
+  type Bytes32AddressSetMapKey is bytes32;
+
+  struct Bytes32AddressSetMap {
+    mapping(Bytes32AddressSetMapKey =>
+            mapping(uint8 =>
+                    EnumerableSet.AddressSet)) _values;
+    mapping(Bytes32AddressSetMapKey => uint8) _index;
+    EnumerableSet.Bytes32Set _keys;
+  }
+
+  /// @notice Returns the EnumerableSet.AddressSet containing the values for a
+  ///         key in an Bytes32AddressSetMap.
+  /// @dev This is used internally to the library only. `.values()` should only
+  ///      be called on its return value in a view/pure function.
+  /// @param map Bytes32AddressSetMap containing the set to be retrieved.
+  /// @param key key of the set to be retrieved.
+  /// @return bytes32[] array of bytes32 values.
+  function _set(Bytes32AddressSetMap storage map,
+                Bytes32AddressSetMapKey key)
+    private
+    view
+    returns (EnumerableSet.AddressSet storage)
+  {
+    uint8 id = map._index[key];
+    return map._values[key][id];
+  }
+
+  /// @notice Lists all keys for an Bytes32AddressSetMap
+  /// @param map Bytes32AddressSetMap to list keys
+  /// @return bytes32[] array of bytes32 values
+  function keys(Bytes32AddressSetMap storage map)
+    internal
+    view
+    returns (EnumerableSet.Bytes32Set storage)
+  {
+    return map._keys;
+  }
+
+  /// @notice Lists all values for a key in an Bytes32AddressSetMap
+  /// @param map Bytes32AddressSetMap to list values
+  /// @param key key of the values to be listed
+  /// @return bytes32[] array of bytes32 values
+  function values(Bytes32AddressSetMap storage map,
+                  Bytes32AddressSetMapKey key)
+    internal
+    view
+    returns (address[] memory)
+  {
+    return _set(map, key).values();
+  }
+
+  /// @notice Lists all values for a key in an Bytes32AddressSetMap
+  /// @param map Bytes32AddressSetMap to list values
+  /// @param key key of the values to be listed
+  /// @return bytes32[] array of bytes32 values
+  function contains(Bytes32AddressSetMap storage map,
+                    Bytes32AddressSetMapKey key,
+                    address addr)
+    internal
+    view
+    returns (bool)
+  {
+    return _set(map, key).contains(addr);
+  }
+
+  /// @notice Returns the length of values for a key.
+  /// @param map Bytes32AddressSetMap for which to get length
+  /// @param key key for which to get the length of values
+  function length(Bytes32AddressSetMap storage map,
+                  Bytes32AddressSetMapKey key)
+    internal
+    view
+    returns (uint256)
+  {
+    return _set(map, key).length();
+  }
+
+  /// @notice Adds a single value to an Bytes32AddressSetMap
+  /// @param map Bytes32AddressSetMap to add the value to.
+  /// @param key key of the value to be added.
+  /// @param value the value to be added.
+  /// @return true if the value was added to the set, that is if it was not
+  ///         already present.
+  function add(Bytes32AddressSetMap storage map,
+               Bytes32AddressSetMapKey key,
+               address value)
+    internal
+    returns (bool)
+  {
+    return _set(map, key).add(value);
+  }
+
+  /// @notice Removes a single value from an Bytes32AddressSetMap
+  /// @param map Bytes32AddressSetMap to remove the value from
+  /// @param key key of the value to be removed
+  /// @param value the value to be removed
+  /// @return true if the value was removed from the set, that is if it was
+  ///         present.
+  function remove(Bytes32AddressSetMap storage map,
+                  Bytes32AddressSetMapKey key,
+                  address value)
+    internal
+    returns (bool)
+  {
+    return _set(map, key).remove(value);
+  }
+
+  /// @notice Clears values for a key.
+  /// @dev Updates an index such that the next time values for that key are
+  ///      retrieved, it will reference a new EnumerableSet.
+  /// @param map Bytes32AddressSetMap for which to clear values
+  /// @param key key for which to clear values
+  function clear(Bytes32AddressSetMap storage map, Bytes32AddressSetMapKey key)
     internal
   {
     map._index[key]++;
