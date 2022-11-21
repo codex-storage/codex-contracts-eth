@@ -12,7 +12,7 @@ contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using EnumerableSet for EnumerableSet.AddressSet;
   using SetMap for SetMap.Bytes32SetMap;
-  using SetMap for SetMap.AddressSetMap;
+  using SetMap for SetMap.AddressBytes32SetMap;
   using SetMap for SetMap.Bytes32AddressSetMap;
 
   type RequestId is bytes32;
@@ -23,7 +23,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  SetMap.AddressSetMap private activeRequestsForClients; // purchasing
+  SetMap.AddressBytes32SetMap private activeRequestsForClients; // purchasing
   SetMap.Bytes32AddressSetMap private activeRequestsForHosts; // purchasing
   SetMap.Bytes32SetMap private activeSlots; // sales
 
@@ -42,7 +42,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    SetMap.AddressSetMapKey key = _toAddressSetMapKey(msg.sender);
+    SetMap.AddressBytes32SetMapKey key = _toAddressSetMapKey(msg.sender);
     return _toRequestIds(activeRequestsForClients.values(key));
   }
 
@@ -473,9 +473,9 @@ contract Marketplace is Collateral, Proofs {
   function _toAddressSetMapKey(address addr)
     internal
     pure
-    returns (SetMap.AddressSetMapKey)
+    returns (SetMap.AddressBytes32SetMapKey)
   {
-    return SetMap.AddressSetMapKey.wrap(addr);
+    return SetMap.AddressBytes32SetMapKey.wrap(addr);
   }
 
   function _toBytes32AddressSetMapKey(RequestId requestId)
