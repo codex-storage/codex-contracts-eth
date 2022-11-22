@@ -151,6 +151,15 @@ describe("SetMap", function () {
         hexlify(key),
         hexlify(key1),
       ])
+      await contract.remove(key1, value)
+      await expect(await contract.keys()).to.deep.equal([
+        hexlify(key),
+        hexlify(key1),
+      ])
+      await contract.remove(key1, value1)
+      await expect(await contract.keys()).to.deep.equal([hexlify(key)])
+      await contract.clear(key)
+      await expect(await contract.keys()).to.deep.equal([])
     })
 
     it("contains a key/value pair", async function () {

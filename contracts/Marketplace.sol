@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
 import "./libs/SetMap.sol";
+import "./libs/Utils.sol";
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -43,7 +44,16 @@ contract Marketplace is Collateral, Proofs {
 
   function myRequests() public view returns (RequestId[] memory) {
     SetMap.AddressBytes32SetMapKey key = _toAddressSetMapKey(msg.sender);
-    return _toRequestIds(activeRequestsForClients.values(key));
+    RequestId[] memory requestIds = _toRequestIds(activeRequestsForClients.values(key));
+    RequestId[] memory result = new RequestId[](requestIds.length);
+    uint8 counter = 0;
+    for (uint8 i = 0; i < requestIds.length; i++) {
+      if (!_isCancelled(requestIds[i])) {
+        result[counter] = requestIds[i];
+        counter++;
+      }
+    }
+    return _toRequestIds(Utils._resize(_toBytes32s(result), counter));
   }
 
   function requestsForHost(address host) public view returns(RequestId[] memory) {
@@ -55,12 +65,14 @@ contract Marketplace is Collateral, Proofs {
     for (uint8 i = 0; i < keyLength; i++) {
       RequestId requestId = RequestId.wrap(keys.at(i));
       SetMap.Bytes32AddressSetMapKey key = _toBytes32AddressSetMapKey(requestId);
-      if (activeRequestsForHosts.contains(key, host)) {
+      if (activeRequestsForHosts.contains(key, host) &&
+          !_isCancelled(requestId))
+      {
         result[counter] = requestId;
         counter++;
       }
     }
-    return result;
+    return _toRequestIds(Utils._resize(_toBytes32s(result), counter));
   }
 
   function mySlots(RequestId requestId)
@@ -435,6 +447,17 @@ contract Marketplace is Collateral, Proofs {
     private
     pure
     returns (SlotId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  function _toBytes32s(RequestId[] memory array)
+    private
+    pure
+    returns (bytes32[] memory result)
   {
     // solhint-disable-next-line no-inline-assembly
     assembly {
