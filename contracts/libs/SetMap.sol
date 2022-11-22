@@ -279,7 +279,11 @@ library SetMap {
     internal
     returns (bool)
   {
-    return _set(map, key).add(value);
+    bool success = _set(map, key).add(value);
+    if (success) {
+      map._keys.add(Bytes32AddressSetMapKey.unwrap(key));
+    }
+    return success;
   }
 
   /// @notice Removes a single value from an Bytes32AddressSetMap
@@ -294,7 +298,12 @@ library SetMap {
     internal
     returns (bool)
   {
-    return _set(map, key).remove(value);
+    EnumerableSet.AddressSet storage set = _set(map, key);
+    bool success = _set(map, key).remove(value);
+    if (success && set.length() == 0) {
+      map._keys.remove(Bytes32AddressSetMapKey.unwrap(key));
+    }
+    return success;
   }
 
   /// @notice Clears values for a key.
