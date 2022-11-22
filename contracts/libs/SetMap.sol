@@ -315,5 +315,6 @@ library SetMap {
     internal
   {
     map._index[key]++;
+    map._keys.remove(Bytes32AddressSetMapKey.unwrap(key));
   }
 }

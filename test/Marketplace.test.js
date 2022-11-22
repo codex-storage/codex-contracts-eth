@@ -705,6 +705,12 @@ describe("Marketplace", function () {
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
+    it("removes request from list when cancelled", async function () {
+      await marketplace.requestStorage(request)
+      await waitUntilCancelled(request)
+      expect(await marketplace.myRequests()).to.deep.equal([])
+    })
+
     it("removes request from list when funds are withdrawn", async function () {
       await marketplace.requestStorage(request)
       await waitUntilCancelled(request)
@@ -729,6 +735,56 @@ describe("Marketplace", function () {
       await marketplace.payoutSlot(slot.request, slot.index)
       switchAccount(client)
       expect(await marketplace.myRequests()).to.deep.equal([])
+    })
+  })
+
+  describe("list of active requests for host", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("is empty when no slot is filled", async function () {
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([])
+    })
+
+    it("adds request to list when filling slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([
+        slot.request,
+      ])
+    })
+
+    it("removes request from list when cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([])
+    })
+
+    it("removes request from list when funds are withdrawn", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      switchAccount(client)
+      await marketplace.withdrawFunds(slot.request)
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([])
+    })
+
+    it("removes request from list when request fails", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFailed(marketplace, request, slot)
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([])
+    })
+
+    it("removes request from list when request finishes", async function () {
+      switchAccount(host)
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.payoutSlot(slot.request, slot.index)
+      expect(await marketplace.requestsForHost(host.address)).to.deep.equal([])
     })
   })
 
@@ -760,6 +816,14 @@ describe("Marketplace", function () {
       expect(await marketplace.mySlots(slot.request)).to.deep.equal([
         slotId(slot1),
       ])
+    })
+
+    it("returns no slots when cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      await waitUntilCancelled(request)
+      expect(await marketplace.mySlots(slot.request)).to.deep.equal([])
     })
 
     it("removes active slots for all hosts in a request when it fails", async function () {
