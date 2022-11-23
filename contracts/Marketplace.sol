@@ -6,16 +6,12 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
-import "./libs/SetMap.sol";
 import "./libs/Utils.sol";
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using EnumerableSet for EnumerableSet.AddressSet;
   using Utils for EnumerableSet.Bytes32Set;
-  using SetMap for SetMap.Bytes32SetMap;
-  using SetMap for SetMap.AddressBytes32SetMap;
-  using SetMap for SetMap.Bytes32AddressSetMap;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
@@ -382,17 +378,6 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _toRequestIds(SetMap.Bytes32SetMapKey[] memory array)
-    private
-    pure
-    returns (RequestId[] memory result)
-  {
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      result := array
-    }
-  }
-
   function _toSlotIds(bytes32[] memory array)
     private
     pure
@@ -433,30 +418,6 @@ contract Marketplace is Collateral, Proofs {
 
   function _toEndId(RequestId requestId) internal pure returns (EndId) {
     return EndId.wrap(RequestId.unwrap(requestId));
-  }
-
-  function _toBytes32SetMapKey(RequestId requestId)
-    internal
-    pure
-    returns (SetMap.Bytes32SetMapKey)
-  {
-    return SetMap.Bytes32SetMapKey.wrap(RequestId.unwrap(requestId));
-  }
-
-  function _toAddressSetMapKey(address addr)
-    internal
-    pure
-    returns (SetMap.AddressBytes32SetMapKey)
-  {
-    return SetMap.AddressBytes32SetMapKey.wrap(addr);
-  }
-
-  function _toBytes32AddressSetMapKey(RequestId requestId)
-    internal
-    pure
-    returns (SetMap.Bytes32AddressSetMapKey)
-  {
-    return SetMap.Bytes32AddressSetMapKey.wrap(RequestId.unwrap(requestId));
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
