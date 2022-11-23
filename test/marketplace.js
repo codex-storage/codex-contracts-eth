@@ -20,7 +20,7 @@ async function waitUntilFailed(contract, request, slot) {
   for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
     slot.index = i
     let id = slotId(slot)
-    await contract.freeSlot(id)
+    await contract.forciblyFreeSlot(id)
   }
 }
 

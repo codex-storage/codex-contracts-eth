@@ -118,7 +118,7 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _freeSlot(SlotId slotId)
+  function _forciblyFreeSlot(SlotId slotId)
     internal
     slotMustAcceptProofs(slotId)
     marketplaceInvariant
