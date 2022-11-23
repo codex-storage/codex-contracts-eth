@@ -705,10 +705,10 @@ describe("Marketplace", function () {
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
-    it("removes request from list when cancelled", async function () {
+    it("keeps request in list when cancelled", async function () {
       await marketplace.requestStorage(request)
       await waitUntilCancelled(request)
-      expect(await marketplace.myRequests()).to.deep.equal([])
+      expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
     it("removes request from list when funds are withdrawn", async function () {
@@ -718,13 +718,13 @@ describe("Marketplace", function () {
       expect(await marketplace.myRequests()).to.deep.equal([])
     })
 
-    it("removes request from list when request fails", async function () {
+    it("keeps request in list when request fails", async function () {
       await marketplace.requestStorage(request)
       switchAccount(host)
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFailed(marketplace, request, slot)
       switchAccount(client)
-      expect(await marketplace.myRequests()).to.deep.equal([])
+      expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
     it("removes request from list when request finishes", async function () {

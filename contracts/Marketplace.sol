@@ -25,7 +25,7 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  SetMap.AddressBytes32SetMap private activeRequestsForClients; // purchasing
+  mapping(address => EnumerableSet.Bytes32Set) private requestsPerClient; // purchasing
   mapping(address => EnumerableSet.Bytes32Set) private slotsPerHost; // sales
   mapping(SlotId => RequestId) private requestForSlot;
 
@@ -44,19 +44,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    SetMap.AddressBytes32SetMapKey key = _toAddressSetMapKey(msg.sender);
-    RequestId[] memory requestIds = _toRequestIds(
-      activeRequestsForClients.values(key)
-    );
-    RequestId[] memory result = new RequestId[](requestIds.length);
-    uint8 counter = 0;
-    for (uint8 i = 0; i < requestIds.length; i++) {
-      if (!_isCancelled(requestIds[i])) {
-        result[counter] = requestIds[i];
-        counter++;
-      }
-    }
-    return _toRequestIds(Utils._resize(_toBytes32s(result), counter));
+    return _toRequestIds(requestsPerClient[msg.sender].values());
   }
 
   function isActive(bytes32 slot) private view returns (bool) {
@@ -90,10 +78,7 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
-    activeRequestsForClients.add(
-      _toAddressSetMapKey(request.client),
-      RequestId.unwrap(id)
-    );
+    requestsPerClient[request.client].add(RequestId.unwrap(id));
 
     _createLock(_toLockId(id), request.expiry);
 
@@ -175,10 +160,6 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
-      activeRequestsForClients.remove(
-        _toAddressSetMapKey(request.client),
-        RequestId.unwrap(requestId)
-      );
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -195,10 +176,7 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
-    activeRequestsForClients.remove(
-      _toAddressSetMapKey(request.client),
-      RequestId.unwrap(requestId)
-    );
+    requestsPerClient[request.client].remove(RequestId.unwrap(requestId));
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
@@ -225,10 +203,7 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    activeRequestsForClients.remove(
-      _toAddressSetMapKey(request.client),
-      RequestId.unwrap(requestId)
-    );
+    requestsPerClient[request.client].remove(RequestId.unwrap(requestId));
 
     emit RequestCancelled(requestId);
 
