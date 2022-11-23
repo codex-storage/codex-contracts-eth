@@ -118,6 +118,21 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
+  // TODO: test
+  function freeSlot(SlotId slotId) public {
+    Slot storage slot = _slot(slotId);
+    require(slot.host == msg.sender, "Slot filled by other host");
+    RequestState s = state(slot.requestId);
+    if (s == RequestState.Finished || s == RequestState.Cancelled) {
+      payoutSlot(slot.requestId, slotId);
+      slotsPerHost[msg.sender].remove(SlotId.unwrap(slotId));
+    } else if (s == RequestState.Failed) {
+      slotsPerHost[msg.sender].remove(SlotId.unwrap(slotId));
+    } else {
+      _forciblyFreeSlot(slotId);
+    }
+  }
+
   function _forciblyFreeSlot(SlotId slotId)
     internal
     slotMustAcceptProofs(slotId)
@@ -159,8 +174,8 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function payoutSlot(RequestId requestId, uint256 slotIndex)
-    public
+  function payoutSlot(RequestId requestId, SlotId slotId)
+    private
     marketplaceInvariant
   {
     require(_isFinished(requestId), "Contract not ended");
@@ -168,7 +183,6 @@ contract Marketplace is Collateral, Proofs {
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
     requestsPerClient[request.client].remove(RequestId.unwrap(requestId));
-    SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
 
