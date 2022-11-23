@@ -94,7 +94,7 @@ contract Storage is Collateral, Marketplace {
         // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
-        _freeSlot(slotId);
+        _forciblyFreeSlot(slotId);
       }
     }
   }
