@@ -5,7 +5,7 @@ import "./Marketplace.sol";
 import "./Proofs.sol";
 import "./Collateral.sol";
 
-contract Storage is Collateral, Marketplace {
+contract Storage is Marketplace {
   uint256 public collateralAmount;
   uint256 public slashMisses;
   uint256 public slashPercentage;

@@ -77,6 +77,7 @@ describe("Storage", function () {
     it("unlocks the host collateral", async function () {
       await storage.fillSlot(slot.request, slot.index, proof)
       await waitUntilFinished(storage, slot.request)
+      await storage.freeSlot(slotId(slot))
       await expect(storage.withdraw()).not.to.be.reverted
     })
   })
