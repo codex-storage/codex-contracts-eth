@@ -35,7 +35,11 @@ contract Storage is Collateral, Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function getRequest(RequestId requestId) public view returns (Request memory) {
+  function getRequest(RequestId requestId)
+    public
+    view
+    returns (Request memory)
+  {
     return _request(requestId);
   }
 
@@ -52,21 +56,21 @@ contract Storage is Collateral, Marketplace {
   }
 
   function isProofRequired(SlotId slotId) public view returns (bool) {
-    if(!_slotAcceptsProofs(slotId)) {
+    if (!_slotAcceptsProofs(slotId)) {
       return false;
     }
     return _isProofRequired(_toProofId(slotId));
   }
 
   function willProofBeRequired(SlotId slotId) public view returns (bool) {
-    if(!_slotAcceptsProofs(slotId)) {
+    if (!_slotAcceptsProofs(slotId)) {
       return false;
     }
     return _willProofBeRequired(_toProofId(slotId));
   }
 
   function getChallenge(SlotId slotId) public view returns (bytes32) {
-    if(!_slotAcceptsProofs(slotId)) {
+    if (!_slotAcceptsProofs(slotId)) {
       return bytes32(0);
     }
     return _getChallenge(_toProofId(slotId));
@@ -88,7 +92,7 @@ contract Storage is Collateral, Marketplace {
     _markProofAsMissing(proofId, period);
     address host = _host(slotId);
     if (_missed(_toProofId(slotId)) % slashMisses == 0) {
-        _slash(host, slashPercentage);
+      _slash(host, slashPercentage);
 
       if (balanceOf(host) < minCollateralThreshold) {
         // When the collateral drops below the minimum threshold, the slot
