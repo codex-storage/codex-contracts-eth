@@ -758,7 +758,7 @@ describe("Marketplace", function () {
       ])
     })
 
-    it("removes request from list when slot is freed", async function () {
+    it("removes slot from list when slot is freed", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
       await marketplace.fillSlot(slot.request, slot1.index, proof)
@@ -766,12 +766,15 @@ describe("Marketplace", function () {
       expect(await marketplace.mySlots()).to.have.members([slotId(slot1)])
     })
 
-    it("returns no slots when cancelled", async function () {
+    it("keeps slots when cancelled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await waitUntilCancelled(request)
-      expect(await marketplace.mySlots()).to.have.members([])
+      expect(await marketplace.mySlots()).to.have.members([
+        slotId(slot),
+        slotId(slot1),
+      ])
     })
 
     it("removes active slots for all hosts in a request when it fails", async function () {

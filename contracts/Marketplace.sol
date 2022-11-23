@@ -43,11 +43,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function isActive(bytes32 slot) private view returns (bool) {
-    RequestState s = state(requestForSlot[SlotId.wrap(slot)]);
-    return
-      s == RequestState.New ||
-      s == RequestState.Started ||
-      s == RequestState.Finished;
+    return state(requestForSlot[SlotId.wrap(slot)]) != RequestState.Failed;
   }
 
   function mySlots() public view returns (SlotId[] memory) {
