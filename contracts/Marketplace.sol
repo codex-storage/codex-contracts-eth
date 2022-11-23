@@ -50,6 +50,10 @@ contract Marketplace is Collateral, Proofs {
     return _toSlotIds(slotsPerHost[msg.sender].filter(isActive));
   }
 
+  function isWithdrawAllowed() internal view override returns (bool) {
+    return slotsPerHost[msg.sender].length() == 0;
+  }
+
   function _equals(RequestId a, RequestId b) internal pure returns (bool) {
     return RequestId.unwrap(a) == RequestId.unwrap(b);
   }
@@ -178,7 +182,10 @@ contract Marketplace is Collateral, Proofs {
     private
     marketplaceInvariant
   {
-    require(_isFinished(requestId), "Contract not ended");
+    require(
+      _isFinished(requestId) || _isCancelled(requestId),
+      "Contract not ended"
+    );
     RequestContext storage context = _context(requestId);
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
