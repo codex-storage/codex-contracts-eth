@@ -6,25 +6,6 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 library Utils {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
-  function _resize(bytes32[] memory array, uint8 newSize)
-    internal
-    pure
-    returns (bytes32[] memory)
-  {
-    require(newSize <= array.length, "size out of bounds");
-
-    if (newSize == 0) {
-      bytes32[] memory empty;
-      return empty;
-    } else {
-      bytes32[] memory sized = new bytes32[](newSize);
-      for (uint8 i = 0; i < newSize; i++) {
-        sized[i] = array[i];
-      }
-      return sized;
-    }
-  }
-
   function filter(
     EnumerableSet.Bytes32Set storage set,
     function(bytes32) internal view returns (bool) include
