@@ -12,7 +12,13 @@ contract TestMarketplace is Marketplace {
     uint256 _proofTimeout,
     uint8 _proofDowntime
   )
-    Marketplace(_token, _collateral, _proofPeriod,_proofTimeout,_proofDowntime)
+    Marketplace(
+      _token,
+      _collateral,
+      _proofPeriod,
+      _proofTimeout,
+      _proofDowntime
+    )
   // solhint-disable-next-line no-empty-blocks
   {
 
