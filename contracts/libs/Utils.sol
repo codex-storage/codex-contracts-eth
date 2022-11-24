@@ -2,7 +2,7 @@
 pragma solidity ^0.8.8;
 
 library Utils {
-  function _resize(bytes32[] memory array, uint8 newSize)
+  function _resize(bytes32[] memory array, uint256 newSize)
     internal
     pure
     returns (bytes32[] memory)

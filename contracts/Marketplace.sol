@@ -8,6 +8,9 @@ import "./Collateral.sol";
 import "./Proofs.sol";
 import "./libs/SetMap.sol";
 import "./libs/Utils.sol";
+import "./libs/ORM2.sol";
+
+import "hardhat/console.sol"; // DELETE ME
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -15,6 +18,7 @@ contract Marketplace is Collateral, Proofs {
   using SetMap for SetMap.Bytes32SetMap;
   using SetMap for SetMap.AddressBytes32SetMap;
   using SetMap for SetMap.Bytes32AddressSetMap;
+  using ORM2 for ORM2.OneToMany;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
@@ -24,9 +28,18 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  SetMap.AddressBytes32SetMap private activeRequestsForClients; // purchasing
-  SetMap.Bytes32AddressSetMap private activeRequestsForHosts; // purchasing
+  // SetMap.AddressBytes32SetMap private activeRequestsForClients; // purchasing
+  //SetMap.Bytes32AddressSetMap private activeRequestsForHosts; // sales
+  // ORM.Table private activeRequestsForHosts; // sales
   SetMap.Bytes32SetMap private activeSlots; // sales
+
+  ORM2.OneToMany private activeClientRequests;
+
+  // address => RequestId
+  ORM2.OneToMany private activeHostRequests;
+  // RequestId => SlotId
+  ORM2.OneToMany private activeRequestSlots;
+
 
   constructor(
     IERC20 _token,
@@ -43,53 +56,61 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    SetMap.AddressBytes32SetMapKey key = _toAddressSetMapKey(msg.sender);
-    RequestId[] memory requestIds = _toRequestIds(activeRequestsForClients.values(key));
-    RequestId[] memory result = new RequestId[](requestIds.length);
-    uint8 counter = 0;
+    uint256 counter = 0;
+    bytes32[] storage requestIds =
+      activeClientRequests.getManyKeys(_toBytes32(msg.sender));
+    bytes32[] memory result = new bytes32[](requestIds.length);
     for (uint8 i = 0; i < requestIds.length; i++) {
-      if (!_isCancelled(requestIds[i])) {
-        result[counter] = requestIds[i];
-        counter++;
+      // There may exist slots that are still "active", but are part of a request
+      // that is expired but has not been set to the cancelled state yet. In that
+      // case, return an empty array.
+      // TODO: remove cancelled lookups https://discord.com/channels/@me/958221374076366898/1044947242013954140
+      bytes32 requestId = requestIds[i];
+      if (_isCancelled(RequestId.wrap(requestId))) {
+        continue;
       }
+      result[counter] = requestId;
+      counter++;
     }
-    return _toRequestIds(Utils._resize(_toBytes32s(result), counter));
+    return _toRequestIds(Utils._resize(result, counter));
   }
 
-  function requestsForHost(address host) public view returns(RequestId[] memory) {
-    EnumerableSet.Bytes32Set storage keys = activeRequestsForHosts.keys();
-    uint256 keyLength = keys.length();
-    RequestId[] memory result = new RequestId[](keyLength);
-
-    uint8 counter = 0; // should be big enough
-    for (uint8 i = 0; i < keyLength; i++) {
-      RequestId requestId = RequestId.wrap(keys.at(i));
-      SetMap.Bytes32AddressSetMapKey key = _toBytes32AddressSetMapKey(requestId);
-      if (activeRequestsForHosts.contains(key, host) &&
-          !_isCancelled(requestId))
-      {
-        result[counter] = requestId;
-        counter++;
-      }
-    }
-    return _toRequestIds(Utils._resize(_toBytes32s(result), counter));
-  }
-
-  function mySlots(RequestId requestId)
+  function mySlots()
     public
     view
     returns (SlotId[] memory)
   {
-    // There may exist slots that are still "active", but are part of a request
-    // that is expired but has not been set to the cancelled state yet. In that
-    // case, return an empty array.
-    if (_isCancelled(requestId)) {
-      SlotId[] memory result;
-      return result;
+    uint256 counter = 0;
+    uint256 totalSlots = activeRequestSlots.getTotalManyCount(); // set this bigger than our possible filtered list size
+    console.log("[mySlots] total slotIds: ", totalSlots);
+    if (totalSlots == 0) {
+      return new SlotId[](0);
     }
-    bytes32[] memory slotIds =
-      activeSlots.values(_toBytes32SetMapKey(requestId), msg.sender);
-    return _toSlotIds(slotIds);
+    bytes32[] memory result = new bytes32[](totalSlots);
+    bytes32[] storage requestIds =
+      activeHostRequests.getManyKeys(_toBytes32(msg.sender));
+    console.log("[mySlots] total requestIds: ", requestIds.length);
+    for (uint256 i = 0; i < requestIds.length; i++) {
+      // There may exist slots that are still "active", but are part of a request
+      // that is expired but has not been set to the cancelled state yet. In that
+      // case, return an empty array.
+      // TODO: remove cancelled lookups https://discord.com/channels/@me/958221374076366898/1044947242013954140
+      bytes32 requestId = requestIds[i];
+      if (_isCancelled(RequestId.wrap(requestId))) {
+        continue;
+      }
+      if (activeRequestSlots.isOne(requestIds[i])) {
+        bytes32[] storage slotIds = activeRequestSlots.getManyKeys(requestIds[i]);
+        console.log("[mySlots] requestId: ");
+        console.logBytes32(requestIds[i]);
+        console.log("[mySlots] total slotsIds for requestId: ", slotIds.length);
+        for (uint256 j = 0; j < slotIds.length; j++) {
+          result[counter] = slotIds[j];
+          counter++;
+        }
+      }
+    }
+    return _toSlotIds(Utils._resize(result, counter));
   }
 
   function _equals(RequestId a, RequestId b) internal pure returns (bool) {
@@ -111,8 +132,17 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
-    activeRequestsForClients.add(_toAddressSetMapKey(request.client),
-                       RequestId.unwrap(id));
+    bytes32 addrBytes32 = _toBytes32(request.client);
+    if (!activeClientRequests.isOne(addrBytes32)) {
+      activeClientRequests.createOne(addrBytes32);
+    }
+    if (!activeClientRequests.isMany(RequestId.unwrap(id))) {
+      activeClientRequests.createMany(addrBytes32, RequestId.unwrap(id));
+    }
+
+    if (!activeRequestSlots.isOne(RequestId.unwrap(id))) {
+      activeRequestSlots.createOne(RequestId.unwrap(id));
+    }
 
     _createLock(_toLockId(id), request.expiry);
 
@@ -148,11 +178,24 @@ contract Marketplace is Collateral, Proofs {
     slot.requestId = requestId;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
-    activeSlots.add(_toBytes32SetMapKey(requestId),
-                    slot.host,
-                    SlotId.unwrap(slotId));
-    activeRequestsForHosts.add(_toBytes32AddressSetMapKey(requestId),
-                               slot.host);
+
+    console.log("FILLING slotId: ");
+    console.logBytes32(SlotId.unwrap(slotId));
+
+    bytes32 sender = _toBytes32(msg.sender);
+    if (!activeHostRequests.isOne(sender)) {
+      activeHostRequests.createOne(sender);
+    }
+    // address => RequestId
+    if (!activeHostRequests.isMany(RequestId.unwrap(requestId))) {
+      activeHostRequests.createMany(sender, RequestId.unwrap(requestId));
+    }
+
+    // RequestId => SlotId
+    if (!activeRequestSlots.isMany(SlotId.unwrap(slotId))) {
+      activeRequestSlots.createMany(RequestId.unwrap(requestId), SlotId.unwrap(slotId));
+    }
+
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
@@ -179,13 +222,10 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
-    SetMap.Bytes32SetMapKey requestIdKey = _toBytes32SetMapKey(requestId);
-    activeSlots.remove(requestIdKey,
-                       slot.host,
-                       SlotId.unwrap(slotId));
-    if (activeSlots.length(requestIdKey, slot.host) == 0) {
-      activeRequestsForHosts.remove(_toBytes32AddressSetMapKey(requestId),
-                                    slot.host);
+    console.log("FREEING slotId: ");
+    console.logBytes32(SlotId.unwrap(slotId));
+    if (activeRequestSlots.isMany(SlotId.unwrap(slotId))) {
+      activeRequestSlots.deleteMany(SlotId.unwrap(slotId));
     }
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
@@ -201,10 +241,11 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
-      activeRequestsForClients.remove(_toAddressSetMapKey(request.client),
-                                      RequestId.unwrap(requestId));
-      activeRequestsForHosts.clear(_toBytes32AddressSetMapKey(requestId));
-      activeSlots.clear(_toBytes32SetMapKey(requestId));
+      console.log("about to delete many");
+      activeClientRequests.deleteMany(RequestId.unwrap(requestId));
+      console.log("about to clear all manys");
+      activeRequestSlots.clearAllManys(RequestId.unwrap(requestId));
+      console.log("about to cleared all manys");
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -219,18 +260,19 @@ contract Marketplace is Collateral, Proofs {
   {
     require(_isFinished(requestId), "Contract not ended");
     RequestContext storage context = _context(requestId);
-    Request storage request = _request(requestId);
+    // Request storage request = _request(requestId);
     context.state = RequestState.Finished;
-    activeRequestsForClients.remove(_toAddressSetMapKey(request.client),
-                                    RequestId.unwrap(requestId));
+    if (activeClientRequests.isMany(RequestId.unwrap(requestId))) {
+      activeClientRequests.deleteMany(RequestId.unwrap(requestId));
+    }
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    activeSlots.remove(_toBytes32SetMapKey(requestId),
-                       slot.host,
-                       SlotId.unwrap(slotId));
-    activeRequestsForHosts.remove(_toBytes32AddressSetMapKey(requestId),
-                                  slot.host);
+    activeRequestSlots.deleteMany(SlotId.unwrap(slotId));
+    if (activeRequestSlots.getManyCount() == 0) {
+      activeRequestSlots.deleteOne(RequestId.unwrap(requestId));
+      activeHostRequests.deleteMany(RequestId.unwrap(requestId));
+    }
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
@@ -251,10 +293,10 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    activeRequestsForClients.remove(_toAddressSetMapKey(request.client),
-                                    RequestId.unwrap(requestId));
-    activeRequestsForHosts.clear(_toBytes32AddressSetMapKey(requestId));
-    activeSlots.clear(_toBytes32SetMapKey(requestId));
+    activeClientRequests.deleteMany(RequestId.unwrap(requestId));
+
+    activeRequestSlots.clearAllManys(RequestId.unwrap(requestId));
+    // TODO: handle dangling RequestId in activeHostRequests (for address)
     emit RequestCancelled(requestId);
 
     // TODO: To be changed once we start paying out hosts for the time they
@@ -452,6 +494,14 @@ contract Marketplace is Collateral, Proofs {
     assembly {
       result := array
     }
+  }
+
+  function _toBytes32(address addr)
+    private
+    pure
+    returns (bytes32 result)
+  {
+    return bytes32(uint(uint160(addr)));
   }
 
   function _toBytes32s(RequestId[] memory array)
