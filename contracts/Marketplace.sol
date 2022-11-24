@@ -3,19 +3,12 @@ pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
-import "./libs/SetMap.sol";
 import "./libs/Utils.sol";
 import "./libs/Mappings.sol";
 
 contract Marketplace is Collateral, Proofs {
-  using EnumerableSet for EnumerableSet.Bytes32Set;
-  using EnumerableSet for EnumerableSet.AddressSet;
-  using SetMap for SetMap.Bytes32SetMap;
-  using SetMap for SetMap.AddressBytes32SetMap;
-  using SetMap for SetMap.Bytes32AddressSetMap;
   using Mappings for Mappings.Mapping;
 
   type RequestId is bytes32;
@@ -26,13 +19,12 @@ contract Marketplace is Collateral, Proofs {
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
-  // SetMap.AddressBytes32SetMap private activeRequestsForClients; // purchasing
-  //SetMap.Bytes32AddressSetMap private activeRequestsForHosts; // sales
-  // ORM.Table private activeRequestsForHosts; // sales
-  SetMap.Bytes32SetMap private activeSlots; // sales
 
+  // PURCHASING
+  // address => RequestId
   Mappings.Mapping private activeClientRequests;
 
+  // SALES
   // address => RequestId
   Mappings.Mapping private activeHostRequests;
   // RequestId => SlotId
@@ -459,17 +451,6 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _toRequestIds(SetMap.Bytes32SetMapKey[] memory array)
-    private
-    pure
-    returns (RequestId[] memory result)
-  {
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      result := array
-    }
-  }
-
   function _toSlotIds(bytes32[] memory array)
     private
     pure
@@ -523,30 +504,6 @@ contract Marketplace is Collateral, Proofs {
     returns (Mappings.ValueId)
   {
     return Mappings.ValueId.wrap(SlotId.unwrap(slotId));
-  }
-
-  function _toBytes32SetMapKey(RequestId requestId)
-    internal
-    pure
-    returns (SetMap.Bytes32SetMapKey)
-  {
-    return SetMap.Bytes32SetMapKey.wrap(RequestId.unwrap(requestId));
-  }
-
-  function _toAddressSetMapKey(address addr)
-    internal
-    pure
-    returns (SetMap.AddressBytes32SetMapKey)
-  {
-    return SetMap.AddressBytes32SetMapKey.wrap(addr);
-  }
-
-  function _toBytes32AddressSetMapKey(RequestId requestId)
-    internal
-    pure
-    returns (SetMap.Bytes32AddressSetMapKey)
-  {
-    return SetMap.Bytes32AddressSetMapKey.wrap(RequestId.unwrap(requestId));
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
