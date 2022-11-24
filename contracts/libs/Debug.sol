@@ -39,7 +39,7 @@ library Debug {
   /// |                                                                    | 0x002CAD0D878B163AD63EE9C098391A6F9443CD3D48916C4E63A2485F832BE57F |
   /// |_________________________________________________________________________________________________________________________________________|
   ///   Referenced values:    4
-  ///   Unreferenced values:  1
+  ///   Unreferenced values:  1  (total values not deleted but are unused)
   ///   TOTAL Values:         5
   function _printTable(Mappings.Mapping storage db, string memory message)
     internal
@@ -51,13 +51,13 @@ library Debug {
     console.log("| ------------------------------------------------------------------ | ------------------------------------------------------------------ |");
     uint256 referencedValues = 0;
     for(uint8 i = 0; i < db._keyIds.length; i++) {
-      bytes32 keyId = db._keyIds[i];
-      console.log("|", _toHex(keyId), "|                                                                    |");
+      Mappings.KeyId keyId = db._keyIds[i];
+      console.log("|", _toHex(Mappings.KeyId.unwrap(keyId)), "|                                                                    |");
 
-      bytes32[] storage valueIds = Mappings.getValueIds(db, keyId);
+      Mappings.ValueId[] storage valueIds = Mappings.getValueIds(db, keyId);
       for(uint8 j = 0; j < valueIds.length; j++) {
-        bytes32 valueId = valueIds[j];
-        console.log("|                                                                    |", _toHex(valueId), "|");
+        Mappings.ValueId valueId = valueIds[j];
+        console.log("|                                                                    |", _toHex(Mappings.ValueId.unwrap(valueId)), "|");
       }
       referencedValues += valueIds.length;
     }

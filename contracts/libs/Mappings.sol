@@ -5,13 +5,16 @@ pragma solidity ^0.8.8;
 import "./Debug.sol"; // DELETE ME
 
 library Mappings {
+  type KeyId is bytes32;
+  type ValueId is bytes32;
+
   // first entity is called a "One"
   struct Key {
     // needed to delete a "One"
     uint256 _oneListPointer;
     // One has many "Many"
-    bytes32[] _valueIds;
-    mapping(bytes32 => uint256) _valueIdsIndex; // valueId => row of local _valueIds
+    ValueId[] _valueIds;
+    mapping(ValueId => uint256) _valueIdsIndex; // valueId => row of local _valueIds
     // more app data
   }
 
@@ -20,15 +23,15 @@ library Mappings {
     // needed to delete a "Many"
     uint256 _valueIdsIndex;
     // many has exactly one "One"
-    bytes32 _keyId;
+    KeyId _keyId;
     // add app fields
   }
 
   struct Mapping {
-    mapping(bytes32 => Key) _keys;
-    bytes32[] _keyIds;
-    mapping(bytes32 => Value) _values;
-    bytes32[] _valueIds;
+    mapping(KeyId => Key) _keys;
+    KeyId[] _keyIds;
+    mapping(ValueId => Value) _values;
+    ValueId[] _valueIds;
   }
 
   function keyCount(Mapping storage db)
@@ -43,7 +46,7 @@ library Mappings {
     return db._valueIds.length;
   }
 
-  function getManyCount(Mapping storage db, bytes32 keyId)
+  function getManyCount(Mapping storage db, KeyId keyId)
     internal
     view
     returns(uint256 manyCount)
@@ -52,48 +55,48 @@ library Mappings {
     return _getValueIds(db, keyId).length;
   }
 
-  function keyExists(Mapping storage db, bytes32 keyId)
+  function keyExists(Mapping storage db, KeyId keyId)
     internal
     view
     returns(bool)
   {
     if(keyCount(db) == 0) return false;
-    return db._keyIds[db._keys[keyId]._oneListPointer] == keyId;
+    return equals(db._keyIds[db._keys[keyId]._oneListPointer], keyId);
   }
 
-  function valueExists(Mapping storage db, bytes32 valueId)
+  function valueExists(Mapping storage db, ValueId valueId)
     internal
     view
     returns(bool)
   {
     if(getManyCount(db) == 0) return false;
     uint256 row = db._values[valueId]._valueIdsIndex;
-    bool retVal = db._valueIds[row] == valueId;
+    bool retVal = equals(db._valueIds[row], valueId);
     return retVal;
   }
 
   function _getValueIds(Mapping storage db,
-                        bytes32 keyId)
+                        KeyId keyId)
     internal
     view
-    returns(bytes32[] storage)
+    returns(ValueId[] storage)
   {
     require(keyExists(db, keyId), "key does not exist");
     return db._keys[keyId]._valueIds;
   }
 
   function getValueIds(Mapping storage db,
-                       bytes32 keyId)
+                       KeyId keyId)
     internal
     view
-    returns(bytes32[] storage)
+    returns(ValueId[] storage)
   {
     require(keyExists(db, keyId), "key does not exist");
     return _getValueIds(db, keyId);
   }
 
   // Insert
-  function insertKey(Mapping storage db, bytes32 keyId)
+  function insertKey(Mapping storage db, KeyId keyId)
     internal
     returns(bool)
   {
@@ -104,7 +107,7 @@ library Mappings {
     return true;
   }
 
-  function insertValue(Mapping storage db, bytes32 keyId, bytes32 valueId)
+  function insertValue(Mapping storage db, KeyId keyId, ValueId valueId)
     internal
     returns(bool)
   {
@@ -123,7 +126,7 @@ library Mappings {
     return true;
   }
 
-  function insert(Mapping storage db, bytes32 keyId, bytes32 valueId)
+  function insert(Mapping storage db, KeyId keyId, ValueId valueId)
     internal
     returns(bool success)
   {
@@ -141,7 +144,7 @@ library Mappings {
 
 
   // Delete
-  function deleteKey(Mapping storage db, bytes32 keyId)
+  function deleteKey(Mapping storage db, KeyId keyId)
     internal
     returns(bool)
   {
@@ -149,7 +152,7 @@ library Mappings {
     require(_getValueIds(db, keyId).length == 0, "references manys"); // this would break referential integrity
 
     uint256 rowToDelete = db._keys[keyId]._oneListPointer;
-    bytes32 keyToMove = db._keyIds[keyCount(db)-1];
+    KeyId keyToMove = db._keyIds[keyCount(db)-1];
     db._keyIds[rowToDelete] = keyToMove;
     db._keys[keyToMove]._oneListPointer = rowToDelete;
     db._keyIds.pop();
@@ -157,7 +160,7 @@ library Mappings {
     return true;
   }
 
-  function deleteValue(Mapping storage db, bytes32 valueId)
+  function deleteValue(Mapping storage db, ValueId valueId)
     internal
     returns(bool)
   {
@@ -169,7 +172,7 @@ library Mappings {
     uint256 lastIndex = getManyCount(db) - 1;
 
     if (lastIndex != toDeleteIndex) {
-      bytes32 lastValue = db._valueIds[lastIndex];
+      ValueId lastValue = db._valueIds[lastIndex];
 
       // Move the last value to the index where the value to delete is
       db._valueIds[toDeleteIndex] = lastValue;
@@ -178,12 +181,12 @@ library Mappings {
     }
     db._valueIds.pop();
 
-    bytes32 keyId = db._values[valueId]._keyId;
+    KeyId keyId = db._values[valueId]._keyId;
     Key storage oneRow = db._keys[keyId];
     toDeleteIndex = oneRow._valueIdsIndex[valueId];
     lastIndex = oneRow._valueIds.length - 1;
     if (lastIndex != toDeleteIndex) {
-      bytes32 lastValue = oneRow._valueIds[lastIndex];
+      ValueId lastValue = oneRow._valueIds[lastIndex];
 
       // Move the last value to the index where the value to delete is
       oneRow._valueIds[toDeleteIndex] = lastValue;
@@ -196,7 +199,7 @@ library Mappings {
     return true;
   }
 
-  function clearValues(Mapping storage db, bytes32 keyId)
+  function clearValues(Mapping storage db, KeyId keyId)
     internal
     returns(bool)
   {
@@ -208,5 +211,22 @@ library Mappings {
     bool result = deleteKey(db, keyId);
     Debug._printTable(db, "[clearValues] AFTER clearing");
     return result;
+  }
+
+  function equals(KeyId a, KeyId b) internal pure returns (bool) {
+    return KeyId.unwrap(a) == KeyId.unwrap(b);
+  }
+
+  function equals(ValueId a, ValueId b) internal pure returns (bool) {
+    return ValueId.unwrap(a) == ValueId.unwrap(b);
+  }
+
+  function toKeyId(address addr) internal pure returns (KeyId) {
+    return KeyId.wrap(bytes32(uint(uint160(addr))));
+  }
+
+  // Useful in the case where a valueId is a foreign key
+  function toKeyId(ValueId valueId) internal pure returns (KeyId) {
+    return KeyId.wrap(ValueId.unwrap(valueId));
   }
 }
