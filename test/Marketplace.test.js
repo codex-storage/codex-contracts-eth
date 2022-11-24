@@ -705,12 +705,6 @@ describe("Marketplace", function () {
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
-    it("removes request from list when cancelled", async function () {
-      await marketplace.requestStorage(request)
-      await waitUntilCancelled(request)
-      expect(await marketplace.myRequests()).to.deep.equal([])
-    })
-
     it("removes request from list when funds are withdrawn", async function () {
       await marketplace.requestStorage(request)
       await waitUntilCancelled(request)
@@ -764,14 +758,6 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await marketplace.freeSlot(slotId(slot))
       expect(await marketplace.mySlots()).to.deep.equal([slotId(slot1)])
-    })
-
-    it("returns no slots when cancelled", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      let slot1 = { ...slot, index: slot.index + 1 }
-      await marketplace.fillSlot(slot.request, slot1.index, proof)
-      await waitUntilCancelled(request)
-      expect(await marketplace.mySlots()).to.deep.equal([])
     })
 
     it("removes active slots for all hosts in a request when it fails", async function () {
