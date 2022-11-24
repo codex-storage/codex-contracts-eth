@@ -8,9 +8,7 @@ import "./Collateral.sol";
 import "./Proofs.sol";
 import "./libs/SetMap.sol";
 import "./libs/Utils.sol";
-import "./libs/ORM2.sol";
-
-import "hardhat/console.sol"; // DELETE ME
+import "./libs/Mappings.sol";
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -18,7 +16,7 @@ contract Marketplace is Collateral, Proofs {
   using SetMap for SetMap.Bytes32SetMap;
   using SetMap for SetMap.AddressBytes32SetMap;
   using SetMap for SetMap.Bytes32AddressSetMap;
-  using ORM2 for ORM2.OneToMany;
+  using Mappings for Mappings.Mapping;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
@@ -33,12 +31,12 @@ contract Marketplace is Collateral, Proofs {
   // ORM.Table private activeRequestsForHosts; // sales
   SetMap.Bytes32SetMap private activeSlots; // sales
 
-  ORM2.OneToMany private activeClientRequests;
+  Mappings.Mapping private activeClientRequests;
 
   // address => RequestId
-  ORM2.OneToMany private activeHostRequests;
+  Mappings.Mapping private activeHostRequests;
   // RequestId => SlotId
-  ORM2.OneToMany private activeRequestSlots;
+  Mappings.Mapping private activeRequestSlots;
 
 
   constructor(
@@ -58,7 +56,7 @@ contract Marketplace is Collateral, Proofs {
   function myRequests() public view returns (RequestId[] memory) {
     uint256 counter = 0;
     bytes32[] storage requestIds =
-      activeClientRequests.getManyKeys(_toBytes32(msg.sender));
+      activeClientRequests.getValueIds(_toBytes32(msg.sender));
     bytes32[] memory result = new bytes32[](requestIds.length);
     for (uint8 i = 0; i < requestIds.length; i++) {
       // There may exist slots that are still "active", but are part of a request
@@ -81,15 +79,13 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId[] memory)
   {
     uint256 counter = 0;
-    uint256 totalSlots = activeRequestSlots.getTotalManyCount(); // set this bigger than our possible filtered list size
-    console.log("[mySlots] total slotIds: ", totalSlots);
+    uint256 totalSlots = activeRequestSlots.getManyCount(); // set this bigger than our possible filtered list size
     if (totalSlots == 0) {
       return new SlotId[](0);
     }
     bytes32[] memory result = new bytes32[](totalSlots);
     bytes32[] storage requestIds =
-      activeHostRequests.getManyKeys(_toBytes32(msg.sender));
-    console.log("[mySlots] total requestIds: ", requestIds.length);
+      activeHostRequests.getValueIds(_toBytes32(msg.sender));
     for (uint256 i = 0; i < requestIds.length; i++) {
       // There may exist slots that are still "active", but are part of a request
       // that is expired but has not been set to the cancelled state yet. In that
@@ -99,11 +95,8 @@ contract Marketplace is Collateral, Proofs {
       if (_isCancelled(RequestId.wrap(requestId))) {
         continue;
       }
-      if (activeRequestSlots.isOne(requestIds[i])) {
-        bytes32[] storage slotIds = activeRequestSlots.getManyKeys(requestIds[i]);
-        console.log("[mySlots] requestId: ");
-        console.logBytes32(requestIds[i]);
-        console.log("[mySlots] total slotsIds for requestId: ", slotIds.length);
+      if (activeRequestSlots.keyExists(requestIds[i])) {
+        bytes32[] storage slotIds = activeRequestSlots.getValueIds(requestIds[i]);
         for (uint256 j = 0; j < slotIds.length; j++) {
           result[counter] = slotIds[j];
           counter++;
@@ -133,15 +126,10 @@ contract Marketplace is Collateral, Proofs {
     _setProofEnd(_toEndId(id), context.endsAt);
 
     bytes32 addrBytes32 = _toBytes32(request.client);
-    if (!activeClientRequests.isOne(addrBytes32)) {
-      activeClientRequests.createOne(addrBytes32);
-    }
-    if (!activeClientRequests.isMany(RequestId.unwrap(id))) {
-      activeClientRequests.createMany(addrBytes32, RequestId.unwrap(id));
-    }
+    activeClientRequests.insert(addrBytes32, RequestId.unwrap(id));
 
-    if (!activeRequestSlots.isOne(RequestId.unwrap(id))) {
-      activeRequestSlots.createOne(RequestId.unwrap(id));
+    if (!activeRequestSlots.keyExists(RequestId.unwrap(id))) {
+      activeRequestSlots.insertKey(RequestId.unwrap(id));
     }
 
     _createLock(_toLockId(id), request.expiry);
@@ -179,22 +167,12 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
 
-    console.log("FILLING slotId: ");
-    console.logBytes32(SlotId.unwrap(slotId));
-
     bytes32 sender = _toBytes32(msg.sender);
-    if (!activeHostRequests.isOne(sender)) {
-      activeHostRequests.createOne(sender);
-    }
     // address => RequestId
-    if (!activeHostRequests.isMany(RequestId.unwrap(requestId))) {
-      activeHostRequests.createMany(sender, RequestId.unwrap(requestId));
-    }
+    activeHostRequests.insert(sender, RequestId.unwrap(requestId));
 
     // RequestId => SlotId
-    if (!activeRequestSlots.isMany(SlotId.unwrap(slotId))) {
-      activeRequestSlots.createMany(RequestId.unwrap(requestId), SlotId.unwrap(slotId));
-    }
+    activeRequestSlots.insert(RequestId.unwrap(requestId), SlotId.unwrap(slotId));
 
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
@@ -222,10 +200,8 @@ contract Marketplace is Collateral, Proofs {
 
     _unexpectProofs(_toProofId(slotId));
 
-    console.log("FREEING slotId: ");
-    console.logBytes32(SlotId.unwrap(slotId));
-    if (activeRequestSlots.isMany(SlotId.unwrap(slotId))) {
-      activeRequestSlots.deleteMany(SlotId.unwrap(slotId));
+    if (activeRequestSlots.valueExists(SlotId.unwrap(slotId))) {
+      activeRequestSlots.deleteValue(SlotId.unwrap(slotId));
     }
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
@@ -241,11 +217,8 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
-      console.log("about to delete many");
-      activeClientRequests.deleteMany(RequestId.unwrap(requestId));
-      console.log("about to clear all manys");
-      activeRequestSlots.clearAllManys(RequestId.unwrap(requestId));
-      console.log("about to cleared all manys");
+      activeClientRequests.deleteValue(RequestId.unwrap(requestId));
+      activeRequestSlots.clearValues(RequestId.unwrap(requestId));
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -262,16 +235,16 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(requestId);
     // Request storage request = _request(requestId);
     context.state = RequestState.Finished;
-    if (activeClientRequests.isMany(RequestId.unwrap(requestId))) {
-      activeClientRequests.deleteMany(RequestId.unwrap(requestId));
+    if (activeClientRequests.valueExists(RequestId.unwrap(requestId))) {
+      activeClientRequests.deleteValue(RequestId.unwrap(requestId));
     }
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    activeRequestSlots.deleteMany(SlotId.unwrap(slotId));
+    activeRequestSlots.deleteValue(SlotId.unwrap(slotId));
     if (activeRequestSlots.getManyCount() == 0) {
-      activeRequestSlots.deleteOne(RequestId.unwrap(requestId));
-      activeHostRequests.deleteMany(RequestId.unwrap(requestId));
+      activeRequestSlots.deleteKey(RequestId.unwrap(requestId));
+      activeHostRequests.deleteValue(RequestId.unwrap(requestId));
     }
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
@@ -293,9 +266,9 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    activeClientRequests.deleteMany(RequestId.unwrap(requestId));
+    activeClientRequests.deleteValue(RequestId.unwrap(requestId));
 
-    activeRequestSlots.clearAllManys(RequestId.unwrap(requestId));
+    activeRequestSlots.clearValues(RequestId.unwrap(requestId));
     // TODO: handle dangling RequestId in activeHostRequests (for address)
     emit RequestCancelled(requestId);
 

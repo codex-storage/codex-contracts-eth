@@ -811,9 +811,6 @@ describe("Marketplace", function () {
       // wait until first request fails
       await waitUntilFailed(marketplace, request, slot)
 
-      console.log("1st requestId: ", requestId(request))
-      console.log("2nd requestId: ", requestId(request2))
-
       // check that our active slots only contains slotIds from second request
       let expected = []
       let expectedSlot = { ...slot, index: 0, request: requestId(request2) }
