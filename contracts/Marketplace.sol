@@ -46,23 +46,9 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    uint256 counter = 0;
     Mappings.ValueId[] storage valueIds =
       activeClientRequests.getValueIds(Mappings.toKeyId(msg.sender));
-    bytes32[] memory result = new bytes32[](valueIds.length);
-    for (uint8 i = 0; i < valueIds.length; i++) {
-      // There may exist slots that are still "active", but are part of a request
-      // that is expired but has not been set to the cancelled state yet. In that
-      // case, return an empty array.
-      // TODO: remove cancelled lookups https://discord.com/channels/@me/958221374076366898/1044947242013954140
-      Mappings.ValueId valueId = valueIds[i];
-      if (_isCancelled(_toRequestId(valueId))) {
-        continue;
-      }
-      result[counter] = Mappings.ValueId.unwrap(valueId);
-      counter++;
-    }
-    return _toRequestIds(Utils._resize(result, counter));
+    return _toRequestIds(valueIds);
   }
 
   function mySlots()
@@ -82,12 +68,7 @@ contract Marketplace is Collateral, Proofs {
       // There may exist slots that are still "active", but are part of a request
       // that is expired but has not been set to the cancelled state yet. In that
       // case, return an empty array.
-      // TODO: remove cancelled lookups https://discord.com/channels/@me/958221374076366898/1044947242013954140
-      Mappings.ValueId requestId = valueIds[i];
-      if (_isCancelled(_toRequestId(requestId))) {
-        continue;
-      }
-      Mappings.KeyId keyId = Mappings.toKeyId(requestId);
+      Mappings.KeyId keyId = Mappings.toKeyId(valueIds[i]);
       if (activeRequestSlots.keyExists(keyId)) {
         Mappings.ValueId[] storage slotIds =
           activeRequestSlots.getValueIds(keyId);
@@ -440,7 +421,7 @@ contract Marketplace is Collateral, Proofs {
     return RequestId.wrap(Mappings.ValueId.unwrap(valueId));
   }
 
-  function _toRequestIds(bytes32[] memory array)
+  function _toRequestIds(Mappings.ValueId[] memory array)
     private
     pure
     returns (RequestId[] memory result)
