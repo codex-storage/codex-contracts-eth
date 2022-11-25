@@ -42,17 +42,16 @@ library Mappings {
     return db._keyIds.length;
   }
 
-  function getManyCount(Mapping storage db) internal view returns(uint256) {
+  function getValueCount(Mapping storage db) internal view returns(uint256) {
     return db._valueIds.length;
   }
 
-  function getManyCount(Mapping storage db, KeyId keyId)
+  function getValueCount(Mapping storage db, KeyId keyId)
     internal
     view
-    returns(uint256 manyCount)
+    returns(uint256)
   {
-    require(keyExists(db, keyId), "key does not exist");
-    return _getValueIds(db, keyId).length;
+    return getValueIds(db, keyId).length;
   }
 
   function keyExists(Mapping storage db, KeyId keyId)
@@ -69,20 +68,18 @@ library Mappings {
     view
     returns(bool)
   {
-    if(getManyCount(db) == 0) return false;
+    if (getValueCount(db) == 0) return false;
     uint256 row = db._values[valueId]._valueIdsIndex;
     bool retVal = equals(db._valueIds[row], valueId);
     return retVal;
   }
 
-  function _getValueIds(Mapping storage db,
-                        KeyId keyId)
+  function getKeyIds(Mapping storage db)
     internal
     view
-    returns(ValueId[] storage)
+    returns(KeyId[] storage)
   {
-    require(keyExists(db, keyId), "key does not exist");
-    return db._keys[keyId]._valueIds;
+    return db._keyIds;
   }
 
   function getValueIds(Mapping storage db,
@@ -92,7 +89,7 @@ library Mappings {
     returns(ValueId[] storage)
   {
     require(keyExists(db, keyId), "key does not exist");
-    return _getValueIds(db, keyId);
+    return db._keys[keyId]._valueIds;
   }
 
   // Insert
@@ -116,7 +113,7 @@ library Mappings {
 
     Value storage value = db._values[valueId];
     db._valueIds.push(valueId);
-    value._valueIdsIndex = getManyCount(db) - 1;
+    value._valueIdsIndex = getValueCount(db) - 1;
     value._keyId = keyId; // each many has exactly one "One", so this is mandatory
 
     // We also maintain a list of "Many" that refer to the "One", so ...
@@ -149,7 +146,7 @@ library Mappings {
     returns(bool)
   {
     require(keyExists(db, keyId), "key does not exist");
-    require(_getValueIds(db, keyId).length == 0, "references manys"); // this would break referential integrity
+    require(getValueIds(db, keyId).length == 0, "references values"); // this would break referential integrity
 
     uint256 rowToDelete = db._keys[keyId]._oneListPointer;
     KeyId keyToMove = db._keyIds[keyCount(db)-1];
@@ -169,7 +166,7 @@ library Mappings {
     // delete from the Many table
     uint256 toDeleteIndex = db._values[valueId]._valueIdsIndex;
 
-    uint256 lastIndex = getManyCount(db) - 1;
+    uint256 lastIndex = getValueCount(db) - 1;
 
     if (lastIndex != toDeleteIndex) {
       ValueId lastValue = db._valueIds[lastIndex];
@@ -196,6 +193,10 @@ library Mappings {
     oneRow._valueIds.pop();
     delete oneRow._valueIdsIndex[valueId];
     delete db._values[valueId];
+
+    if (getValueCount(db, keyId) == 0) {
+      deleteKey(db, keyId);
+    }
     return true;
   }
 

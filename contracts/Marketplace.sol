@@ -57,7 +57,7 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId[] memory)
   {
     uint256 counter = 0;
-    uint256 totalSlots = activeRequestSlots.getManyCount(); // set this bigger than our possible filtered list size
+    uint256 totalSlots = activeRequestSlots.getValueCount(); // set this bigger than our possible filtered list size
     if (totalSlots == 0) {
       return new SlotId[](0);
     }
@@ -220,7 +220,7 @@ contract Marketplace is Collateral, Proofs {
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
     activeRequestSlots.deleteValue(_toValueId(slotId));
-    if (activeRequestSlots.getManyCount() == 0) {
+    if (activeRequestSlots.getValueCount() == 0) {
       activeRequestSlots.deleteKey(_toKeyId(requestId));
       activeHostRequests.deleteValue(valueId);
     }

@@ -63,7 +63,7 @@ library Debug {
     }
     console.log("|_________________________________________________________________________________________________________________________________________|");
     console.log("  Referenced values:   ", referencedValues);
-    uint256 totalValues = Mappings.getManyCount(db);
+    uint256 totalValues = Mappings.getValueCount(db);
     console.log("  Unreferenced values: ", totalValues - referencedValues, " (total values not deleted but are unused)");
     console.log("  TOTAL Values:        ", totalValues);
   }
