@@ -6,11 +6,9 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
-import "./libs/Utils.sol";
 
 contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
-  using Utils for EnumerableSet.Bytes32Set;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
