@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// heavily inspired by: https://bitbucket.org/rhitchens2/soliditystoragepatterns/src/master/GeneralizedCollection.sol
+// heavily inspired by: https://bitbucket.org/rhitchens2/soliditystoragepatterns/src/master/OneToMany.sol
 pragma solidity ^0.8.8;
 
 import "./EnumerableSetExtensions.sol";
