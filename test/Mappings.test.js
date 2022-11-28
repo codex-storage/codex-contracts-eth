@@ -20,18 +20,16 @@ describe("Mappings", function () {
 
     it("starts empty", async function () {
       await expect(await contract.keyExists(key)).to.be.false
-      await expect(await contract.valueExists(value)).to.be.false
-      await expect(await contract.getKeyIds()).to.deep.equal([])
-      await expect(await contract.getTotalValueCount()).to.equal(0)
+      await expect(await contract.valueExists(key, value)).to.be.false
+      await expect(await contract.keys()).to.deep.equal([])
+      await expect(await contract.totalCount()).to.equal(0)
     })
 
     it("adds a key and value", async function () {
       await expect(contract.insert(key, value))
         .to.emit(contract, "OperationResult")
         .withArgs(true)
-      await expect(await contract.getValueIds(key)).to.deep.equal([
-        hexlify(value),
-      ])
+      await expect(await contract.values(key)).to.deep.equal([hexlify(value)])
     })
 
     it("removes a key", async function () {
@@ -46,13 +44,11 @@ describe("Mappings", function () {
       let value1 = randomBytes(32)
       await contract.insert(key, value)
       await contract.insert(key, value1)
-      await expect(contract.deleteValue(value))
+      await expect(contract.deleteValue(key, value))
         .to.emit(contract, "OperationResult")
         .withArgs(true)
-      await expect(await contract.getKeyIds()).to.deep.equal([hexlify(key)])
-      await expect(await contract.getValueIds(key)).to.deep.equal([
-        hexlify(value1),
-      ])
+      await expect(await contract.keys()).to.deep.equal([hexlify(key)])
+      await expect(await contract.values(key)).to.deep.equal([hexlify(value1)])
     })
 
     // referential integrity
@@ -64,7 +60,7 @@ describe("Mappings", function () {
     })
 
     it("fails to get value ids when key does not exist", async function () {
-      await expect(contract.getValueIds(key)).to.be.revertedWith(
+      await expect(contract.values(key)).to.be.revertedWith(
         "key does not exist"
       )
     })
@@ -95,35 +91,35 @@ describe("Mappings", function () {
       let value3 = randomBytes(32)
       await contract.insert(key, value)
       await expect(await contract.keyExists(key)).to.be.true
-      await expect(await contract.valueExists(value)).to.be.true
-      await expect(await contract.valueExists(value1)).to.be.false
-      await expect(await contract.getValueCount(key)).to.equal(1)
-      await expect(await contract.getTotalValueCount()).to.equal(1)
+      await expect(await contract.valueExists(key, value)).to.be.true
+      await expect(await contract.valueExists(key, value1)).to.be.false
+      await expect(await contract.count(key)).to.equal(1)
+      await expect(await contract.totalCount()).to.equal(1)
 
       await contract.insert(key, value1)
-      await expect(await contract.valueExists(value1)).to.be.true
-      await expect(await contract.getValueCount(key)).to.equal(2)
-      await expect(await contract.getTotalValueCount()).to.equal(2)
+      await expect(await contract.valueExists(key, value1)).to.be.true
+      await expect(await contract.count(key)).to.equal(2)
+      await expect(await contract.totalCount()).to.equal(2)
 
-      await expect(contract.deleteValue(value1))
-      await expect(await contract.keyExists(key)).to.be.true
-      await expect(await contract.valueExists(value1)).to.be.false
-      await expect(await contract.getValueCount(key)).to.equal(1)
-      await expect(await contract.getTotalValueCount()).to.equal(1)
+      await expect(contract.deleteValue(key, value1))
+      await expect(await contract.valueExists(key, value)).to.be.true
+      await expect(await contract.valueExists(key, value1)).to.be.false
+      await expect(await contract.count(key)).to.equal(1)
+      await expect(await contract.totalCount()).to.equal(1)
 
       await contract.insert(key, value1)
       await contract.insert(key, value2)
       await contract.insert(key, value3)
-      await expect(contract.clearValues(key))
+      await expect(contract.clear(key))
       await expect(await contract.keyExists(key)).to.be.false
-      await expect(await contract.getKeyIds()).to.deep.equal([])
+      await expect(await contract.keys()).to.deep.equal([])
 
       // TODO: handle unreferenced values, as visible here. Once handled, this value should be 1
-      await expect(await contract.getTotalValueCount()).to.equal(4)
-      // await expect(await contract.valueExists(value)).to.be.false
-      // await expect(await contract.valueExists(value1)).to.be.false
-      // await expect(await contract.valueExists(value2)).to.be.false
-      // await expect(await contract.valueExists(value3)).to.be.false
+      // await expect(await contract.totalCount()).to.equal(4)
+      // await expect(await contract.valueExists(key, value)).to.be.false
+      // await expect(await contract.valueExists(key, value1)).to.be.false
+      // await expect(await contract.valueExists(key, value2)).to.be.false
+      // await expect(await contract.valueExists(key, value3)).to.be.false
     })
   })
 })

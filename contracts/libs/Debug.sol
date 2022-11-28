@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Mappings.sol";
+
 import "hardhat/console.sol"; // DELETE ME
 
 library Debug {
+  using Mappings for Mappings.Mapping;
+  using EnumerableSet for EnumerableSet.Bytes32Set;
+
   function _toHex16 (bytes16 data) private pure returns (bytes32 result) {
     result = bytes32 (data) & 0xFFFFFFFFFFFFFFFF000000000000000000000000000000000000000000000000 |
               (bytes32 (data) & 0x0000000000000000FFFFFFFFFFFFFFFF00000000000000000000000000000000) >> 64;
@@ -50,11 +55,11 @@ library Debug {
     console.log("| Key                                                                | Value                                                              |");
     console.log("| ------------------------------------------------------------------ | ------------------------------------------------------------------ |");
     uint256 referencedValues = 0;
-    for(uint8 i = 0; i < db._keyIds.length; i++) {
-      Mappings.KeyId keyId = db._keyIds[i];
-      console.log("|", _toHex(Mappings.KeyId.unwrap(keyId)), "|                                                                    |");
+    for(uint8 i = 0; i < db._keyIds.length(); i++) {
+      bytes32 keyId = db._keyIds.at(i);
+      console.log("|", _toHex(keyId), "|                                                                    |");
 
-      Mappings.ValueId[] storage valueIds = Mappings.getValueIds(db, keyId);
+      Mappings.ValueId[] memory valueIds = db.values(Mappings.KeyId.wrap(keyId));
       for(uint8 j = 0; j < valueIds.length; j++) {
         Mappings.ValueId valueId = valueIds[j];
         console.log("|                                                                    |", _toHex(Mappings.ValueId.unwrap(valueId)), "|");
@@ -63,7 +68,7 @@ library Debug {
     }
     console.log("|_________________________________________________________________________________________________________________________________________|");
     console.log("  Referenced values:   ", referencedValues);
-    uint256 totalValues = Mappings.getValueCount(db);
+    uint256 totalValues = db.count();
     console.log("  Unreferenced values: ", totalValues - referencedValues, " (total values not deleted but are unused)");
     console.log("  TOTAL Values:        ", totalValues);
   }

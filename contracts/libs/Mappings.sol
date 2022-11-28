@@ -2,232 +2,191 @@
 // heavily inspired by: https://bitbucket.org/rhitchens2/soliditystoragepatterns/src/master/GeneralizedCollection.sol
 pragma solidity ^0.8.8;
 
-import "./Debug.sol"; // DELETE ME
+import "./EnumerableSetExtensions.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 library Mappings {
+
+  using EnumerableSet for EnumerableSet.Bytes32Set;
+  using EnumerableSetExtensions for EnumerableSetExtensions.ClearableBytes32Set;
+
   type KeyId is bytes32;
   type ValueId is bytes32;
 
-  // first entity is called a "One"
-  struct Key {
-    // needed to delete a "One"
-    uint256 _oneListPointer;
-    // One has many "Many"
-    ValueId[] _valueIds;
-    mapping(ValueId => uint256) _valueIdsIndex; // valueId => row of local _valueIds
-    // more app data
-  }
-
-  // other entity is called a "Many"
-  struct Value {
-    // needed to delete a "Many"
-    uint256 _valueIdsIndex;
-    // many has exactly one "One"
-    KeyId _keyId;
-    // add app fields
-  }
-
   struct Mapping {
+    EnumerableSet.Bytes32Set _keyIds;
+    EnumerableSet.Bytes32Set _valueIds;
     mapping(KeyId => Key) _keys;
-    KeyId[] _keyIds;
     mapping(ValueId => Value) _values;
-    ValueId[] _valueIds;
+  }
+  struct Key {
+    string name;
+    bool delux;
+    uint price;
+
+    EnumerableSetExtensions.ClearableBytes32Set _values;
+  }
+  struct Value {
+    string name;
+    bool delux;
+    uint price;
+
+    KeyId _keyId;
   }
 
-  function keyCount(Mapping storage db)
+  function exists(Mapping storage map, KeyId key)
+    internal
+    view
+    returns (bool)
+  {
+    return map._keyIds.contains(KeyId.unwrap(key));
+  }
+
+  function exists(Mapping storage map, KeyId key, ValueId value)
+    internal
+    view
+    returns (bool)
+  {
+    bytes32 val = ValueId.unwrap(value);
+    return map._keys[key]._values.contains(val) &&
+           map._valueIds.contains(val);
+  }
+
+  function keys(Mapping storage map)
+    internal
+    view
+    returns(KeyId[] memory)
+  {
+    return _toKeyIds(map._keyIds.values());
+  }
+
+  function values(Mapping storage map,
+                  KeyId key)
+    internal
+    view
+    returns(ValueId[] memory)
+  {
+    require(exists(map, key), "key does not exist");
+    return _toValueIds(map._keys[key]._values.values());
+  }
+
+  function count(Mapping storage map,
+                      KeyId key)
     internal
     view
     returns(uint256)
   {
-    return db._keyIds.length;
+    require(exists(map, key), "key does not exist");
+    return map._keys[key]._values.length();
   }
 
-  function getValueCount(Mapping storage db) internal view returns(uint256) {
-    return db._valueIds.length;
-  }
-
-  function getValueCount(Mapping storage db, KeyId keyId)
+  function count(Mapping storage map)
     internal
     view
     returns(uint256)
   {
-    return getValueIds(db, keyId).length;
+    return map._valueIds.length();
   }
 
-  function keyExists(Mapping storage db, KeyId keyId)
+  function insertKey(Mapping storage map, KeyId key)
     internal
-    view
-    returns(bool)
+    returns (bool)
   {
-    if(keyCount(db) == 0) return false;
-    return equals(db._keyIds[db._keys[keyId]._oneListPointer], keyId);
+    require(!exists(map, key), "key already exists");
+    return map._keyIds.add(KeyId.unwrap(key));
+    // NOTE: map._keys[key]._values contains a default EnumerableSet.Bytes32Set
   }
 
-  function valueExists(Mapping storage db, ValueId valueId)
+  function insertValue(Mapping storage map, KeyId key, ValueId value)
     internal
-    view
-    returns(bool)
+    returns (bool success)
   {
-    if (getValueCount(db) == 0) return false;
-    uint256 row = db._values[valueId]._valueIdsIndex;
-    bool retVal = equals(db._valueIds[row], valueId);
-    return retVal;
+    require(exists(map, key), "key does not exists");
+    require(!exists(map, key, value), "value already exists");
+    success = map._valueIds.add(ValueId.unwrap(value));
+    assert (success); // value addition failure
+    map._values[value]._keyId = key;
+
+    success = map._keys[key]._values.add(ValueId.unwrap(value));
   }
 
-  function getKeyIds(Mapping storage db)
+  function insert(Mapping storage map, KeyId key, ValueId value)
     internal
-    view
-    returns(KeyId[] storage)
+    returns (bool success)
   {
-    return db._keyIds;
-  }
-
-  function getValueIds(Mapping storage db,
-                       KeyId keyId)
-    internal
-    view
-    returns(ValueId[] storage)
-  {
-    require(keyExists(db, keyId), "key does not exist");
-    return db._keys[keyId]._valueIds;
-  }
-
-  // Insert
-  function insertKey(Mapping storage db, KeyId keyId)
-    internal
-    returns(bool)
-  {
-    require(!keyExists(db, keyId), "key already exists"); // duplicate key prohibited
-
-    db._keyIds.push(keyId);
-    db._keys[keyId]._oneListPointer = keyCount(db) - 1;
-    return true;
-  }
-
-  function insertValue(Mapping storage db, KeyId keyId, ValueId valueId)
-    internal
-    returns(bool)
-  {
-    require(keyExists(db, keyId), "key does not exist");
-    require(!valueExists(db, valueId), "value already exists"); // duplicate key prohibited
-
-    Value storage value = db._values[valueId];
-    db._valueIds.push(valueId);
-    value._valueIdsIndex = getValueCount(db) - 1;
-    value._keyId = keyId; // each many has exactly one "One", so this is mandatory
-
-    // We also maintain a list of "Many" that refer to the "One", so ...
-    Key storage key = db._keys[keyId];
-    key._valueIds.push(valueId);
-    key._valueIdsIndex[valueId] = key._valueIds.length - 1;
-    return true;
-  }
-
-  function insert(Mapping storage db, KeyId keyId, ValueId valueId)
-    internal
-    returns(bool success)
-  {
-    if (!keyExists(db, keyId)) {
-      success = insertKey(db, keyId);
-      if (!success) {
-        return false;
-      }
+    if (!exists(map, key)) {
+      success = insertKey(map, key);
+      assert (success); // key insertion failure
     }
-    if (!valueExists(db, valueId)) {
-      success = insertValue(db, keyId, valueId);
-    }
-    return success;
+    map._valueIds.add(ValueId.unwrap(value));
+    map._values[value]._keyId = key;
+
+    success = map._keys[key]._values.add(ValueId.unwrap(value));
   }
 
-
-  // Delete
-  function deleteKey(Mapping storage db, KeyId keyId)
+  function deleteKey(Mapping storage map, KeyId key)
     internal
-    returns(bool)
+    returns (bool success)
   {
-    require(keyExists(db, keyId), "key does not exist");
-    require(getValueIds(db, keyId).length == 0, "references values"); // this would break referential integrity
-
-    uint256 rowToDelete = db._keys[keyId]._oneListPointer;
-    KeyId keyToMove = db._keyIds[keyCount(db)-1];
-    db._keyIds[rowToDelete] = keyToMove;
-    db._keys[keyToMove]._oneListPointer = rowToDelete;
-    db._keyIds.pop();
-    delete db._keys[keyId];
-    return true;
+    require(exists(map, key), "key does not exist");
+    require(count(map, key) == 0, "references values");
+    success = map._keyIds.remove(KeyId.unwrap(key)); // Note that this will fail automatically if the key doesn't exist
+    assert(success); // key removal failure
+    delete map._keys[key];
   }
 
-  function deleteValue(Mapping storage db, ValueId valueId)
+  function deleteValue(Mapping storage map, KeyId key, ValueId value)
     internal
-    returns(bool)
+    returns (bool success)
   {
-    require(valueExists(db, valueId), "value does not exist"); // non-existant key
+    require(exists(map, key), "key does not exist");
+    require(exists(map, key, value), "value does not exist");
 
-    // delete from the Many table
-    uint256 toDeleteIndex = db._values[valueId]._valueIdsIndex;
+    success = map._valueIds.remove(ValueId.unwrap(value));
+    assert (success); // value removal failure
+    delete map._values[value];
 
-    uint256 lastIndex = getValueCount(db) - 1;
+    success = map._keys[key]._values.remove(ValueId.unwrap(value));
 
-    if (lastIndex != toDeleteIndex) {
-      ValueId lastValue = db._valueIds[lastIndex];
-
-      // Move the last value to the index where the value to delete is
-      db._valueIds[toDeleteIndex] = lastValue;
-      // Update the index for the moved value
-      db._values[lastValue]._valueIdsIndex = toDeleteIndex; // Replace lastvalue's index to valueIndex
-    }
-    db._valueIds.pop();
-
-    KeyId keyId = db._values[valueId]._keyId;
-    Key storage oneRow = db._keys[keyId];
-    toDeleteIndex = oneRow._valueIdsIndex[valueId];
-    lastIndex = oneRow._valueIds.length - 1;
-    if (lastIndex != toDeleteIndex) {
-      ValueId lastValue = oneRow._valueIds[lastIndex];
-
-      // Move the last value to the index where the value to delete is
-      oneRow._valueIds[toDeleteIndex] = lastValue;
-      // Update the index for the moved value
-      oneRow._valueIdsIndex[lastValue] = toDeleteIndex; // Replace lastvalue's index to valueIndex
-    }
-    oneRow._valueIds.pop();
-    delete oneRow._valueIdsIndex[valueId];
-    delete db._values[valueId];
-
-    if (getValueCount(db, keyId) == 0) {
-      deleteKey(db, keyId);
-    }
-    return true;
   }
 
-  function clearValues(Mapping storage db, KeyId keyId)
+  function clear(Mapping storage map, KeyId key)
     internal
-    returns(bool)
+    returns (bool success)
   {
-    require(keyExists(db, keyId), "key does not exist"); // non-existant key
+    require(exists(map, key), "key does not exist");
 
-    Debug._printTable(db, "[clearValues] BEFORE clearing");
-    // delete db._valueIds;
-    delete db._keys[keyId]._valueIds;
-    bool result = deleteKey(db, keyId);
-    Debug._printTable(db, "[clearValues] AFTER clearing");
-    return result;
+    map._keys[key]._values.clear();
+    success = deleteKey(map, key);
   }
 
-  function equals(KeyId a, KeyId b) internal pure returns (bool) {
-    return KeyId.unwrap(a) == KeyId.unwrap(b);
+  function _toKeyIds(bytes32[] memory array)
+    private
+    pure
+    returns (KeyId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
   }
 
-  function equals(ValueId a, ValueId b) internal pure returns (bool) {
-    return ValueId.unwrap(a) == ValueId.unwrap(b);
+  function _toValueIds(bytes32[] memory array)
+    private
+    pure
+    returns (ValueId[] memory result)
+  {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := array
+    }
+  }
+
+  function toKeyId(ValueId valueId) internal pure returns (KeyId) {
+    return KeyId.wrap(ValueId.unwrap(valueId));
   }
 
   function toKeyId(address addr) internal pure returns (KeyId) {
     return KeyId.wrap(bytes32(uint(uint160(addr))));
-  }
-
-  // Useful in the case where a valueId is a foreign key
-  function toKeyId(ValueId valueId) internal pure returns (KeyId) {
-    return KeyId.wrap(ValueId.unwrap(valueId));
   }
 }

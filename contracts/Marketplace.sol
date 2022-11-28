@@ -28,7 +28,7 @@ contract Marketplace is Collateral, Proofs {
   // address => RequestId
   Mappings.Mapping private activeHostRequests;
   // RequestId => SlotId
-  Mappings.Mapping private activeRequestSlots;
+  Mappings.Mapping private activeHostRequestSlots;
 
 
   constructor(
@@ -46,8 +46,8 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function myRequests() public view returns (RequestId[] memory) {
-    Mappings.ValueId[] storage valueIds =
-      activeClientRequests.getValueIds(Mappings.toKeyId(msg.sender));
+    Mappings.ValueId[] memory valueIds =
+      activeClientRequests.values(Mappings.toKeyId(msg.sender));
     return _toRequestIds(valueIds);
   }
 
@@ -57,21 +57,15 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId[] memory)
   {
     uint256 counter = 0;
-    uint256 totalSlots = activeRequestSlots.getValueCount(); // set this bigger than our possible filtered list size
-    if (totalSlots == 0) {
-      return new SlotId[](0);
-    }
+    uint256 totalSlots = activeHostRequestSlots.count(); // set this bigger than our possible filtered list size
     bytes32[] memory result = new bytes32[](totalSlots);
-    Mappings.ValueId[] storage valueIds =
-      activeHostRequests.getValueIds(Mappings.toKeyId(msg.sender));
+    Mappings.ValueId[] memory valueIds =
+      activeHostRequests.values(Mappings.toKeyId(msg.sender));
     for (uint256 i = 0; i < valueIds.length; i++) {
-      // There may exist slots that are still "active", but are part of a request
-      // that is expired but has not been set to the cancelled state yet. In that
-      // case, return an empty array.
       Mappings.KeyId keyId = Mappings.toKeyId(valueIds[i]);
-      if (activeRequestSlots.keyExists(keyId)) {
-        Mappings.ValueId[] storage slotIds =
-          activeRequestSlots.getValueIds(keyId);
+      if (activeHostRequestSlots.exists(keyId)) {
+        Mappings.ValueId[] memory slotIds =
+          activeHostRequestSlots.values(keyId);
         for (uint256 j = 0; j < slotIds.length; j++) {
           result[counter] = Mappings.ValueId.unwrap(slotIds[j]);
           counter++;
@@ -100,12 +94,12 @@ contract Marketplace is Collateral, Proofs {
     context.endsAt = block.timestamp + request.ask.duration;
     _setProofEnd(_toEndId(id), context.endsAt);
 
-    Mappings.KeyId addrBytes32 = Mappings.toKeyId(request.client);
-    activeClientRequests.insert(addrBytes32, _toValueId(id));
+    Mappings.KeyId clientKey = Mappings.toKeyId(request.client);
+    activeClientRequests.insert(clientKey, _toValueId(id));
 
-    Mappings.KeyId keyId = _toKeyId(id);
-    if (!activeRequestSlots.keyExists(keyId)) {
-      activeRequestSlots.insertKey(keyId);
+    Mappings.KeyId requestKey = _toKeyId(id);
+    if (!activeHostRequestSlots.exists(requestKey)) {
+      activeHostRequestSlots.insertKey(requestKey);
     }
 
     _createLock(_toLockId(id), request.expiry);
@@ -144,11 +138,8 @@ contract Marketplace is Collateral, Proofs {
     context.slotsFilled += 1;
 
     Mappings.KeyId sender = Mappings.toKeyId(msg.sender);
-    // address => RequestId
     activeHostRequests.insert(sender, _toValueId(requestId));
-
-    // RequestId => SlotId
-    activeRequestSlots.insert(_toKeyId(requestId), _toValueId(slotId));
+    activeHostRequestSlots.insert(_toKeyId(requestId), _toValueId(slotId));
 
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
@@ -156,6 +147,32 @@ contract Marketplace is Collateral, Proofs {
       context.startedAt = block.timestamp;
       _extendLockExpiryTo(lockId, context.endsAt);
       emit RequestFulfilled(requestId);
+    }
+  }
+
+  function _removeHostSlot(address host, RequestId requestId, SlotId slotId) internal {
+    Mappings.KeyId requestKey = _toKeyId(requestId);
+    activeHostRequestSlots.deleteValue(requestKey, _toValueId(slotId));
+
+    if (activeHostRequestSlots.count(requestKey) == 0) {
+      Mappings.KeyId hostKey = Mappings.toKeyId(host);
+      Mappings.ValueId requestValue = _toValueId(requestId);
+      activeHostRequestSlots.deleteKey(requestKey);
+      activeHostRequests.deleteValue(hostKey, requestValue);
+    }
+  }
+
+  function _removeAllHostSlots(address host, RequestId requestId) internal {
+    Mappings.KeyId hostKey = Mappings.toKeyId(host);
+    activeHostRequestSlots.clear(_toKeyId(requestId));
+    activeHostRequests.deleteValue(hostKey, _toValueId(requestId));
+  }
+
+  function _removeClientRequest(address client, RequestId requestId) internal {
+    Mappings.ValueId requestValue = _toValueId(requestId);
+    Mappings.KeyId clientKey = Mappings.toKeyId(client);
+    if (activeClientRequests.exists(clientKey, requestValue)) {
+      activeClientRequests.deleteValue(clientKey, requestValue);
     }
   }
 
@@ -175,11 +192,9 @@ contract Marketplace is Collateral, Proofs {
     // not finalised.
 
     _unexpectProofs(_toProofId(slotId));
+    _removeHostSlot(slot.host, requestId, slotId);
 
-    Mappings.ValueId valueId = _toValueId(slotId);
-    if (activeRequestSlots.valueExists(valueId)) {
-      activeRequestSlots.deleteValue(valueId);
-    }
+    address slotHost = slot.host;
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -194,8 +209,8 @@ contract Marketplace is Collateral, Proofs {
       context.state = RequestState.Failed;
       _setProofEnd(_toEndId(requestId), block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
-      activeClientRequests.deleteValue(_toValueId(requestId));
-      activeRequestSlots.clearValues(_toKeyId(requestId));
+      _removeAllHostSlots(slotHost, requestId);
+      _removeClientRequest(request.client, requestId);
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
@@ -210,20 +225,14 @@ contract Marketplace is Collateral, Proofs {
   {
     require(_isFinished(requestId), "Contract not ended");
     RequestContext storage context = _context(requestId);
-    // Request storage request = _request(requestId);
-    context.state = RequestState.Finished;
-    Mappings.ValueId valueId = _toValueId(requestId);
-    if (activeClientRequests.valueExists(valueId)) {
-      activeClientRequests.deleteValue(valueId);
-    }
+    Request storage request = _request(requestId);
     SlotId slotId = _toSlotId(requestId, slotIndex);
     Slot storage slot = _slot(slotId);
     require(!slot.hostPaid, "Already paid");
-    activeRequestSlots.deleteValue(_toValueId(slotId));
-    if (activeRequestSlots.getValueCount() == 0) {
-      activeRequestSlots.deleteKey(_toKeyId(requestId));
-      activeHostRequests.deleteValue(valueId);
-    }
+
+    context.state = RequestState.Finished;
+    _removeHostSlot(slot.host, requestId, slotId);
+    _removeClientRequest(request.client, requestId);
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
@@ -244,8 +253,9 @@ contract Marketplace is Collateral, Proofs {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    activeClientRequests.deleteValue(_toValueId(requestId));
-    activeRequestSlots.clearValues(_toKeyId(requestId));
+    // TODO: double-check that we don't want to _removeAllHostSlots() here.
+    // @markspanbroek?
+    _removeClientRequest(request.client, requestId);
     // TODO: handle dangling RequestId in activeHostRequests (for address)
     emit RequestCancelled(requestId);
 

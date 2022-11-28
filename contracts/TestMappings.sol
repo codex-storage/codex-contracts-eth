@@ -11,77 +11,78 @@ contract TestMappings {
 
   Mappings.Mapping private _map;
 
-  function getTotalValueCount() public view returns (uint256) {
-    return _map.getValueCount();
+  function totalCount() public view returns (uint256) {
+    return _map.count();
   }
 
-  function getValueCount(Mappings.KeyId keyId) public view returns (uint256) {
-    return _map.getValueCount(keyId);
+  function count(Mappings.KeyId key) public view returns (uint256) {
+    return _map.count(key);
   }
 
-  function keyExists(Mappings.KeyId keyId) public view returns (bool) {
-    return _map.keyExists(keyId);
+  function keyExists(Mappings.KeyId key) public view returns (bool) {
+    return _map.exists(key);
   }
 
-  function valueExists(Mappings.ValueId valueId)
+  function valueExists(Mappings.KeyId key, Mappings.ValueId value)
     public
     view
     returns (bool)
   {
-    return _map.valueExists(valueId);
+    return _map.exists(key, value);
   }
 
-  function getKeyIds() public view returns (Mappings.KeyId[] memory) {
-    return _map.getKeyIds();
+  function keys() public view returns (Mappings.KeyId[] memory) {
+    return _map.keys();
   }
 
-  function getValueIds(Mappings.KeyId keyId)
+  function values(Mappings.KeyId key)
     public
     view
     returns (Mappings.ValueId[] memory)
   {
-    return _map.getValueIds(keyId);
+    return _map.values(key);
   }
 
-  function insertKey(Mappings.KeyId keyId) public returns (bool success) {
-    success = _map.insertKey(keyId);
+  function insertKey(Mappings.KeyId key) public returns (bool success) {
+    success = _map.insertKey(key);
     emit OperationResult(success);
   }
 
-  function insertValue(Mappings.KeyId keyId, Mappings.ValueId valueId)
+  function insertValue(Mappings.KeyId key, Mappings.ValueId value)
     public
     returns (bool success)
   {
-    success = _map.insertValue(keyId, valueId);
+    success = _map.insertValue(key, value);
     emit OperationResult(success);
   }
 
-  function insert(Mappings.KeyId keyId, Mappings.ValueId valueId)
+  function insert(Mappings.KeyId key, Mappings.ValueId value)
     public
     returns (bool success)
   {
-    success = _map.insert(keyId, valueId);
+    success = _map.insert(key, value);
     emit OperationResult(success);
   }
 
-  function deleteKey(Mappings.KeyId keyId) public returns (bool success) {
-    success = _map.deleteKey(keyId);
+  function deleteKey(Mappings.KeyId key) public returns (bool success) {
+    success = _map.deleteKey(key);
     emit OperationResult(success);
   }
 
-  function deleteValue(Mappings.ValueId valueId)
+  function deleteValue(Mappings.KeyId key,
+                       Mappings.ValueId value)
     public
     returns (bool success)
   {
-    success = _map.deleteValue(valueId);
+    success = _map.deleteValue(key, value);
     emit OperationResult(success);
   }
 
-  function clearValues(Mappings.KeyId keyId)
+  function clear(Mappings.KeyId key)
     public
     returns (bool success)
   {
-    success = _map.clearValues(keyId);
+    success = _map.clear(key);
     emit OperationResult(success);
   }
 }
