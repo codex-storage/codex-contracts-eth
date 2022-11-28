@@ -758,59 +758,16 @@ describe("Marketplace", function () {
       ])
     })
 
-    it("removes active slots for all hosts in a request when it fails", async function () {
-      let halfOfSlots = request.ask.slots / 2
-
-      // fill half the slots with host1
-      for (let i = 0; i < Math.floor(halfOfSlots); i++) {
-        await marketplace.fillSlot(requestId(request), i, proof)
-      }
-
-      // fill other half of slots with host2
-      switchAccount(host2)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
-      for (let i = Math.floor(halfOfSlots); i < request.ask.slots; i++) {
-        await marketplace.fillSlot(requestId(request), i, proof)
-      }
-
-      await waitUntilFailed(marketplace, request, slot)
-      expect(await marketplace.mySlots()).to.have.members([])
-      switchAccount(host)
-      expect(await marketplace.mySlots()).to.have.members([])
-    })
-
-    it("doesn't remove active slots for hosts in request that didn't fail", async function () {
-      // start first request
-      await waitUntilStarted(marketplace, request, proof)
-
-      // start a second request
-      let request2 = await exampleRequest()
-      request2.client = client.address
-      switchAccount(client)
-      await token.approve(marketplace.address, price(request2))
-      await marketplace.requestStorage(request2)
-      switchAccount(host)
-      await waitUntilStarted(marketplace, request2, proof)
-
-      // wait until first request fails
-      await waitUntilFailed(marketplace, request, slot)
-
-      // check that our active slots only contains slotIds from second request
-      let expected = []
-      let expectedSlot = { ...slot, index: 0, request: requestId(request2) }
-      for (let i = 0; i < request2.ask.slots; i++) {
-        expectedSlot.index = i
-        let id = slotId(expectedSlot)
-        expected.push(id)
-      }
-      expect(await marketplace.mySlots()).to.have.members(expected)
-    })
-
     it("removes slot from list when slot is paid out", async function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+    })
+
+    it("removes slot from list when failed slot is freed", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFailed(marketplace, request, slot)
       expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
     })
   })
