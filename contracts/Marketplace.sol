@@ -22,7 +22,6 @@ contract Marketplace is Collateral, Proofs {
   mapping(SlotId => Slot) private slots;
   mapping(address => EnumerableSet.Bytes32Set) private requestsPerClient; // purchasing
   mapping(address => EnumerableSet.Bytes32Set) private slotsPerHost; // sales
-  mapping(SlotId => RequestId) private requestForSlot;
 
   constructor(
     IERC20 _token,
@@ -42,12 +41,8 @@ contract Marketplace is Collateral, Proofs {
     return _toRequestIds(requestsPerClient[msg.sender].values());
   }
 
-  function isActive(bytes32 slot) private view returns (bool) {
-    return state(requestForSlot[SlotId.wrap(slot)]) != RequestState.Failed;
-  }
-
   function mySlots() public view returns (SlotId[] memory) {
-    return _toSlotIds(slotsPerHost[msg.sender].filter(isActive));
+    return _toSlotIds(slotsPerHost[msg.sender].values());
   }
 
   function isWithdrawAllowed() internal view override returns (bool) {
@@ -111,7 +106,6 @@ contract Marketplace is Collateral, Proofs {
     context.slotsFilled += 1;
 
     slotsPerHost[slot.host].add(SlotId.unwrap(slotId));
-    requestForSlot[slotId] = requestId;
 
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
