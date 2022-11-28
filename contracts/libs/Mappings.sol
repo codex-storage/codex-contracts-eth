@@ -20,17 +20,10 @@ library Mappings {
     mapping(ValueId => Value) _values;
   }
   struct Key {
-    string name;
-    bool delux;
-    uint price;
-
     EnumerableSetExtensions.ClearableBytes32Set _values;
   }
-  struct Value {
-    string name;
-    bool delux;
-    uint price;
 
+  struct Value {
     KeyId _keyId;
   }
 
@@ -118,10 +111,9 @@ library Mappings {
       success = insertKey(map, key);
       assert (success); // key insertion failure
     }
-    map._valueIds.add(ValueId.unwrap(value));
-    map._values[value]._keyId = key;
-
-    success = map._keys[key]._values.add(ValueId.unwrap(value));
+    if (!exists(map, key, value)) {
+      success = insertValue(map, key, value);
+    }
   }
 
   function deleteKey(Mapping storage map, KeyId key)
