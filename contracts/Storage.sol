@@ -37,7 +37,11 @@ contract Storage is Collateral, Marketplace {
 
   function getRequest(DAL.RequestId requestId) public view returns (Marketplace.Request memory) {
     DAL.Request storage request = _request(requestId);
-    return Marketplace.Request(request.client, request.ask, request.content, request.expiry, request.nonce);
+    return Request(DAL.ClientId.unwrap(request.client),
+                   request.ask,
+                   request.content,
+                   request.expiry,
+                   request.nonce);
     // return _request(requestId);
   }
 
@@ -46,8 +50,8 @@ contract Storage is Collateral, Marketplace {
     // return _slot(slotId);
   }
 
-  function getHost(DAL.SlotId slotId) public view returns (address) {
-    return _slot(slotId).host;
+  function getHost(DAL.SlotId slotId) public view returns (DAL.HostId) {
+    return _host(slotId);
     // return _host(slotId);
   }
 
@@ -90,7 +94,7 @@ contract Storage is Collateral, Marketplace {
   {
     ProofId proofId = _toProofId(slotId);
     _markProofAsMissing(proofId, period);
-    address host = _host(slotId);
+    address host = DAL.HostId.unwrap(_host(slotId));
     if (_missed(_toProofId(slotId)) % slashMisses == 0) {
         _slash(host, slashPercentage);
 

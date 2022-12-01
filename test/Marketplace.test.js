@@ -104,7 +104,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Request already exists"
+        "request already exists"
       )
     })
   })
@@ -778,6 +778,8 @@ describe("Marketplace", function () {
 
       await waitUntilFailed(marketplace, request, slot)
       switchAccount(host)
+      expect(await marketplace.mySlots()).to.deep.equal([])
+      switchAccount(host2)
       expect(await marketplace.mySlots()).to.deep.equal([])
     })
 

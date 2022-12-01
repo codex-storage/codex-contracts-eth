@@ -2,46 +2,46 @@
 // inspired by: https://bitbucket.org/rhitchens2/soliditystoragepatterns/src/master/OneToMany.sol
 pragma solidity ^0.8.8;
 
-import "./EnumerableSetExtensions.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "../Marketplace.sol";
 import "./Utils.sol";
 
 library DAL {
 
   using EnumerableSet for EnumerableSet.Bytes32Set;
-  using EnumerableSet for EnumerableSet.AddressSet;
-  using EnumerableSetExtensions for EnumerableSetExtensions.ClearableBytes32Set;
 
   type RequestId is bytes32;
   type SlotId is bytes32;
+  type ClientId is address;
+  type HostId is address;
 
   struct Client {
-    address addr; // PK
+    ClientId id; // PK
 
-    EnumerableSetExtensions.ClearableBytes32Set activeRequests;
+    EnumerableSet.Bytes32Set requests;
   }
 
   struct Host {
-    address addr; // PK
+    HostId id; // PK
 
-    EnumerableSetExtensions.ClearableBytes32Set activeSlots;
-    EnumerableSetExtensions.ClearableBytes32Set activeRequests;
+    EnumerableSet.Bytes32Set slots;
+    EnumerableSet.Bytes32Set requests;
   }
 
   struct Request {
     RequestId id;
-    address client;
+    ClientId client;
     Ask ask;
     Content content;
     uint256 expiry; // time at which this request expires
     bytes32 nonce; // random nonce to differentiate between similar requests
 
-    EnumerableSetExtensions.ClearableBytes32Set slots;
+    EnumerableSet.Bytes32Set slots;
   }
 
   struct Slot {
     SlotId id;
-    address host;
+    HostId host;
     bool hostPaid;
     RequestId requestId;
   }
@@ -74,98 +74,95 @@ library DAL {
   struct Database {
     mapping(RequestId => Request) requests;
     mapping(SlotId => Slot) slots;
-    mapping(address => Client) clients;
-    mapping(address => Host) hosts;
+    mapping(ClientId => Client) clients;
+    mapping(HostId => Host) hosts;
   }
 
 
 
   /// *** CREATE OPERATIONS *** ///
 
-  function insertRequest(Database storage db,
-                         RequestId requestId,
-                         address client,
-                         Ask memory ask,
-                         Content memory content,
-                         uint256 expiry,
-                         bytes32 nonce)
+  function insert(Database storage db,
+                  RequestId requestId,
+                  ClientId clientId,
+                  Ask memory ask,
+                  Content memory content,
+                  uint256 expiry,
+                  bytes32 nonce)
     internal
-    returns (DAL.Request storage)
   {
-    require(clientExists(db, client), "client does not exist");
+    require(!isDefault(requestId), "request id required");
+    require(!_isDefault(clientId), "client address required");
+    require(exists(db, clientId), "client does not exist");
     require(!exists(db, requestId), "request already exists");
 
     Request storage r = db.requests[requestId];
     r.id = requestId;
-    r.client = client;
+    r.client = clientId;
     r.ask = ask;
     r.content = content;
     r.expiry = expiry;
     r.nonce = nonce;
-    return r;
   }
 
-  function insertClient(Database storage db, address client) internal {
-    // NOTE: by default db.clients[client].activeRequests already exists but has a default value
-    db.clients[client].addr = client;
+  function insert(Database storage db, ClientId clientId) internal {
+    require (!exists(db, clientId), "client already exists");
+    require (!_isDefault(clientId), "address required");
+    Client storage c = db.clients[clientId];
+    c.id = clientId;
+    // NOTE: by default db.clients[client].requests already exists but has a default value
   }
 
-  function insertHost(Database storage db, address host) internal {
-    // NOTE: by default db.hosts[host].activeSlots already exists but has a default value
-    db.hosts[host].addr = host;
+  function insert(Database storage db, HostId hostId) internal {
+    require (!exists(db, hostId), "host already exists");
+    require (!_isDefault(hostId), "address required");
+    Host storage h = db.hosts[hostId];
+    h.id = hostId;
+    // NOTE: by default db.hosts[host].slots already exists but has a default value
   }
 
-  function insertSlot(Database storage db, Slot memory slot) internal {
+  function insert(Database storage db, Slot memory slot ) internal {
+    require(!_isDefault(slot.id), "slot id required");
+    require(!isDefault(slot.requestId), "request id required");
     require(exists(db, slot.requestId), "request does not exist");
     require(!exists(db, slot.id), "slot already exists");
-    require(hostExists(db, slot.host), "host does not exist");
+    require(exists(db, slot.host), "host does not exist");
     db.slots[slot.id] = slot;
 
     Request storage request = db.requests[slot.requestId];
     request.slots.add(SlotId.unwrap(slot.id));
   }
 
-  function insertActiveRequestForClient(Database storage db,
-                                     RequestId requestId)
+  function insert(Database storage db,
+                  EnumerableSet.Bytes32Set storage requests,
+                  RequestId requestId)
     internal
   {
     require(exists(db, requestId), "request does not exist");
-    Request storage request = db.requests[requestId];
-    require(clientExists(db, request.client), "client does not exist");
 
-    Client storage client = db.clients[request.client];
-    client.activeRequests.add(RequestId.unwrap(requestId));
-  }
-  function insertActiveRequestForHost(Database storage db,
-                                   address host,
-                                   RequestId requestId)
-    internal
-  {
-    require(exists(db, requestId), "request does not exist");
-    require(hostExists(db, host), "host does not exist");
-
-    Host storage h = db.hosts[host];
-    h.activeRequests.add(RequestId.unwrap(requestId));
+    requests.add(RequestId.unwrap(requestId));
   }
 
-  function insertActiveSlotForHost(Database storage db, SlotId slotId)
+  function insert(Database storage db,
+                  EnumerableSet.Bytes32Set storage slots,
+                  SlotId slotId)
     internal
   {
     require(exists(db, slotId), "slot does not exist");
     Slot storage slot = db.slots[slotId];
-    require(hostExists(db, slot.host), "host does not exist");
+    require(exists(db, slot.host), "host does not exist");
     Host storage host = db.hosts[slot.host];
-    require(host.activeRequests.contains(RequestId.unwrap(slot.requestId)),
+    require(host.requests.contains(RequestId.unwrap(slot.requestId)),
       "slot request not active");
 
-    host.activeSlots.add(SlotId.unwrap(slotId));
+    slots.add(SlotId.unwrap(slotId));
   }
 
 
 
   /// *** READ OPERATIONS *** ///
 
-  function selectRequest(Database storage db, RequestId requestId)
+  function select(Database storage db, RequestId requestId)
     internal
     view
     returns (Request storage)
@@ -174,7 +171,7 @@ library DAL {
     return db.requests[requestId];
   }
 
-  function selectSlot(Database storage db, SlotId slotId)
+  function select(Database storage db, SlotId slotId)
     internal
     view
     returns (Slot storage)
@@ -183,22 +180,22 @@ library DAL {
     return db.slots[slotId];
   }
 
-  function selectClient(Database storage db, address addr)
+  function select(Database storage db, ClientId clientId)
     internal
     view
     returns (Client storage)
   {
-    require(clientExists(db, addr), "Client does not exist");
-    return db.clients[addr];
+    require(exists(db, clientId), "Client does not exist");
+    return db.clients[clientId];
   }
 
-  function selectHost(Database storage db, address addr)
+  function select(Database storage db, HostId hostId)
     internal
     view
     returns (Host storage)
   {
-    require(hostExists(db, addr), "Host does not exist");
-    return db.hosts[addr];
+    require(exists(db, hostId), "Host does not exist");
+    return db.hosts[hostId];
   }
 
   function exists(Database storage db, RequestId requestId)
@@ -206,7 +203,8 @@ library DAL {
     view
     returns (bool)
   {
-    return db.requests[requestId].client != address(0);
+    Request storage request = db.requests[requestId];
+    return !isDefault(request.id) && !_isDefault(request.client);
   }
 
   function exists(Database storage db, SlotId slotId)
@@ -214,23 +212,27 @@ library DAL {
     view
     returns (bool)
   {
-    return !isDefault(db.slots[slotId].requestId);
+    Slot storage slot = db.slots[slotId];
+    Request storage request = db.requests[slot.requestId];
+    return request.slots.contains(SlotId.unwrap(slotId)) &&
+           !_isDefault(slot.id) &&
+           !isDefault(slot.requestId);
   }
 
-  function clientExists(Database storage db, address client)
+  function exists(Database storage db, ClientId clientId)
     internal
     view
     returns (bool)
   {
-    return db.clients[client].addr != address(0);
+    return !_isDefault(db.clients[clientId].id);
   }
 
-  function hostExists(Database storage db, address host)
+  function exists(Database storage db, HostId hostId)
     internal
     view
     returns (bool)
   {
-    return db.hosts[host].addr != address(0);
+    return !_isDefault(db.hosts[hostId].id);
   }
 
 
@@ -238,107 +240,76 @@ library DAL {
 
   /// *** DELETE OPERATIONS *** ///
 
-  function deleteRequest(Database storage db, RequestId requestId) internal {
-    require(exists(db, requestId), "request does not exist");
-    Request storage request = db.requests[requestId];
+  function remove(Database storage db, Request storage request) internal {
     require(request.slots.length() == 0, "references slots");
-    require(clientExists(db, request.client), "client does not exist");
+    require(exists(db, request.client), "client does not exist");
     Client storage client = db.clients[request.client];
-    bytes32 bRequestId = RequestId.unwrap(requestId);
-    require(!client.activeRequests.contains(bRequestId), "active request refs");
+    bytes32 bRequestId = RequestId.unwrap(request.id);
+    require(!client.requests.contains(bRequestId), "active request refs");
 
-    delete db.requests[requestId];
+    delete db.requests[request.id];
   }
 
-  function deleteClient(Database storage db, address addr) internal {
-    require(clientExists(db, addr), "client does not exist");
-    Client storage c = db.clients[addr];
-    require(c.activeRequests.length() == 0, "active request refs");
+  function remove(Database storage db, Client storage client) internal {
+    require(client.requests.length() == 0, "active request refs");
 
-    delete db.clients[addr];
+    delete db.clients[client.id];
   }
 
-  function deleteHost(Database storage db, address addr) internal {
-    require(hostExists(db, addr), "host does not exist");
-    Host storage h = db.hosts[addr];
-    require(h.activeSlots.length() == 0, "active slot refs");
+  function remove(Database storage db, Host storage host) internal {
+    require(host.slots.length() == 0, "active slot refs");
 
-    delete db.hosts[addr];
+    delete db.hosts[host.id];
   }
 
-  function deleteSlot(Database storage db, SlotId slotId) internal {
-    require(exists(db, slotId), "slot does not exist");
-    Slot storage slot = db.slots[slotId];
+  function remove(Database storage db, Slot storage slot) internal {
     require(exists(db, slot.requestId), "request does not exist");
     Host storage host = db.hosts[slot.host];
-    bytes32 bSlotId = SlotId.unwrap(slotId);
-    require(!host.activeSlots.contains(bSlotId), "active slot refs");
+    bytes32 bSlotId = SlotId.unwrap(slot.id);
+    require(!host.slots.contains(bSlotId), "active slot refs");
 
     Request storage request = db.requests[slot.requestId];
     request.slots.remove(bSlotId);
-    delete db.slots[slotId];
+    delete db.slots[slot.id];
   }
 
-  function deleteActiveRequestForClient(Database storage db,
-                                        RequestId requestId)
+  function remove(Database storage db,
+                  EnumerableSet.Bytes32Set storage requests,
+                  RequestId requestId)
     internal
   {
     require(exists(db, requestId), "request does not exist");
-    Request storage request = db.requests[requestId];
-    require(clientExists(db, request.client), "client does not exist");
 
-    Client storage client = db.clients[request.client];
-    client.activeRequests.remove(RequestId.unwrap(requestId));
+    requests.remove(RequestId.unwrap(requestId));
   }
 
-  function deleteActiveRequestForHost(Database storage db,
-                                      address host,
-                                      RequestId requestId)
+  function remove(Database storage db,
+                  EnumerableSet.Bytes32Set storage slots,
+                  SlotId slotId)
     internal
-  {
-    require(exists(db, requestId), "request does not exist");
-    require(hostExists(db, host), "host does not exist");
-    // NOTE: we are not enforcing relationship integrity with
-    // host.activeRequests as a workaround to avoid iterating all activeSlots
-    // and removing them. The result of this is that there may
-    // exist "dangling" host.activeSlots that do not have a corresponding
-    // activeRequest, which should be considered when reading the values.
-    // Because of this, a join between activeSlots and activeRequests should be
-    // performed to get an accurate picture, as in `activeSlotsForHost`.
-
-    Host storage h = db.hosts[host];
-    h.activeRequests.remove(RequestId.unwrap(requestId));
-  }
-
-  function deleteActiveSlotForHost(Database storage db,
-                                SlotId slotId)
-    internal
-    returns (bool success)
   {
     require(exists(db, slotId), "slot does not exist");
-    Slot storage slot = db.slots[slotId];
-    require(hostExists(db, slot.host), "host does not exist");
 
-    Host storage host = db.hosts[slot.host];
-    success = host.activeSlots.remove(SlotId.unwrap(slotId));
+    slots.remove(SlotId.unwrap(slotId));
   }
 
 
 
-  /// CALCULATED PROPERTIES
+  /// *** CALCULATED PROPERTIES *** ///
 
   // WARNING: calling this in a transaction may cause an out of gas exception
-  function activeSlotsForHost(Database storage db, Host storage host)
+  function activeSlots(Database storage db, Host storage host)
     internal
     view
     returns (SlotId[] memory)
   {
-    bytes32[] memory result = new bytes32[](host.activeSlots.length());
+    // perform an inner join on host.slots and host.requests
+    bytes32[] memory result = new bytes32[](host.slots.length());
     uint256 counter = 0;
-    for (uint256 i = 0; i < host.activeSlots.length(); i++) {
-      bytes32 slotId = host.activeSlots.at(i);
-      Slot storage slot = selectSlot(db, SlotId.wrap(slotId));
-      if (host.activeRequests.contains(RequestId.unwrap(slot.requestId))) {
+    for (uint256 i = 0; i < host.slots.length(); i++) {
+      bytes32 slotId = host.slots.at(i);
+      Slot storage slot = select(db, SlotId.wrap(slotId));
+      if (host.requests.contains(RequestId.unwrap(slot.requestId))) {
         result[counter] = slotId;
         counter++;
       }
@@ -346,7 +317,9 @@ library DAL {
     return toSlotIds(Utils.resize(result, counter));
   }
 
-  /// CONVERSIONS
+
+
+  /// *** CONVERSIONS *** ///
 
   function toRequestIds(bytes32[] memory array)
     internal
@@ -378,11 +351,33 @@ library DAL {
     return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
   }
 
-  /// COMPARISONS
+  /// *** COMPARISONS *** ///
+
   function isDefault(RequestId requestId) internal pure returns (bool) {
     return equals(requestId, RequestId.wrap(0));
   }
+
+  function _isDefault(SlotId slotId) private pure returns (bool) {
+    return equals(slotId, SlotId.wrap(0));
+  }
+
+  function _isDefault(address addr) private pure returns (bool) {
+    return addr == address(0);
+  }
+
+  function _isDefault (ClientId clientId) private pure returns (bool) {
+    return _isDefault(ClientId.unwrap(clientId));
+  }
+
+  function _isDefault (HostId hostId) private pure returns (bool) {
+    return _isDefault(HostId.unwrap(hostId));
+  }
+
   function equals(RequestId a, RequestId b) internal pure returns (bool) {
     return RequestId.unwrap(a) == RequestId.unwrap(b);
+  }
+
+  function equals(SlotId a, SlotId b) internal pure returns (bool) {
+    return SlotId.unwrap(a) == SlotId.unwrap(b);
   }
 }
