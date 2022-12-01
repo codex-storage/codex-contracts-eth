@@ -12,6 +12,6 @@ contract TestUtils {
     pure
     returns (bytes32[] memory)
   {
-    return Utils._resize(array, newSize);
+    return Utils.resize(array, newSize);
   }
 }

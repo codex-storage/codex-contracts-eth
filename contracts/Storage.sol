@@ -35,52 +35,56 @@ contract Storage is Collateral, Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function getRequest(RequestId requestId) public view returns (Request memory) {
-    return _request(requestId);
+  function getRequest(DAL.RequestId requestId) public view returns (Marketplace.Request memory) {
+    DAL.Request storage request = _request(requestId);
+    return Marketplace.Request(request.client, request.ask, request.content, request.expiry, request.nonce);
+    // return _request(requestId);
   }
 
-  function getSlot(SlotId slotId) public view returns (Slot memory) {
+  function getSlot(DAL.SlotId slotId) public view returns (DAL.Slot memory) {
     return _slot(slotId);
+    // return _slot(slotId);
   }
 
-  function getHost(SlotId slotId) public view returns (address) {
-    return _host(slotId);
+  function getHost(DAL.SlotId slotId) public view returns (address) {
+    return _slot(slotId).host;
+    // return _host(slotId);
   }
 
-  function missingProofs(SlotId slotId) public view returns (uint256) {
+  function missingProofs(DAL.SlotId slotId) public view returns (uint256) {
     return _missed(_toProofId(slotId));
   }
 
-  function isProofRequired(SlotId slotId) public view returns (bool) {
+  function isProofRequired(DAL.SlotId slotId) public view returns (bool) {
     if(!_slotAcceptsProofs(slotId)) {
       return false;
     }
     return _isProofRequired(_toProofId(slotId));
   }
 
-  function willProofBeRequired(SlotId slotId) public view returns (bool) {
+  function willProofBeRequired(DAL.SlotId slotId) public view returns (bool) {
     if(!_slotAcceptsProofs(slotId)) {
       return false;
     }
     return _willProofBeRequired(_toProofId(slotId));
   }
 
-  function getChallenge(SlotId slotId) public view returns (bytes32) {
+  function getChallenge(DAL.SlotId slotId) public view returns (bytes32) {
     if(!_slotAcceptsProofs(slotId)) {
       return bytes32(0);
     }
     return _getChallenge(_toProofId(slotId));
   }
 
-  function getPointer(SlotId slotId) public view returns (uint8) {
+  function getPointer(DAL.SlotId slotId) public view returns (uint8) {
     return _getPointer(_toProofId(slotId));
   }
 
-  function submitProof(SlotId slotId, bytes calldata proof) public {
+  function submitProof(DAL.SlotId slotId, bytes calldata proof) public {
     _submitProof(_toProofId(slotId), proof);
   }
 
-  function markProofAsMissing(SlotId slotId, uint256 period)
+  function markProofAsMissing(DAL.SlotId slotId, uint256 period)
     public
     slotMustAcceptProofs(slotId)
   {

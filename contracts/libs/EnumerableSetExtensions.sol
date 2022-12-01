@@ -73,7 +73,7 @@ library EnumerableSetExtensions {
     map._index++;
   }
 
-  /// @notice Returns the length of values for a key and address.
+  /// @notice Returns the length of values for the set.
   /// @param map ClearableBytes32Set for which to get length of values
   function length(ClearableBytes32Set storage map)
     internal
@@ -81,6 +81,17 @@ library EnumerableSetExtensions {
     returns (uint256)
   {
     return _set(map).length();
+  }
+
+  /// @notice Returns the value at index provided.
+  /// @param map ClearableBytes32Set for which to get the value
+  /// @return bytes32 value at index
+  function at(ClearableBytes32Set storage map, uint256 index)
+    internal
+    view
+    returns (bytes32)
+  {
+    return _set(map).at(index);
   }
 
   /// @notice Lists all values for a key in an Bytes32SetMap

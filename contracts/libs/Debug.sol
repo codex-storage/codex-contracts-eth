@@ -27,7 +27,7 @@ library Debug {
               0x0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F) * 7);
   }
 
-  function _toHex (bytes32 data) internal pure returns (string memory) {
+  function toHex (bytes32 data) internal pure returns (string memory) {
     return string (abi.encodePacked ("0x", _toHex16 (bytes16 (data)), _toHex16 (bytes16 (data << 128))));
   }
 
@@ -46,7 +46,7 @@ library Debug {
   ///   Referenced values:    4
   ///   Unreferenced values:  1  (total values not deleted but are unused)
   ///   TOTAL Values:         5
-  function _printTable(Mappings.Mapping storage db, string memory message)
+  function printTable(Mappings.Mapping storage db, string memory message)
     internal
     view
   {
@@ -57,12 +57,12 @@ library Debug {
     uint256 referencedValues = 0;
     for(uint8 i = 0; i < db._keyIds.length(); i++) {
       bytes32 keyId = db._keyIds.at(i);
-      console.log("|", _toHex(keyId), "|                                                                    |");
+      console.log("|", toHex(keyId), "|                                                                    |");
 
       Mappings.ValueId[] memory valueIds = db.values(Mappings.KeyId.wrap(keyId));
       for(uint8 j = 0; j < valueIds.length; j++) {
         Mappings.ValueId valueId = valueIds[j];
-        console.log("|                                                                    |", _toHex(Mappings.ValueId.unwrap(valueId)), "|");
+        console.log("|                                                                    |", toHex(Mappings.ValueId.unwrap(valueId)), "|");
       }
       referencedValues += valueIds.length;
     }

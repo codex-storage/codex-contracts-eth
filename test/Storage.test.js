@@ -68,7 +68,7 @@ describe("Storage", function () {
   })
 
   it("can retrieve host that filled slot", async function () {
-    expect(await storage.getHost(slotId(slot))).to.equal(AddressZero)
+    expect(storage.getHost(slotId(slot))).to.be.revertedWith("Slot empty")
     await storage.fillSlot(slot.request, slot.index, proof)
     expect(await storage.getHost(slotId(slot))).to.equal(host.address)
   })

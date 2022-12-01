@@ -18,23 +18,23 @@ contract TestMarketplace is Marketplace {
 
   }
 
-  function isCancelled(RequestId requestId) public view returns (bool) {
+  function isCancelled(DAL.RequestId requestId) public view returns (bool) {
     return _isCancelled(requestId);
   }
 
-  function isSlotCancelled(SlotId slotId) public view returns (bool) {
+  function isSlotCancelled(DAL.SlotId slotId) public view returns (bool) {
     return _isSlotCancelled(slotId);
   }
 
-  function freeSlot(SlotId slotId) public {
+  function freeSlot(DAL.SlotId slotId) public {
     _freeSlot(slotId);
   }
 
-  function slot(SlotId slotId) public view returns (Slot memory) {
+  function slot(DAL.SlotId slotId) public view returns (DAL.Slot memory) {
     return _slot(slotId);
   }
 
-  function testAcceptsProofs(SlotId slotId)
+  function testAcceptsProofs(DAL.SlotId slotId)
     public
     view
     slotMustAcceptProofs(slotId)

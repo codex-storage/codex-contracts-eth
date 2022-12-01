@@ -805,7 +805,7 @@ describe("Marketplace", function () {
         let id = slotId(expectedSlot)
         expected.push(id)
       }
-      expect(await marketplace.mySlots()).to.deep.equal(expected)
+      expect(await marketplace.mySlots()).to.deep.equal(expected.reverse())
     })
 
     it("removes slots from list when request finishes", async function () {
