@@ -3,7 +3,6 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../Marketplace.sol";
 import "./Utils.sol";
 
 library DAL {
@@ -18,18 +17,18 @@ library DAL {
   struct Client {
     ClientId id; // PK
 
-    EnumerableSet.Bytes32Set requests;
+    EnumerableSet.Bytes32Set requests; // FKs
   }
 
   struct Host {
     HostId id; // PK
 
-    EnumerableSet.Bytes32Set slots;
-    EnumerableSet.Bytes32Set requests;
+    EnumerableSet.Bytes32Set slots; // FKs
+    EnumerableSet.Bytes32Set requests; // FKs
   }
 
   struct Request {
-    RequestId id;
+    RequestId id; // PK
     ClientId client;
     Ask ask;
     Content content;
@@ -40,10 +39,10 @@ library DAL {
   }
 
   struct Slot {
-    SlotId id;
-    HostId host;
+    SlotId id; // PK
+    HostId host; // FK
     bool hostPaid;
-    RequestId requestId;
+    RequestId requestId; // FK
   }
 
   struct Ask {
@@ -246,6 +245,8 @@ library DAL {
     Client storage client = db.clients[request.client];
     bytes32 bRequestId = RequestId.unwrap(request.id);
     require(!client.requests.contains(bRequestId), "active request refs");
+    // TODO: iterate all request's hosts and check that host.requests doesn't
+    // have requestId
 
     delete db.requests[request.id];
   }
@@ -279,6 +280,8 @@ library DAL {
     internal
   {
     require(exists(db, requestId), "request does not exist");
+    // TODO: check that host.slots doesn't have a slot belonging to the request
+    // being removed
 
     requests.remove(RequestId.unwrap(requestId));
   }
@@ -291,6 +294,26 @@ library DAL {
     require(exists(db, slotId), "slot does not exist");
 
     slots.remove(SlotId.unwrap(slotId));
+  }
+
+  // WARNING: this may cause a transaction to run out of gas!
+  function clearSlots(Database storage db,
+                      Host storage host,
+                      RequestId requestId,
+                      uint256 maxIterations)
+    internal
+  {
+    require(maxIterations > 0, "maxIterations must be > 0");
+    require(host.slots.length() <= maxIterations, "iterations out of bounds");
+
+    for (uint256 i = 0; i < host.slots.length(); i++) {
+      bytes32 slotId = host.slots.at(i);
+      Slot storage slot = select(db, SlotId.wrap(slotId));
+      if (equals(slot.requestId, requestId)) {
+        host.slots.remove(slotId);
+      }
+    }
+    remove(db, host.requests, requestId);
   }
 
 

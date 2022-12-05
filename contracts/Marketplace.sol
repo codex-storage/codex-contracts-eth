@@ -11,11 +11,13 @@ import "./libs/DAL.sol";
 contract Marketplace is Collateral, Proofs {
   using DAL for DAL.Database;
   using EnumerableSet for EnumerableSet.Bytes32Set;
+  using DAL for EnumerableSet.Bytes32Set;
 
   uint256 public immutable collateral;
   MarketplaceFunds private funds;
   mapping(DAL.RequestId => RequestContext) private requestContexts;
   DAL.Database private db;
+  uint16 private constant MAX_SLOTS = 256;
 
   constructor(
     IERC20 _token,
@@ -45,6 +47,8 @@ contract Marketplace is Collateral, Proofs {
     public
     marketplaceInvariant
   {
+    require(request.ask.slots <= MAX_SLOTS, "Max slots exceeded");
+    require(request.ask.maxSlotLoss <= MAX_SLOTS, "Max slot loss exceeded");
     require(request.client == msg.sender, "Invalid client address");
 
     DAL.RequestId requestId = _toRequestId(request);
@@ -152,7 +156,14 @@ contract Marketplace is Collateral, Proofs {
 
       DAL.Client storage client = db.select(request.client);
       db.remove(client.requests, requestId);
-      db.remove(host.requests, requestId);
+
+      // Remove all request's slots from hosts.slots. This is an expensive
+      // operation as it iterates all slots and removes them one-by-one.
+      // An alternative is to use EnumerableExtensions.ClearableBytes32Set
+      // for host.slots instead, however this would not free any storage
+      // but instead use a new EnumerableSet.Bytes32Set each time it is cleared.
+      db.clearSlots(host, requestId, MAX_SLOTS);
+
       emit RequestFailed(requestId);
 
       // TODO: burn all remaining slot collateral (note: slot collateral not
