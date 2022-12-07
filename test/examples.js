@@ -40,5 +40,12 @@ const exampleLock = async () => {
 const exampleAddress = () => {
   return getAddress(hexlify(randomBytes(20)))
 }
+const zeroBytesHex = (bytes) => {
+  let hex = "0x"
+  for (let i = 0; i < bytes; i++) {
+    hex += "00"
+  }
+  return hex
+}
 
-module.exports = { exampleRequest, exampleLock, exampleAddress }
+module.exports = { exampleRequest, exampleLock, exampleAddress, zeroBytesHex }

@@ -11,7 +11,6 @@ import "./libs/DAL.sol";
 contract Marketplace is Collateral, Proofs {
   using DAL for DAL.Database;
   using EnumerableSet for EnumerableSet.Bytes32Set;
-  using DAL for EnumerableSet.Bytes32Set;
 
   uint256 public immutable collateral;
   MarketplaceFunds private funds;

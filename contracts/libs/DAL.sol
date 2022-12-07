@@ -84,8 +84,8 @@ library DAL {
   function insert(Database storage db,
                   RequestId requestId,
                   ClientId clientId,
-                  Ask memory ask,
-                  Content memory content,
+                  Ask calldata ask,
+                  Content calldata content,
                   uint256 expiry,
                   bytes32 nonce)
     internal
@@ -104,6 +104,18 @@ library DAL {
     r.nonce = nonce;
   }
 
+  function insert(Database storage db, Slot memory slot ) internal {
+    require(!_isDefault(slot.id), "slot id required");
+    require(!isDefault(slot.requestId), "request id required");
+    require(exists(db, slot.requestId), "request does not exist");
+    require(!exists(db, slot.id), "slot already exists");
+    require(exists(db, slot.host), "host does not exist");
+    db.slots[slot.id] = slot;
+
+    Request storage request = db.requests[slot.requestId];
+    request.slots.add(SlotId.unwrap(slot.id));
+  }
+
   function insert(Database storage db, ClientId clientId) internal {
     require (!exists(db, clientId), "client already exists");
     require (!_isDefault(clientId), "address required");
@@ -118,18 +130,6 @@ library DAL {
     Host storage h = db.hosts[hostId];
     h.id = hostId;
     // NOTE: by default db.hosts[host].slots already exists but has a default value
-  }
-
-  function insert(Database storage db, Slot memory slot ) internal {
-    require(!_isDefault(slot.id), "slot id required");
-    require(!isDefault(slot.requestId), "request id required");
-    require(exists(db, slot.requestId), "request does not exist");
-    require(!exists(db, slot.id), "slot already exists");
-    require(exists(db, slot.host), "host does not exist");
-    db.slots[slot.id] = slot;
-
-    Request storage request = db.requests[slot.requestId];
-    request.slots.add(SlotId.unwrap(slot.id));
   }
 
   function insert(Database storage db,
@@ -251,6 +251,17 @@ library DAL {
     delete db.requests[request.id];
   }
 
+  function remove(Database storage db, Slot storage slot) internal {
+    require(exists(db, slot.requestId), "request does not exist");
+    Host storage host = db.hosts[slot.host];
+    bytes32 bSlotId = SlotId.unwrap(slot.id);
+    require(!host.slots.contains(bSlotId), "active slot refs");
+
+    Request storage request = db.requests[slot.requestId];
+    request.slots.remove(bSlotId);
+    delete db.slots[slot.id];
+  }
+
   function remove(Database storage db, Client storage client) internal {
     require(client.requests.length() == 0, "active request refs");
 
@@ -261,17 +272,6 @@ library DAL {
     require(host.slots.length() == 0, "active slot refs");
 
     delete db.hosts[host.id];
-  }
-
-  function remove(Database storage db, Slot storage slot) internal {
-    require(exists(db, slot.requestId), "request does not exist");
-    Host storage host = db.hosts[slot.host];
-    bytes32 bSlotId = SlotId.unwrap(slot.id);
-    require(!host.slots.contains(bSlotId), "active slot refs");
-
-    Request storage request = db.requests[slot.requestId];
-    request.slots.remove(bSlotId);
-    delete db.slots[slot.id];
   }
 
   function remove(Database storage db,
