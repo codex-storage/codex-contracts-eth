@@ -107,6 +107,22 @@ describe("Marketplace", function () {
         "request already exists"
       )
     })
+
+    it("rejects request with more than 256 slots", async function () {
+      await token.approve(marketplace.address, price(request) * 2)
+      request.ask.slots = 257
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Max slots exceeded"
+      )
+    })
+
+    it("rejects request with more than 256 max slot loss", async function () {
+      await token.approve(marketplace.address, price(request) * 2)
+      request.ask.maxSlotLoss = 257
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Max slot loss exceeded"
+      )
+    })
   })
 
   describe("filling a slot", function () {
@@ -815,6 +831,32 @@ describe("Marketplace", function () {
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.payoutSlot(slot.request, slot.index)
       expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+    })
+  })
+
+  describe.only("gas reporting limits", function () {
+    before(function () {
+      if (!process.env.REPORT_GAS) {
+        this.skip()
+      }
+    })
+    beforeEach(async function () {
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+    it("tests maximum slots with a minimum slot loss", async function () {
+      this.timeout(100000)
+
+      switchAccount(client)
+      request.ask.slots = 256
+      request.ask.maxSlotLoss = 1
+      slot.request = requestId(request)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFailed(marketplace, request, slot)
     })
   })
 })

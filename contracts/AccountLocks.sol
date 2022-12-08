@@ -10,7 +10,7 @@ pragma solidity ^0.8.8;
 contract AccountLocks {
   type LockId is bytes32;
 
-  uint256 public constant MAX_LOCKS_PER_ACCOUNT = 128;
+  uint256 public constant MAX_LOCKS_PER_ACCOUNT = 256;
 
   mapping(LockId => Lock) private locks;
   mapping(address => Account) private accounts;
