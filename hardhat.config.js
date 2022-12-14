@@ -24,5 +24,6 @@ module.exports = {
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
     showTimeSpent: true,
+    coinmarketcap: process.env.CMC_API_KEY
   },
 }
