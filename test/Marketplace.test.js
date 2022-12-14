@@ -850,7 +850,7 @@ describe("Marketplace", function () {
 
       switchAccount(client)
       request.ask.slots = 256
-      request.ask.maxSlotLoss = 1
+      request.ask.maxSlotLoss = 0
       slot.request = requestId(request)
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
