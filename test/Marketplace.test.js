@@ -834,7 +834,7 @@ describe("Marketplace", function () {
     })
   })
 
-  describe.only("gas reporting limits", function () {
+  describe("gas reporting limits", function () {
     before(function () {
       if (!process.env.REPORT_GAS) {
         this.skip()

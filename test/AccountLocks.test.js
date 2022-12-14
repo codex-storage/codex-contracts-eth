@@ -145,6 +145,8 @@ describe("Account Locks", function () {
     }
 
     it("supports a limited amount of locks per account", async function () {
+      this.timeout(100000)
+
       for (let i = 0; i < maxlocks; i++) {
         await addLock()
       }
@@ -160,6 +162,8 @@ describe("Account Locks", function () {
     })
 
     it("handles maximum amount of locks within gas limit", async function () {
+      this.timeout(100000)
+
       let ids = []
       for (let i = 0; i < maxlocks; i++) {
         ids.push(await addLock())
