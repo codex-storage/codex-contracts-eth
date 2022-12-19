@@ -126,11 +126,6 @@ describe("Marketplace", function () {
         .withArgs(slot.request, slot.index, slotId(slot))
     })
 
-    it("locks collateral of host", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
-    })
-
     it("starts requiring storage proofs", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(0)
@@ -532,6 +527,34 @@ describe("Marketplace", function () {
       await marketplace.withdrawFunds(slot.request)
       const endBalance = await token.balanceOf(client.address)
       expect(endBalance - startBalance).to.equal(price(request))
+    })
+  })
+
+  describe("collateral locking", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    it("locks collateral of host when it fills a slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+    })
+
+    it("allows withdrawal when all slots are free", async function () {
+      let slot1 = { ...slot, index: 0 }
+      let slot2 = { ...slot, index: 1 }
+      await marketplace.fillSlot(slot1.request, slot1.index, proof)
+      await marketplace.fillSlot(slot2.request, slot2.index, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.freeSlot(slotId(slot1))
+      await expect(marketplace.withdraw()).to.be.revertedWith("Account locked")
+      await marketplace.freeSlot(slotId(slot2))
+      await expect(marketplace.withdraw()).not.to.be.reverted
     })
   })
 
