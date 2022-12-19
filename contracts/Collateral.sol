@@ -2,9 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./AccountLocks.sol";
 
-abstract contract Collateral is AccountLocks {
+abstract contract Collateral {
   IERC20 public immutable token;
   CollateralFunds private funds;
 
@@ -39,11 +38,7 @@ abstract contract Collateral is AccountLocks {
     add(msg.sender, amount);
   }
 
-  // TODO: remove AccountLocks
-  function isWithdrawAllowed() internal virtual returns (bool) {
-    _unlockAccount();
-    return true;
-  }
+  function isWithdrawAllowed() internal virtual returns (bool);
 
   function withdraw() public collateralInvariant {
     require(isWithdrawAllowed(), "Account locked");

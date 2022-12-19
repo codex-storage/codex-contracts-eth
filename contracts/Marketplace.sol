@@ -68,8 +68,6 @@ contract Marketplace is Collateral, Proofs {
 
     requestsPerClient[request.client].add(RequestId.unwrap(id));
 
-    _createLock(_toLockId(id), request.expiry);
-
     uint256 amount = price(request);
     funds.received += amount;
     funds.balance += amount;
@@ -91,8 +89,6 @@ contract Marketplace is Collateral, Proofs {
     require(slot.host == address(0), "Slot already filled");
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
-    LockId lockId = _toLockId(requestId);
-    _lock(msg.sender, lockId);
 
     ProofId proofId = _toProofId(slotId);
     _expectProofs(proofId, _toEndId(requestId), request.ask.proofProbability);
@@ -109,7 +105,6 @@ contract Marketplace is Collateral, Proofs {
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
-      _extendLockExpiryTo(lockId, context.endsAt);
       emit RequestFulfilled(requestId);
     }
   }
@@ -412,10 +407,6 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId)
   {
     return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
-  }
-
-  function _toLockId(RequestId requestId) internal pure returns (LockId) {
-    return LockId.wrap(RequestId.unwrap(requestId));
   }
 
   function _toProofId(SlotId slotId) internal pure returns (ProofId) {
