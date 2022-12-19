@@ -114,14 +114,12 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  // TODO: test
   function freeSlot(SlotId slotId) public {
     Slot storage slot = _slot(slotId);
     require(slot.host == msg.sender, "Slot filled by other host");
     RequestState s = state(slot.requestId);
     if (s == RequestState.Finished || s == RequestState.Cancelled) {
       payoutSlot(slot.requestId, slotId);
-      slotsPerHost[msg.sender].remove(SlotId.unwrap(slotId));
     } else if (s == RequestState.Failed) {
       slotsPerHost[msg.sender].remove(SlotId.unwrap(slotId));
     } else {
