@@ -53,8 +53,8 @@ contract Proofs {
     return _end(_requestId(id));
   }
 
-  function _missed(SlotId id) internal view returns (uint256) {
-    return missed[id];
+  function missingProofs(SlotId slotId) public view returns (uint256) {
+    return missed[slotId];
   }
 
   function periodOf(uint256 timestamp) private view returns (uint256) {

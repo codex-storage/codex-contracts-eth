@@ -211,12 +211,12 @@ describe("Proofs", function () {
     })
 
     it("marks a proof as missing", async function () {
-      expect(await proofs.missed(slotId)).to.equal(0)
+      expect(await proofs.missingProofs(slotId)).to.equal(0)
       await waitUntilProofIsRequired(slotId)
       let missedPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(missedPeriod))
       await proofs.markProofAsMissing(slotId, missedPeriod)
-      expect(await proofs.missed(slotId)).to.equal(1)
+      expect(await proofs.missingProofs(slotId)).to.equal(1)
     })
 
     it("does not mark a proof as missing before period end", async function () {
