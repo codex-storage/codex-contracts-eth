@@ -56,10 +56,6 @@ contract TestProofs is Proofs {
     return _getPointer(id);
   }
 
-  function submitProof(SlotId id, bytes calldata proof) public {
-    _submitProof(id, proof);
-  }
-
   function markProofAsMissing(SlotId id, uint256 _period) public {
     _markProofAsMissing(id, _period);
   }

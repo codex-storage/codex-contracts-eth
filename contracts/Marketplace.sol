@@ -89,7 +89,7 @@ contract Marketplace is Collateral, Proofs {
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
     _expectProofs(slotId, requestId, request.ask.proofProbability);
-    _submitProof(slotId, proof);
+    submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.requestId = requestId;

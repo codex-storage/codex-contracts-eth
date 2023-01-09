@@ -161,7 +161,7 @@ contract Proofs {
     return isRequired && pointer < downtime;
   }
 
-  function _submitProof(SlotId id, bytes calldata proof) internal {
+  function submitProof(SlotId id, bytes calldata proof) public {
     require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
     require(!received[id][currentPeriod()], "Proof already submitted");
     received[id][currentPeriod()] = true;
