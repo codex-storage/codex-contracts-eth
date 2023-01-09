@@ -1,4 +1,4 @@
-async function deployStorage({ deployments, getNamedAccounts }) {
+async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
   const proofPeriod = 10
   const proofTimeout = 5
@@ -9,16 +9,16 @@ async function deployStorage({ deployments, getNamedAccounts }) {
   const minCollateralThreshold = 40
   const args = [
     token.address,
+    collateralAmount,
+    minCollateralThreshold,
+    slashMisses,
+    slashPercentage,
     proofPeriod,
     proofTimeout,
     proofDowntime,
-    collateralAmount,
-    slashMisses,
-    slashPercentage,
-    minCollateralThreshold,
   ]
   const { deployer } = await getNamedAccounts()
-  await deployments.deploy("Storage", { args, from: deployer })
+  await deployments.deploy("Marketplace", { args, from: deployer })
 }
 
 async function mine256blocks({ network, ethers }) {
@@ -29,8 +29,8 @@ async function mine256blocks({ network, ethers }) {
 
 module.exports = async (environment) => {
   await mine256blocks(environment)
-  await deployStorage(environment)
+  await deployMarketplace(environment)
 }
 
-module.exports.tags = ["Storage"]
+module.exports.tags = ["Marketplace"]
 module.exports.dependencies = ["TestToken"]
