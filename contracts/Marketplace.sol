@@ -264,6 +264,10 @@ contract Marketplace is Collateral, Proofs {
     return slots[slotId].host;
   }
 
+  function getHost(SlotId slotId) public view returns (address) {
+    return _host(slotId);
+  }
+
   function _request(RequestId requestId)
     internal
     view
@@ -272,6 +276,14 @@ contract Marketplace is Collateral, Proofs {
     Request storage request = requests[requestId];
     require(request.client != address(0), "Unknown request");
     return request;
+  }
+
+  function getRequest(RequestId requestId)
+    public
+    view
+    returns (Request memory)
+  {
+    return _request(requestId);
   }
 
   function _slot(SlotId slotId) internal view returns (Slot storage) {

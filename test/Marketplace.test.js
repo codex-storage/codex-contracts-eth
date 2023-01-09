@@ -1,5 +1,6 @@
 const { ethers } = require("hardhat")
 const { hexlify, randomBytes } = ethers.utils
+const { AddressZero } = ethers.constants
 const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { hours, minutes } = require("./time")
@@ -85,6 +86,16 @@ describe("Marketplace", function () {
         .withArgs(requestId(request), askToArray(request.ask))
     })
 
+    it("allows retrieval of request details", async function () {
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      const id = requestId(request)
+      const retrieved = await marketplace.getRequest(id)
+      expect(retrieved.client).to.equal(request.client)
+      expect(retrieved.expiry).to.equal(request.expiry)
+      expect(retrieved.nonce).to.equal(request.nonce)
+    })
+
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
       await token.approve(marketplace.address, price(invalid))
@@ -124,6 +135,12 @@ describe("Marketplace", function () {
       await expect(marketplace.fillSlot(slot.request, slot.index, proof))
         .to.emit(marketplace, "SlotFilled")
         .withArgs(slot.request, slot.index, slotId(slot))
+    })
+
+    it("allows retrieval of host that filled slot", async function () {
+      expect(await marketplace.getHost(slotId(slot))).to.equal(AddressZero)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      expect(await marketplace.getHost(slotId(slot))).to.equal(host.address)
     })
 
     it("starts requiring storage proofs", async function () {
