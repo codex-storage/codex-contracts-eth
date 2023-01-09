@@ -10,7 +10,7 @@ const {
   advanceTime,
   advanceTimeTo,
 } = require("./evm")
-const { periodic, hours, minutes } = require("./time")
+const { periodic } = require("./time")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
