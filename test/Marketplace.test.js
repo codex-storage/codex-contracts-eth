@@ -27,6 +27,9 @@ const {
 
 describe("Marketplace", function () {
   const collateral = 100
+  const minCollateralThreshold = 40
+  const slashMisses = 3
+  const slashPercentage = 10
   const proofPeriod = 10
   const proofTimeout = 5
   const proofDowntime = 64
@@ -54,6 +57,9 @@ describe("Marketplace", function () {
     marketplace = await Marketplace.deploy(
       token.address,
       collateral,
+      minCollateralThreshold,
+      slashMisses,
+      slashPercentage,
       proofPeriod,
       proofTimeout,
       proofDowntime
@@ -749,6 +755,86 @@ describe("Marketplace", function () {
       await advanceTimeTo(request.expiry + 1)
       const challenge2 = await marketplace.getChallenge(id)
       expect(BigNumber.from(challenge2).isZero())
+    })
+  })
+
+  describe("missing proofs", function () {
+    let period, periodOf, periodEnd
+
+    beforeEach(async function () {
+      period = (await marketplace.proofPeriod()).toNumber()
+      ;({ periodOf, periodEnd } = periodic(period))
+
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    async function waitUntilProofIsRequired(id) {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      while (
+        !(
+          (await marketplace.isProofRequired(id)) &&
+          (await marketplace.getPointer(id)) < 250
+        )
+      ) {
+        await advanceTime(period)
+      }
+    }
+
+    it("fails to mark proof as missing when cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      let missedPeriod = periodOf(await currentTime())
+      await expect(
+        marketplace.markProofAsMissing(slotId(slot), missedPeriod)
+      ).to.be.revertedWith("Slot not accepting proofs")
+    })
+
+    describe("slashing when missing proofs", function () {
+      it("reduces collateral when too many proofs are missing", async function () {
+        const id = slotId(slot)
+        await marketplace.fillSlot(slot.request, slot.index, proof)
+        for (let i = 0; i < slashMisses; i++) {
+          await waitUntilProofIsRequired(id)
+          let missedPeriod = periodOf(await currentTime())
+          await advanceTime(period)
+          await marketplace.markProofAsMissing(id, missedPeriod)
+        }
+        const expectedBalance = (collateral * (100 - slashPercentage)) / 100
+        expect(await marketplace.balanceOf(host.address)).to.equal(
+          expectedBalance
+        )
+      })
+    })
+
+    describe("freeing a slot", function () {
+      it("frees slot when collateral slashed below minimum threshold", async function () {
+        const id = slotId(slot)
+
+        await waitUntilStarted(marketplace, request, proof)
+
+        // max slashes before dropping below collateral threshold
+        const maxSlashes = 10
+        for (let i = 0; i < maxSlashes; i++) {
+          for (let j = 0; j < slashMisses; j++) {
+            await waitUntilProofIsRequired(id)
+            let missedPeriod = periodOf(await currentTime())
+            await advanceTime(period)
+            if (i === maxSlashes - 1 && j === slashMisses - 1) {
+              await expect(
+                await marketplace.markProofAsMissing(id, missedPeriod)
+              ).to.emit(marketplace, "SlotFreed")
+              expect(await marketplace.getHost(id)).to.equal(AddressZero)
+            } else {
+              await marketplace.markProofAsMissing(id, missedPeriod)
+            }
+          }
+        }
+      })
     })
   })
 

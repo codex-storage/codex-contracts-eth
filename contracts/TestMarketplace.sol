@@ -8,6 +8,9 @@ contract TestMarketplace is Marketplace {
   constructor(
     IERC20 _token,
     uint256 _collateral,
+    uint256 _minCollateralThreshold,
+    uint256 _slashMisses,
+    uint256 _slashPercentage,
     uint256 _proofPeriod,
     uint256 _proofTimeout,
     uint8 _proofDowntime
@@ -15,6 +18,9 @@ contract TestMarketplace is Marketplace {
     Marketplace(
       _token,
       _collateral,
+      _minCollateralThreshold,
+      _slashMisses,
+      _slashPercentage,
       _proofPeriod,
       _proofTimeout,
       _proofDowntime
@@ -40,7 +46,9 @@ contract TestMarketplace is Marketplace {
     return _slot(slotId);
   }
 
-  function testAcceptsProofs(SlotId slotId)
+  function testAcceptsProofs(
+    SlotId slotId
+  )
     public
     view
     slotMustAcceptProofs(slotId)
