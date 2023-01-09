@@ -1,5 +1,5 @@
 {
-  "name": "dagger-contracts",
+  "name": "codex-contracts-eth",
   "license": "MIT",
   "scripts": {
     "test": "npm run lint && hardhat test",

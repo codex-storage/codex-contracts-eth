@@ -1,7 +1,7 @@
-Dagger Contracts
+Codex Contracts
 ================
 
-An experimental implementation of the contracts that underlay the Dagger storage
+An experimental implementation of the contracts that underlay the Codex storage
 network. Its goal is to experiment with the rules around the bidding process,
 the storage contracts, the storage proofs and the host collateral. Neither
 completeness nor correctness are guaranteed at this moment in time.
@@ -24,7 +24,7 @@ the deployed contracts.
 Overview
 --------
 
-The Dagger storage network depends on hosts offering storage to clients of the
+The Codex storage network depends on hosts offering storage to clients of the
 network. The smart contracts in this repository handle interactions between
 client and host as they negotiate and fulfill a contract to store data for a
 certain amount of time.
