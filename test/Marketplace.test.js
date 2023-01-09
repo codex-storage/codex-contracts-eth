@@ -1,9 +1,10 @@
 const { ethers } = require("hardhat")
 const { hexlify, randomBytes } = ethers.utils
 const { AddressZero } = ethers.constants
+const { BigNumber } = ethers
 const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
-const { hours, minutes } = require("./time")
+const { periodic, hours, minutes } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
 const {
   waitUntilCancelled,
@@ -17,14 +18,16 @@ const { price, pricePerSlot } = require("./price")
 const {
   snapshot,
   revert,
+  mine,
   ensureMinimumBlockHeight,
   advanceTime,
+  advanceTimeTo,
   currentTime,
 } = require("./evm")
 
 describe("Marketplace", function () {
   const collateral = 100
-  const proofPeriod = 30 * 60
+  const proofPeriod = 10
   const proofTimeout = 5
   const proofDowntime = 64
   const proof = hexlify(randomBytes(42))
@@ -674,6 +677,81 @@ describe("Marketplace", function () {
       )
     })
   })
+
+  describe("proof requirements", function () {
+    let period, periodOf, periodEnd
+
+    beforeEach(async function () {
+      period = (await marketplace.proofPeriod()).toNumber()
+      ;({ periodOf, periodEnd } = periodic(period))
+
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.deposit(collateral)
+    })
+
+    async function waitUntilProofWillBeRequired(id) {
+      while (!(await marketplace.willProofBeRequired(id))) {
+        await mine()
+      }
+    }
+
+    async function waitUntilProofIsRequired(id) {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      while (
+        !(
+          (await marketplace.isProofRequired(id)) &&
+          (await marketplace.getPointer(id)) < 250
+        )
+      ) {
+        await advanceTime(period)
+      }
+    }
+
+    it("will not require proofs once cancelled", async function () {
+      const id = slotId(slot)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilProofWillBeRequired(id)
+      await expect(await marketplace.willProofBeRequired(id)).to.be.true
+      await advanceTimeTo(request.expiry + 1)
+      await expect(await marketplace.willProofBeRequired(id)).to.be.false
+    })
+
+    it("does not require proofs once cancelled", async function () {
+      const id = slotId(slot)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilProofIsRequired(id)
+      await expect(await marketplace.isProofRequired(id)).to.be.true
+      await advanceTimeTo(request.expiry + 1)
+      await expect(await marketplace.isProofRequired(id)).to.be.false
+    })
+
+    it("does not provide challenges once cancelled", async function () {
+      const id = slotId(slot)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilProofIsRequired(id)
+      const challenge1 = await marketplace.getChallenge(id)
+      expect(BigNumber.from(challenge1).gt(0))
+      await advanceTimeTo(request.expiry + 1)
+      const challenge2 = await marketplace.getChallenge(id)
+      expect(BigNumber.from(challenge2).isZero())
+    })
+
+    it("does not provide pointer once cancelled", async function () {
+      const id = slotId(slot)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilProofIsRequired(id)
+      const challenge1 = await marketplace.getChallenge(id)
+      expect(BigNumber.from(challenge1).gt(0))
+      await advanceTimeTo(request.expiry + 1)
+      const challenge2 = await marketplace.getChallenge(id)
+      expect(BigNumber.from(challenge2).isZero())
+    })
+  })
+
   describe("modifiers", function () {
     beforeEach(async function () {
       switchAccount(client)

@@ -1,10 +1,9 @@
 const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
-const { BigNumber } = ethers
 const { hexlify, randomBytes } = ethers.utils
 const { AddressZero } = ethers.constants
 const { exampleRequest } = require("./examples")
-const { advanceTime, advanceTimeTo, currentTime, mine } = require("./evm")
+const { advanceTime, advanceTimeTo, currentTime } = require("./evm")
 const { requestId, slotId } = require("./ids")
 const { periodic } = require("./time")
 const { price } = require("./price")
@@ -88,6 +87,15 @@ describe("Storage", function () {
       }
     }
 
+    it("fails to mark proof as missing when cancelled", async function () {
+      await storage.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      let missedPeriod = periodOf(await currentTime())
+      await expect(
+        storage.markProofAsMissing(slotId(slot), missedPeriod)
+      ).to.be.revertedWith("Slot not accepting proofs")
+    })
+
     describe("slashing when missing proofs", function () {
       it("reduces collateral when too many proofs are missing", async function () {
         const id = slotId(slot)
@@ -128,82 +136,6 @@ describe("Storage", function () {
           }
         }
       })
-    })
-  })
-
-  describe("contract state", function () {
-    let period, periodOf, periodEnd
-
-    beforeEach(async function () {
-      period = (await storage.proofPeriod()).toNumber()
-      ;({ periodOf, periodEnd } = periodic(period))
-    })
-
-    async function waitUntilProofWillBeRequired(id) {
-      while (!(await storage.willProofBeRequired(id))) {
-        await mine()
-      }
-    }
-
-    async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-      while (
-        !(
-          (await storage.isProofRequired(id)) &&
-          (await storage.getPointer(id)) < 250
-        )
-      ) {
-        await advanceTime(period)
-      }
-    }
-
-    it("fails to mark proof as missing when cancelled", async function () {
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilCancelled(request)
-      let missedPeriod = periodOf(await currentTime())
-      await expect(
-        storage.markProofAsMissing(slotId(slot), missedPeriod)
-      ).to.be.revertedWith("Slot not accepting proofs")
-    })
-
-    it("will not require proofs once cancelled", async function () {
-      const id = slotId(slot)
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilProofWillBeRequired(id)
-      await expect(await storage.willProofBeRequired(id)).to.be.true
-      await advanceTimeTo(request.expiry + 1)
-      await expect(await storage.willProofBeRequired(id)).to.be.false
-    })
-
-    it("does not require proofs once cancelled", async function () {
-      const id = slotId(slot)
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilProofIsRequired(id)
-      await expect(await storage.isProofRequired(id)).to.be.true
-      await advanceTimeTo(request.expiry + 1)
-      await expect(await storage.isProofRequired(id)).to.be.false
-    })
-
-    it("does not provide challenges once cancelled", async function () {
-      const id = slotId(slot)
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilProofIsRequired(id)
-      const challenge1 = await storage.getChallenge(id)
-      expect(BigNumber.from(challenge1).gt(0))
-      await advanceTimeTo(request.expiry + 1)
-      const challenge2 = await storage.getChallenge(id)
-      expect(BigNumber.from(challenge2).isZero())
-    })
-
-    it("does not provide pointer once cancelled", async function () {
-      const id = slotId(slot)
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilProofIsRequired(id)
-      const challenge1 = await storage.getChallenge(id)
-      expect(BigNumber.from(challenge1).gt(0))
-      await advanceTimeTo(request.expiry + 1)
-      const challenge2 = await storage.getChallenge(id)
-      expect(BigNumber.from(challenge2).isZero())
     })
   })
 })
