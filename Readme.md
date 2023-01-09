@@ -31,7 +31,7 @@ certain amount of time.
 
 When all goes well, the client and host perform the following steps:
 
-    Client                 Host            Storage Contract
+    Client                 Host          Marketplace Contract
       |                     |                      |
       |                                            |
       | --------------- request (1) -------------> |
