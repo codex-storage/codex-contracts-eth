@@ -24,51 +24,51 @@ contract TestProofs is Proofs {
     return _timeout();
   }
 
-  function end(EndId id) public view returns (uint256) {
+  function end(RequestId id) public view returns (uint256) {
     return _end(id);
   }
 
-  function missed(ProofId id) public view returns (uint256) {
+  function missed(SlotId id) public view returns (uint256) {
     return _missed(id);
   }
 
   function expectProofs(
-    ProofId id,
-    EndId endId,
+    SlotId slot,
+    RequestId request,
     uint256 _probability
   ) public {
-    _expectProofs(id, endId, _probability);
+    _expectProofs(slot, request, _probability);
   }
 
-  function unexpectProofs(ProofId id) public {
+  function unexpectProofs(SlotId id) public {
     _unexpectProofs(id);
   }
 
-  function isProofRequired(ProofId id) public view returns (bool) {
+  function isProofRequired(SlotId id) public view returns (bool) {
     return _isProofRequired(id);
   }
 
-  function willProofBeRequired(ProofId id) public view returns (bool) {
+  function willProofBeRequired(SlotId id) public view returns (bool) {
     return _willProofBeRequired(id);
   }
 
-  function getChallenge(ProofId id) public view returns (bytes32) {
+  function getChallenge(SlotId id) public view returns (bytes32) {
     return _getChallenge(id);
   }
 
-  function getPointer(ProofId id) public view returns (uint8) {
+  function getPointer(SlotId id) public view returns (uint8) {
     return _getPointer(id);
   }
 
-  function submitProof(ProofId id, bytes calldata proof) public {
+  function submitProof(SlotId id, bytes calldata proof) public {
     _submitProof(id, proof);
   }
 
-  function markProofAsMissing(ProofId id, uint256 _period) public {
+  function markProofAsMissing(SlotId id, uint256 _period) public {
     _markProofAsMissing(id, _period);
   }
 
-  function setProofEnd(EndId id, uint256 ending) public {
+  function setProofEnd(RequestId id, uint256 ending) public {
     _setProofEnd(id, ending);
   }
 }
