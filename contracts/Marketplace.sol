@@ -62,7 +62,7 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(id);
     // set contract end time to `duration` from now (time request was created)
     context.endsAt = block.timestamp + request.ask.duration;
-    _setProofEnd(_toEndId(id), context.endsAt);
+    _setProofEnd(id, context.endsAt);
 
     requestsPerClient[request.client].add(RequestId.unwrap(id));
 
@@ -88,9 +88,8 @@ contract Marketplace is Collateral, Proofs {
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
-    ProofId proofId = _toProofId(slotId);
-    _expectProofs(proofId, _toEndId(requestId), request.ask.proofProbability);
-    _submitProof(proofId, proof);
+    _expectProofs(slotId, requestId, request.ask.proofProbability);
+    _submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.requestId = requestId;
@@ -135,7 +134,7 @@ contract Marketplace is Collateral, Proofs {
     // Slot collateral is not yet implemented as the design decision was
     // not finalised.
 
-    _unexpectProofs(_toProofId(slotId));
+    _unexpectProofs(slotId);
 
     slotsPerHost[slot.host].remove(SlotId.unwrap(slotId));
 
@@ -151,7 +150,7 @@ contract Marketplace is Collateral, Proofs {
       context.state == RequestState.Started
     ) {
       context.state = RequestState.Failed;
-      _setProofEnd(_toEndId(requestId), block.timestamp - 1);
+      _setProofEnd(requestId, block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
@@ -311,7 +310,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
-    uint256 end = _end(_toEndId(requestId));
+    uint256 end = _end(requestId);
     if (_requestAcceptsProofs(requestId)) {
       return end;
     } else {
@@ -417,14 +416,6 @@ contract Marketplace is Collateral, Proofs {
     returns (SlotId)
   {
     return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
-  }
-
-  function _toProofId(SlotId slotId) internal pure returns (ProofId) {
-    return ProofId.wrap(SlotId.unwrap(slotId));
-  }
-
-  function _toEndId(RequestId requestId) internal pure returns (EndId) {
-    return EndId.wrap(RequestId.unwrap(requestId));
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {

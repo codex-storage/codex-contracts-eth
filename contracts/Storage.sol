@@ -36,46 +36,45 @@ contract Storage is Marketplace {
   }
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
-    return _missed(_toProofId(slotId));
+    return _missed(slotId);
   }
 
   function isProofRequired(SlotId slotId) public view returns (bool) {
     if (!_slotAcceptsProofs(slotId)) {
       return false;
     }
-    return _isProofRequired(_toProofId(slotId));
+    return _isProofRequired(slotId);
   }
 
   function willProofBeRequired(SlotId slotId) public view returns (bool) {
     if (!_slotAcceptsProofs(slotId)) {
       return false;
     }
-    return _willProofBeRequired(_toProofId(slotId));
+    return _willProofBeRequired(slotId);
   }
 
   function getChallenge(SlotId slotId) public view returns (bytes32) {
     if (!_slotAcceptsProofs(slotId)) {
       return bytes32(0);
     }
-    return _getChallenge(_toProofId(slotId));
+    return _getChallenge(slotId);
   }
 
   function getPointer(SlotId slotId) public view returns (uint8) {
-    return _getPointer(_toProofId(slotId));
+    return _getPointer(slotId);
   }
 
   function submitProof(SlotId slotId, bytes calldata proof) public {
-    _submitProof(_toProofId(slotId), proof);
+    _submitProof(slotId, proof);
   }
 
   function markProofAsMissing(SlotId slotId, uint256 period)
     public
     slotMustAcceptProofs(slotId)
   {
-    ProofId proofId = _toProofId(slotId);
-    _markProofAsMissing(proofId, period);
+    _markProofAsMissing(slotId, period);
     address host = _host(slotId);
-    if (_missed(_toProofId(slotId)) % slashMisses == 0) {
+    if (_missed(slotId) % slashMisses == 0) {
       _slash(host, slashPercentage);
 
       if (balanceOf(host) < minCollateralThreshold) {
