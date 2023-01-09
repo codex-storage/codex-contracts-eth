@@ -35,10 +35,6 @@ contract Storage is Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function getSlot(SlotId slotId) public view returns (Slot memory) {
-    return _slot(slotId);
-  }
-
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return _missed(_toProofId(slotId));
   }
