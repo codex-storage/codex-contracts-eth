@@ -2,6 +2,7 @@ const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { BigNumber } = ethers
 const { hexlify, randomBytes } = ethers.utils
+const { AddressZero } = ethers.constants
 const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime, mine } = require("./evm")
 const { requestId, slotId } = require("./ids")
@@ -120,7 +121,7 @@ describe("Storage", function () {
               await expect(
                 await storage.markProofAsMissing(id, missedPeriod)
               ).to.emit(storage, "SlotFreed")
-              await expect(storage.getSlot(id)).to.be.revertedWith("Slot empty")
+              expect(await storage.getHost(id)).to.equal(AddressZero)
             } else {
               await storage.markProofAsMissing(id, missedPeriod)
             }
