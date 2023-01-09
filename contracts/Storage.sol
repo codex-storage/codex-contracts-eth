@@ -35,10 +35,6 @@ contract Storage is Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function submitProof(SlotId slotId, bytes calldata proof) public {
-    _submitProof(slotId, proof);
-  }
-
   function markProofAsMissing(SlotId slotId, uint256 period)
     public
     slotMustAcceptProofs(slotId)
