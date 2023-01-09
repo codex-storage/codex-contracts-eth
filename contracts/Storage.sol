@@ -35,31 +35,6 @@ contract Storage is Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function isProofRequired(SlotId slotId) public view returns (bool) {
-    if (!_slotAcceptsProofs(slotId)) {
-      return false;
-    }
-    return _isProofRequired(slotId);
-  }
-
-  function willProofBeRequired(SlotId slotId) public view returns (bool) {
-    if (!_slotAcceptsProofs(slotId)) {
-      return false;
-    }
-    return _willProofBeRequired(slotId);
-  }
-
-  function getChallenge(SlotId slotId) public view returns (bytes32) {
-    if (!_slotAcceptsProofs(slotId)) {
-      return bytes32(0);
-    }
-    return _getChallenge(slotId);
-  }
-
-  function getPointer(SlotId slotId) public view returns (uint8) {
-    return _getPointer(slotId);
-  }
-
   function submitProof(SlotId slotId, bytes calldata proof) public {
     _submitProof(slotId, proof);
   }
