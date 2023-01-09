@@ -35,10 +35,6 @@ contract Storage is Marketplace {
     minCollateralThreshold = _minCollateralThreshold;
   }
 
-  function missingProofs(SlotId slotId) public view returns (uint256) {
-    return _missed(slotId);
-  }
-
   function isProofRequired(SlotId slotId) public view returns (bool) {
     if (!_slotAcceptsProofs(slotId)) {
       return false;
@@ -74,7 +70,7 @@ contract Storage is Marketplace {
   {
     _markProofAsMissing(slotId, period);
     address host = _host(slotId);
-    if (_missed(slotId) % slashMisses == 0) {
+    if (missingProofs(slotId) % slashMisses == 0) {
       _slash(host, slashPercentage);
 
       if (balanceOf(host) < minCollateralThreshold) {

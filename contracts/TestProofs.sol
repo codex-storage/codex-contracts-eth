@@ -28,10 +28,6 @@ contract TestProofs is Proofs {
     return _end(id);
   }
 
-  function missed(SlotId id) public view returns (uint256) {
-    return _missed(id);
-  }
-
   function expectProofs(
     SlotId slot,
     RequestId request,
