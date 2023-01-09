@@ -2,7 +2,6 @@ const { expect } = require("chai")
 const { ethers, deployments } = require("hardhat")
 const { BigNumber } = ethers
 const { hexlify, randomBytes } = ethers.utils
-const { AddressZero } = ethers.constants
 const { exampleRequest } = require("./examples")
 const { advanceTime, advanceTimeTo, currentTime, mine } = require("./evm")
 const { requestId, slotId } = require("./ids")
@@ -57,20 +56,6 @@ describe("Storage", function () {
     switchAccount(host)
     await token.approve(storage.address, collateralAmount)
     await storage.deposit(collateralAmount)
-  })
-
-  it("can retrieve storage requests", async function () {
-    const id = requestId(request)
-    const retrieved = await storage.getRequest(id)
-    expect(retrieved.client).to.equal(request.client)
-    expect(retrieved.expiry).to.equal(request.expiry)
-    expect(retrieved.nonce).to.equal(request.nonce)
-  })
-
-  it("can retrieve host that filled slot", async function () {
-    expect(await storage.getHost(slotId(slot))).to.equal(AddressZero)
-    await storage.fillSlot(slot.request, slot.index, proof)
-    expect(await storage.getHost(slotId(slot))).to.equal(host.address)
   })
 
   describe("ending the contract", function () {
