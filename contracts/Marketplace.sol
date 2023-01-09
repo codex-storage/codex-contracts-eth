@@ -12,6 +12,10 @@ contract Marketplace is Collateral, Proofs {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   uint256 public immutable collateral;
+  uint256 public immutable minCollateralThreshold;
+  uint256 public immutable slashMisses;
+  uint256 public immutable slashPercentage;
+
   MarketplaceFunds private funds;
   mapping(RequestId => Request) private requests;
   mapping(RequestId => RequestContext) private requestContexts;
@@ -22,6 +26,9 @@ contract Marketplace is Collateral, Proofs {
   constructor(
     IERC20 _token,
     uint256 _collateral,
+    uint256 _minCollateralThreshold,
+    uint256 _slashMisses,
+    uint256 _slashPercentage,
     uint256 _proofPeriod,
     uint256 _proofTimeout,
     uint8 _proofDowntime
@@ -31,6 +38,9 @@ contract Marketplace is Collateral, Proofs {
     marketplaceInvariant
   {
     collateral = _collateral;
+    minCollateralThreshold = _minCollateralThreshold;
+    slashMisses = _slashMisses;
+    slashPercentage = _slashPercentage;
   }
 
   function myRequests() public view returns (RequestId[] memory) {
@@ -116,6 +126,24 @@ contract Marketplace is Collateral, Proofs {
       slotsPerHost[msg.sender].remove(SlotId.unwrap(slotId));
     } else {
       _forciblyFreeSlot(slotId);
+    }
+  }
+
+  function markProofAsMissing(SlotId slotId, uint256 period)
+    public
+    slotMustAcceptProofs(slotId)
+  {
+    _markProofAsMissing(slotId, period);
+    address host = _host(slotId);
+    if (missingProofs(slotId) % slashMisses == 0) {
+      _slash(host, slashPercentage);
+
+      if (balanceOf(host) < minCollateralThreshold) {
+        // When the collateral drops below the minimum threshold, the slot
+        // needs to be freed so that there is enough remaining collateral to be
+        // distributed for repairs and rewards (with any leftover to be burnt).
+        _forciblyFreeSlot(slotId);
+      }
     }
   }
 

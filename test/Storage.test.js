@@ -38,7 +38,7 @@ describe("Storage", function () {
     await token.mint(client.address, 1_000_000_000)
     await token.mint(host.address, 1_000_000_000)
 
-    collateralAmount = await storage.collateralAmount()
+    collateralAmount = await storage.collateral()
     slashMisses = await storage.slashMisses()
     slashPercentage = await storage.slashPercentage()
     minCollateralThreshold = await storage.minCollateralThreshold()
@@ -64,78 +64,6 @@ describe("Storage", function () {
       await waitUntilFinished(storage, slot.request)
       await storage.freeSlot(slotId(slot))
       await expect(storage.withdraw()).not.to.be.reverted
-    })
-  })
-
-  describe("missing proofs", function () {
-    let period, periodOf, periodEnd
-
-    beforeEach(async function () {
-      period = (await storage.proofPeriod()).toNumber()
-      ;({ periodOf, periodEnd } = periodic(period))
-    })
-
-    async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
-      while (
-        !(
-          (await storage.isProofRequired(id)) &&
-          (await storage.getPointer(id)) < 250
-        )
-      ) {
-        await advanceTime(period)
-      }
-    }
-
-    it("fails to mark proof as missing when cancelled", async function () {
-      await storage.fillSlot(slot.request, slot.index, proof)
-      await waitUntilCancelled(request)
-      let missedPeriod = periodOf(await currentTime())
-      await expect(
-        storage.markProofAsMissing(slotId(slot), missedPeriod)
-      ).to.be.revertedWith("Slot not accepting proofs")
-    })
-
-    describe("slashing when missing proofs", function () {
-      it("reduces collateral when too many proofs are missing", async function () {
-        const id = slotId(slot)
-        await storage.fillSlot(slot.request, slot.index, proof)
-        for (let i = 0; i < slashMisses; i++) {
-          await waitUntilProofIsRequired(id)
-          let missedPeriod = periodOf(await currentTime())
-          await advanceTime(period)
-          await storage.markProofAsMissing(id, missedPeriod)
-        }
-        const expectedBalance =
-          (collateralAmount * (100 - slashPercentage)) / 100
-        expect(await storage.balanceOf(host.address)).to.equal(expectedBalance)
-      })
-    })
-
-    describe("freeing a slot", function () {
-      it("frees slot when collateral slashed below minimum threshold", async function () {
-        const id = slotId(slot)
-
-        await waitUntilStarted(storage, request, proof)
-
-        // max slashes before dropping below collateral threshold
-        const maxSlashes = 10
-        for (let i = 0; i < maxSlashes; i++) {
-          for (let j = 0; j < slashMisses; j++) {
-            await waitUntilProofIsRequired(id)
-            let missedPeriod = periodOf(await currentTime())
-            await advanceTime(period)
-            if (i === maxSlashes - 1 && j === slashMisses - 1) {
-              await expect(
-                await storage.markProofAsMissing(id, missedPeriod)
-              ).to.emit(storage, "SlotFreed")
-              expect(await storage.getHost(id)).to.equal(AddressZero)
-            } else {
-              await storage.markProofAsMissing(id, missedPeriod)
-            }
-          }
-        }
-      })
     })
   })
 })
