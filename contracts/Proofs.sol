@@ -16,7 +16,6 @@ abstract contract Proofs {
   }
 
   mapping(SlotId => bool) private slotIds;
-  mapping(SlotId => uint256) private starts;
   mapping(SlotId => uint256) private probabilities;
   mapping(SlotId => uint256) private missed;
   mapping(SlotId => mapping(uint256 => bool)) private received;
@@ -29,6 +28,10 @@ abstract contract Proofs {
   function _timeout() internal view returns (uint256) {
     return timeout;
   }
+
+  // Override this to let the proving system know when proofs for a
+  // slot are required.
+  function proofStart(SlotId id) public view virtual returns (uint256);
 
   // Override this to let the proving system know when proofs for a
   // slot are no longer required.
@@ -52,7 +55,6 @@ abstract contract Proofs {
   function _expectProofs(SlotId id, uint256 probability) internal {
     require(!slotIds[id], "Slot id already in use");
     slotIds[id] = true;
-    starts[id] = block.timestamp;
     probabilities[id] = probability;
   }
 
@@ -97,7 +99,7 @@ abstract contract Proofs {
     SlotId id,
     uint256 proofPeriod
   ) internal view returns (bool isRequired, uint8 pointer) {
-    if (proofPeriod <= periodOf(starts[id])) {
+    if (proofPeriod <= periodOf(proofStart(id))) {
       return (false, 0);
     }
     uint256 end = proofEnd(id);
