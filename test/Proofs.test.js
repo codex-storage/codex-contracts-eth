@@ -42,14 +42,14 @@ describe("Proofs", function () {
     })
 
     it("does not allow ids to be reused", async function () {
-      await proofs.expectProofs(slotId, probability)
-      await expect(proofs.expectProofs(slotId, probability)).to.be.revertedWith(
-        "Slot id already in use"
-      )
+      await proofs.startRequiringProofs(slotId, probability)
+      await expect(
+        proofs.startRequiringProofs(slotId, probability)
+      ).to.be.revertedWith("Proofs already required for slot")
     })
 
     it("requires proofs with an agreed upon probability", async function () {
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
       let amount = 0
       for (let i = 0; i < 100; i++) {
         if (await proofs.isProofRequired(slotId)) {
@@ -64,7 +64,7 @@ describe("Proofs", function () {
     it("requires no proofs in the start period", async function () {
       const startPeriod = Math.floor((await currentTime()) / period)
       const probability = 1
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
       while (Math.floor((await currentTime()) / period) == startPeriod) {
         expect(await proofs.isProofRequired(slotId)).to.be.false
         await advanceTime(Math.floor(period / 10))
@@ -73,14 +73,14 @@ describe("Proofs", function () {
 
     it("requires no proofs in the end period", async function () {
       const probability = 1
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
       await advanceTime(duration)
       expect(await proofs.isProofRequired(slotId)).to.be.false
     })
 
     it("requires no proofs after the end time", async function () {
       const probability = 1
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
       await advanceTime(duration + timeout)
       expect(await proofs.isProofRequired(slotId)).to.be.false
     })
@@ -92,7 +92,7 @@ describe("Proofs", function () {
       for (let slotId of [id1, id2, id3]) {
         await proofs.setProofStart(slotId, await currentTime())
         await proofs.setProofEnd(slotId, (await currentTime()) + duration)
-        await proofs.expectProofs(slotId, probability)
+        await proofs.startRequiringProofs(slotId, probability)
       }
       let req1, req2, req3
       while (req1 === req2 && req2 === req3) {
@@ -124,7 +124,7 @@ describe("Proofs", function () {
     beforeEach(async function () {
       await proofs.setProofStart(slotId, await currentTime())
       await proofs.setProofEnd(slotId, (await currentTime()) + duration)
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
     })
@@ -148,7 +148,7 @@ describe("Proofs", function () {
     it("will not require proofs when no longer expected", async function () {
       expect(await proofs.getPointer(slotId)).to.be.lt(downtime)
       expect(await proofs.willProofBeRequired(slotId)).to.be.true
-      await proofs.unexpectProofs(slotId)
+      await proofs.stopRequiringProofs(slotId)
       expect(await proofs.willProofBeRequired(slotId)).to.be.false
     })
   })
@@ -159,7 +159,7 @@ describe("Proofs", function () {
     beforeEach(async function () {
       await proofs.setProofStart(slotId, await currentTime())
       await proofs.setProofEnd(slotId, (await currentTime()) + duration)
-      await proofs.expectProofs(slotId, probability)
+      await proofs.startRequiringProofs(slotId, probability)
     })
 
     async function waitUntilProofIsRequired(slotId) {
@@ -274,7 +274,7 @@ describe("Proofs", function () {
 
     it("requires no proofs when no longer expected", async function () {
       await waitUntilProofIsRequired(slotId)
-      await proofs.unexpectProofs(slotId)
+      await proofs.stopRequiringProofs(slotId)
       await expect(await proofs.isProofRequired(slotId)).to.be.false
     })
   })

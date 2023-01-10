@@ -35,12 +35,12 @@ contract TestProofs is Proofs {
     return _timeout();
   }
 
-  function expectProofs(SlotId slot, uint256 _probability) public {
-    _expectProofs(slot, _probability);
+  function startRequiringProofs(SlotId slot, uint256 _probability) public {
+    _startRequiringProofs(slot, _probability);
   }
 
-  function unexpectProofs(SlotId id) public {
-    _unexpectProofs(id);
+  function stopRequiringProofs(SlotId id) public {
+    _stopRequiringProofs(id);
   }
 
   function isProofRequired(SlotId id) public view returns (bool) {
