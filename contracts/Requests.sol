@@ -36,3 +36,27 @@ struct PoR {
   bytes publicKey; // public key
   bytes name; // random name
 }
+
+library Requests {
+  function id(Request memory request) internal pure returns (RequestId) {
+    return RequestId.wrap(keccak256(abi.encode(request)));
+  }
+
+  function toRequestIds(
+    bytes32[] memory ids
+  ) internal pure returns (RequestId[] memory result) {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := ids
+    }
+  }
+
+  function toSlotIds(
+    bytes32[] memory ids
+  ) internal pure returns (SlotId[] memory result) {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      result := ids
+    }
+  }
+}
