@@ -96,7 +96,7 @@ contract Marketplace is Collateral, Proofs {
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
-    _expectProofs(slotId, request.ask.proofProbability);
+    _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
@@ -162,7 +162,7 @@ contract Marketplace is Collateral, Proofs {
     // Slot collateral is not yet implemented as the design decision was
     // not finalised.
 
-    _unexpectProofs(slotId);
+    _stopRequiringProofs(slotId);
 
     slotsPerHost[slot.host].remove(SlotId.unwrap(slotId));
 

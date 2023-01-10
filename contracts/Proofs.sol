@@ -52,14 +52,14 @@ abstract contract Proofs {
   /// @notice Informs the contract that proofs should be expected for id
   /// @dev Requires that the id is not already in use
   /// @param probability The probability that a proof should be expected
-  function _expectProofs(SlotId id, uint256 probability) internal {
-    require(!slotIds[id], "Slot id already in use");
+  function _startRequiringProofs(SlotId id, uint256 probability) internal {
+    require(!slotIds[id], "Proofs already required for slot");
     slotIds[id] = true;
     probabilities[id] = probability;
   }
 
-  function _unexpectProofs(SlotId id) internal {
-    require(slotIds[id], "Proof id not in use");
+  function _stopRequiringProofs(SlotId id) internal {
+    require(slotIds[id], "Proofs not required for slot");
     slotIds[id] = false;
   }
 
