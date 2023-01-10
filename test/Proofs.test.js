@@ -37,6 +37,7 @@ describe("Proofs", function () {
 
   describe("general", function () {
     beforeEach(async function () {
+      await proofs.setProofStart(slotId, await currentTime())
       await proofs.setProofEnd(slotId, (await currentTime()) + duration)
     })
 
@@ -89,6 +90,7 @@ describe("Proofs", function () {
       let id2 = hexlify(randomBytes(32))
       let id3 = hexlify(randomBytes(32))
       for (let slotId of [id1, id2, id3]) {
+        await proofs.setProofStart(slotId, await currentTime())
         await proofs.setProofEnd(slotId, (await currentTime()) + duration)
         await proofs.expectProofs(slotId, probability)
       }
@@ -120,6 +122,7 @@ describe("Proofs", function () {
     }
 
     beforeEach(async function () {
+      await proofs.setProofStart(slotId, await currentTime())
       await proofs.setProofEnd(slotId, (await currentTime()) + duration)
       await proofs.expectProofs(slotId, probability)
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
@@ -154,6 +157,7 @@ describe("Proofs", function () {
     const proof = hexlify(randomBytes(42))
 
     beforeEach(async function () {
+      await proofs.setProofStart(slotId, await currentTime())
       await proofs.setProofEnd(slotId, (await currentTime()) + duration)
       await proofs.expectProofs(slotId, probability)
     })
