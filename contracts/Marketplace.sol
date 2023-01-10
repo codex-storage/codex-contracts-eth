@@ -133,7 +133,7 @@ contract Marketplace is Collateral, Proofs {
     uint256 period
   ) public slotMustAcceptProofs(slotId) {
     _markProofAsMissing(slotId, period);
-    address host = _host(slotId);
+    address host = getHost(slotId);
     if (missingProofs(slotId) % slashMisses == 0) {
       _slash(host, slashPercentage);
 
@@ -284,12 +284,8 @@ contract Marketplace is Collateral, Proofs {
     return _isCancelled(requestId);
   }
 
-  function _host(SlotId slotId) internal view returns (address) {
-    return slots[slotId].host;
-  }
-
   function getHost(SlotId slotId) public view returns (address) {
-    return _host(slotId);
+    return slots[slotId].host;
   }
 
   function _request(
