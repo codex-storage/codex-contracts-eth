@@ -59,10 +59,9 @@ contract Marketplace is Collateral, Proofs {
     return RequestId.unwrap(a) == RequestId.unwrap(b);
   }
 
-  function requestStorage(Request calldata request)
-    public
-    marketplaceInvariant
-  {
+  function requestStorage(
+    Request calldata request
+  ) public marketplaceInvariant {
     require(request.client == msg.sender, "Invalid client address");
 
     RequestId id = _toRequestId(request);
@@ -129,10 +128,10 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function markProofAsMissing(SlotId slotId, uint256 period)
-    public
-    slotMustAcceptProofs(slotId)
-  {
+  function markProofAsMissing(
+    SlotId slotId,
+    uint256 period
+  ) public slotMustAcceptProofs(slotId) {
     _markProofAsMissing(slotId, period);
     address host = _host(slotId);
     if (missingProofs(slotId) % slashMisses == 0) {
@@ -147,7 +146,9 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function _forciblyFreeSlot(SlotId slotId)
+  function _forciblyFreeSlot(
+    SlotId slotId
+  )
     internal
     slotMustAcceptProofs(slotId)
     marketplaceInvariant
@@ -188,10 +189,10 @@ contract Marketplace is Collateral, Proofs {
     }
   }
 
-  function payoutSlot(RequestId requestId, SlotId slotId)
-    private
-    marketplaceInvariant
-  {
+  function payoutSlot(
+    RequestId requestId,
+    SlotId slotId
+  ) private marketplaceInvariant {
     require(
       _isFinished(requestId) || _isCancelled(requestId),
       "Contract not ended"
@@ -266,11 +267,9 @@ contract Marketplace is Collateral, Proofs {
   /// @dev Returns requestId that is mapped to the slotId
   /// @param slotId id of the slot
   /// @return if of the request the slot belongs to
-  function _getRequestIdForSlot(SlotId slotId)
-    internal
-    view
-    returns (RequestId)
-  {
+  function _getRequestIdForSlot(
+    SlotId slotId
+  ) internal view returns (RequestId) {
     Slot memory slot = _slot(slotId);
     require(_notEqual(slot.requestId, 0), "Missing request id");
     return slot.requestId;
@@ -293,21 +292,17 @@ contract Marketplace is Collateral, Proofs {
     return _host(slotId);
   }
 
-  function _request(RequestId requestId)
-    internal
-    view
-    returns (Request storage)
-  {
+  function _request(
+    RequestId requestId
+  ) internal view returns (Request storage) {
     Request storage request = requests[requestId];
     require(request.client != address(0), "Unknown request");
     return request;
   }
 
-  function getRequest(RequestId requestId)
-    public
-    view
-    returns (Request memory)
-  {
+  function getRequest(
+    RequestId requestId
+  ) public view returns (Request memory) {
     return _request(requestId);
   }
 
@@ -317,11 +312,9 @@ contract Marketplace is Collateral, Proofs {
     return slot;
   }
 
-  function _context(RequestId requestId)
-    internal
-    view
-    returns (RequestContext storage)
-  {
+  function _context(
+    RequestId requestId
+  ) internal view returns (RequestContext storage) {
     return requestContexts[requestId];
   }
 
@@ -413,61 +406,50 @@ contract Marketplace is Collateral, Proofs {
   /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
   /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
   /// @param requestId id of the request for which to obtain state info
-  function _requestAcceptsProofs(RequestId requestId)
-    internal
-    view
-    returns (bool)
-  {
+  function _requestAcceptsProofs(
+    RequestId requestId
+  ) internal view returns (bool) {
     RequestState s = state(requestId);
     return s == RequestState.New || s == RequestState.Started;
   }
 
-  function _toRequestId(Request memory request)
-    internal
-    pure
-    returns (RequestId)
-  {
+  function _toRequestId(
+    Request memory request
+  ) internal pure returns (RequestId) {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
 
-  function _toRequestIds(bytes32[] memory array)
-    private
-    pure
-    returns (RequestId[] memory result)
-  {
+  function _toRequestIds(
+    bytes32[] memory array
+  ) private pure returns (RequestId[] memory result) {
     // solhint-disable-next-line no-inline-assembly
     assembly {
       result := array
     }
   }
 
-  function _toSlotIds(bytes32[] memory array)
-    private
-    pure
-    returns (SlotId[] memory result)
-  {
+  function _toSlotIds(
+    bytes32[] memory array
+  ) private pure returns (SlotId[] memory result) {
     // solhint-disable-next-line no-inline-assembly
     assembly {
       result := array
     }
   }
 
-  function _toBytes32s(RequestId[] memory array)
-    private
-    pure
-    returns (bytes32[] memory result)
-  {
+  function _toBytes32s(
+    RequestId[] memory array
+  ) private pure returns (bytes32[] memory result) {
     // solhint-disable-next-line no-inline-assembly
     assembly {
       result := array
     }
   }
 
-  function _toSlotId(RequestId requestId, uint256 slotIndex)
-    internal
-    pure
-    returns (SlotId)
-  {
+  function _toSlotId(
+    RequestId requestId,
+    uint256 slotIndex
+  ) internal pure returns (SlotId) {
     return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
   }
 
