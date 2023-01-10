@@ -71,7 +71,6 @@ contract Marketplace is Collateral, Proofs {
     RequestContext storage context = _context(id);
     // set contract end time to `duration` from now (time request was created)
     context.endsAt = block.timestamp + request.ask.duration;
-    _setProofEnd(id, context.endsAt);
 
     requestsPerClient[request.client].add(RequestId.unwrap(id));
 
@@ -97,7 +96,7 @@ contract Marketplace is Collateral, Proofs {
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
-    _expectProofs(slotId, requestId, request.ask.proofProbability);
+    _expectProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
@@ -179,7 +178,6 @@ contract Marketplace is Collateral, Proofs {
       context.state == RequestState.Started
     ) {
       context.state = RequestState.Failed;
-      _setProofEnd(requestId, block.timestamp - 1);
       context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
@@ -322,12 +320,12 @@ contract Marketplace is Collateral, Proofs {
     return _timeout();
   }
 
-  function proofEnd(SlotId slotId) public view returns (uint256) {
+  function proofEnd(SlotId slotId) public view override returns (uint256) {
     return requestEnd(_slot(slotId).requestId);
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
-    uint256 end = _end(requestId);
+    uint256 end = _context(requestId).endsAt;
     if (_requestAcceptsProofs(requestId)) {
       return end;
     } else {

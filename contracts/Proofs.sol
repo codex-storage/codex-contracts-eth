@@ -3,7 +3,7 @@ pragma solidity ^0.8.8;
 
 import "./Requests.sol";
 
-contract Proofs {
+abstract contract Proofs {
   uint256 private immutable period;
   uint256 private immutable timeout;
   uint8 private immutable downtime;
@@ -17,8 +17,6 @@ contract Proofs {
 
   mapping(SlotId => bool) private slotIds;
   mapping(SlotId => uint256) private starts;
-  mapping(RequestId => uint256) private ends;
-  mapping(SlotId => RequestId) private requestForSlot;
   mapping(SlotId => uint256) private probabilities;
   mapping(SlotId => uint256) private markers;
   mapping(SlotId => uint256) private missed;
@@ -33,21 +31,9 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(RequestId requestId) internal view returns (uint256) {
-    uint256 end = ends[requestId];
-    require(end > 0, "Proof ending doesn't exist");
-    return end;
-  }
-
-  function _requestId(SlotId id) internal view returns (RequestId) {
-    RequestId requestId = requestForSlot[id];
-    require(RequestId.unwrap(requestId) > 0, "request for slot doesn't exist");
-    return requestId;
-  }
-
-  function _end(SlotId id) internal view returns (uint256) {
-    return _end(_requestId(id));
-  }
+  // Override this to let the proving system know when proofs for a
+  // slot are no longer required.
+  function proofEnd(SlotId id) public view virtual returns (uint256);
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return missed[slotId];
@@ -63,19 +49,13 @@ contract Proofs {
 
   /// @notice Informs the contract that proofs should be expected for id
   /// @dev Requires that the id is not already in use
-  /// @param id identifies the proof expectation, typically a slot id
   /// @param probability The probability that a proof should be expected
-  function _expectProofs(
-    SlotId id, // typically slot id
-    RequestId request, // typically request id, used so that the ending is global for all slots
-    uint256 probability
-  ) internal {
+  function _expectProofs(SlotId id, uint256 probability) internal {
     require(!slotIds[id], "Slot id already in use");
     slotIds[id] = true;
     starts[id] = block.timestamp;
     probabilities[id] = probability;
     markers[id] = uint256(blockhash(block.number - 1)) % period;
-    requestForSlot[id] = request;
   }
 
   function _unexpectProofs(SlotId id) internal {
@@ -122,7 +102,7 @@ contract Proofs {
     if (proofPeriod <= periodOf(starts[id])) {
       return (false, 0);
     }
-    uint256 end = _end(id);
+    uint256 end = proofEnd(id);
     if (proofPeriod >= periodOf(end)) {
       return (false, 0);
     }
@@ -169,17 +149,6 @@ contract Proofs {
     require(!missing[id][missedPeriod], "Proof already marked as missing");
     missing[id][missedPeriod] = true;
     missed[id] += 1;
-  }
-
-  /// @notice Sets the proof end time
-  /// @dev Can only be set once
-  /// @param ending the new end time (in seconds)
-  function _setProofEnd(RequestId request, uint256 ending) internal {
-    require(
-      ends[request] == 0 || ending < block.timestamp,
-      "End exists or must be past"
-    );
-    ends[request] = ending;
   }
 
   event ProofSubmitted(SlotId id, bytes proof);
