@@ -18,7 +18,6 @@ abstract contract Proofs {
   mapping(SlotId => bool) private slotIds;
   mapping(SlotId => uint256) private starts;
   mapping(SlotId => uint256) private probabilities;
-  mapping(SlotId => uint256) private markers;
   mapping(SlotId => uint256) private missed;
   mapping(SlotId => mapping(uint256 => bool)) private received;
   mapping(SlotId => mapping(uint256 => bool)) private missing;
@@ -55,7 +54,6 @@ abstract contract Proofs {
     slotIds[id] = true;
     starts[id] = block.timestamp;
     probabilities[id] = probability;
-    markers[id] = uint256(blockhash(block.number - 1)) % period;
   }
 
   function _unexpectProofs(SlotId id) internal {
