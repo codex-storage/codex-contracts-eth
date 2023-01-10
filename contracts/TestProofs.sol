@@ -27,10 +27,6 @@ contract TestProofs is Proofs {
     return ends[slotId];
   }
 
-  function period() public view returns (uint256) {
-    return _period();
-  }
-
   function timeout() public view returns (uint256) {
     return _timeout();
   }
@@ -59,7 +55,7 @@ contract TestProofs is Proofs {
     return _getPointer(id);
   }
 
-  function markProofAsMissing(SlotId id, uint256 _period) public {
+  function markProofAsMissing(SlotId id, Period _period) public {
     _markProofAsMissing(id, _period);
   }
 

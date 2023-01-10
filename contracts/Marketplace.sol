@@ -129,7 +129,7 @@ contract Marketplace is Collateral, Proofs {
 
   function markProofAsMissing(
     SlotId slotId,
-    uint256 period
+    Period period
   ) public slotMustAcceptProofs(slotId) {
     _markProofAsMissing(slotId, period);
     address host = getHost(slotId);
@@ -313,7 +313,7 @@ contract Marketplace is Collateral, Proofs {
   }
 
   function proofPeriod() public view returns (uint256) {
-    return _period();
+    return secondsPerPeriod;
   }
 
   function proofTimeout() public view returns (uint256) {
