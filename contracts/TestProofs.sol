@@ -5,6 +5,8 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
+  mapping(SlotId => uint256) private ends;
+
   constructor(
     uint256 __period,
     uint256 __timeout,
@@ -16,6 +18,10 @@ contract TestProofs is Proofs {
 
   }
 
+  function proofEnd(SlotId slotId) public view override returns (uint256) {
+    return ends[slotId];
+  }
+
   function period() public view returns (uint256) {
     return _period();
   }
@@ -24,16 +30,8 @@ contract TestProofs is Proofs {
     return _timeout();
   }
 
-  function end(RequestId id) public view returns (uint256) {
-    return _end(id);
-  }
-
-  function expectProofs(
-    SlotId slot,
-    RequestId request,
-    uint256 _probability
-  ) public {
-    _expectProofs(slot, request, _probability);
+  function expectProofs(SlotId slot, uint256 _probability) public {
+    _expectProofs(slot, _probability);
   }
 
   function unexpectProofs(SlotId id) public {
@@ -60,7 +58,7 @@ contract TestProofs is Proofs {
     _markProofAsMissing(id, _period);
   }
 
-  function setProofEnd(RequestId id, uint256 ending) public {
-    _setProofEnd(id, ending);
+  function setProofEnd(SlotId id, uint256 end) public {
+    ends[id] = end;
   }
 }
