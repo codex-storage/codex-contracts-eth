@@ -15,10 +15,10 @@ contract Proofs {
     downtime = __downtime;
   }
 
-  mapping(SlotId => bool) private ids;
+  mapping(SlotId => bool) private slotIds;
   mapping(SlotId => uint256) private starts;
   mapping(RequestId => uint256) private ends;
-  mapping(SlotId => RequestId) private requestIds;
+  mapping(SlotId => RequestId) private requestForSlot;
   mapping(SlotId => uint256) private probabilities;
   mapping(SlotId => uint256) private markers;
   mapping(SlotId => uint256) private missed;
@@ -33,14 +33,14 @@ contract Proofs {
     return timeout;
   }
 
-  function _end(RequestId request) internal view returns (uint256) {
-    uint256 end = ends[request];
+  function _end(RequestId requestId) internal view returns (uint256) {
+    uint256 end = ends[requestId];
     require(end > 0, "Proof ending doesn't exist");
     return end;
   }
 
   function _requestId(SlotId id) internal view returns (RequestId) {
-    RequestId requestId = requestIds[id];
+    RequestId requestId = requestForSlot[id];
     require(RequestId.unwrap(requestId) > 0, "request for slot doesn't exist");
     return requestId;
   }
@@ -70,17 +70,17 @@ contract Proofs {
     RequestId request, // typically request id, used so that the ending is global for all slots
     uint256 probability
   ) internal {
-    require(!ids[id], "Slot id already in use");
-    ids[id] = true;
+    require(!slotIds[id], "Slot id already in use");
+    slotIds[id] = true;
     starts[id] = block.timestamp;
     probabilities[id] = probability;
     markers[id] = uint256(blockhash(block.number - 1)) % period;
-    requestIds[id] = request;
+    requestForSlot[id] = request;
   }
 
   function _unexpectProofs(SlotId id) internal {
-    require(ids[id], "Proof id not in use");
-    ids[id] = false;
+    require(slotIds[id], "Proof id not in use");
+    slotIds[id] = false;
   }
 
   function _getPointer(
@@ -129,7 +129,7 @@ contract Proofs {
     pointer = _getPointer(id, proofPeriod);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
-    isRequired = ids[id] && uint256(challenge) % probability == 0;
+    isRequired = slotIds[id] && uint256(challenge) % probability == 0;
   }
 
   function _isProofRequired(
