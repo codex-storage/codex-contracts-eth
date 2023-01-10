@@ -8,11 +8,7 @@ contract Proofs {
   uint256 private immutable timeout;
   uint8 private immutable downtime;
 
-  constructor(
-    uint256 __period,
-    uint256 __timeout,
-    uint8 __downtime
-  ) {
+  constructor(uint256 __period, uint256 __timeout, uint8 __downtime) {
     require(block.number > 256, "Insufficient block height");
     period = __period;
     timeout = __timeout;
@@ -87,11 +83,10 @@ contract Proofs {
     ids[id] = false;
   }
 
-  function _getPointer(SlotId id, uint256 proofPeriod)
-    internal
-    view
-    returns (uint8)
-  {
+  function _getPointer(
+    SlotId id,
+    uint256 proofPeriod
+  ) internal view returns (uint8) {
     uint256 blockNumber = block.number % 256;
     uint256 periodNumber = proofPeriod % 256;
     uint256 idOffset = uint256(SlotId.unwrap(id)) % 256;
@@ -109,11 +104,10 @@ contract Proofs {
     return keccak256(abi.encode(hash));
   }
 
-  function _getChallenge(SlotId id, uint256 proofPeriod)
-    internal
-    view
-    returns (bytes32)
-  {
+  function _getChallenge(
+    SlotId id,
+    uint256 proofPeriod
+  ) internal view returns (bytes32) {
     return _getChallenge(_getPointer(id, proofPeriod));
   }
 
@@ -121,11 +115,10 @@ contract Proofs {
     return _getChallenge(id, currentPeriod());
   }
 
-  function _getProofRequirement(SlotId id, uint256 proofPeriod)
-    internal
-    view
-    returns (bool isRequired, uint8 pointer)
-  {
+  function _getProofRequirement(
+    SlotId id,
+    uint256 proofPeriod
+  ) internal view returns (bool isRequired, uint8 pointer) {
     if (proofPeriod <= periodOf(starts[id])) {
       return (false, 0);
     }
@@ -139,11 +132,10 @@ contract Proofs {
     isRequired = ids[id] && uint256(challenge) % probability == 0;
   }
 
-  function _isProofRequired(SlotId id, uint256 proofPeriod)
-    internal
-    view
-    returns (bool)
-  {
+  function _isProofRequired(
+    SlotId id,
+    uint256 proofPeriod
+  ) internal view returns (bool) {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, proofPeriod);
