@@ -320,16 +320,8 @@ contract Marketplace is Collateral, Proofs {
     return _timeout();
   }
 
-  function proofStart(SlotId slotId) public view override returns (uint256) {
-    return requestStart(_slot(slotId).requestId);
-  }
-
   function proofEnd(SlotId slotId) public view override returns (uint256) {
     return requestEnd(_slot(slotId).requestId);
-  }
-
-  function requestStart(RequestId requestId) public view returns (uint256) {
-    return _context(requestId).startedAt;
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
