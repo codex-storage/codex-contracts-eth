@@ -82,7 +82,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     Request storage request = _request(requestId);
     require(slotIndex < request.ask.slots, "Invalid slot");
 
-    SlotId slotId = _toSlotId(requestId, slotIndex);
+    SlotId slotId = Requests.slotId(requestId, slotIndex);
     Slot storage slot = slots[slotId];
     require(slot.host == address(0), "Slot already filled");
 
@@ -397,13 +397,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   ) internal view returns (bool) {
     RequestState s = state(requestId);
     return s == RequestState.New || s == RequestState.Started;
-  }
-
-  function _toSlotId(
-    RequestId requestId,
-    uint256 slotIndex
-  ) internal pure returns (SlotId) {
-    return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
   }
 
   function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {

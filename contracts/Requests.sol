@@ -42,6 +42,13 @@ library Requests {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
 
+  function slotId(
+    RequestId requestId,
+    uint256 slotIndex
+  ) internal pure returns (SlotId) {
+    return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));
+  }
+
   function toRequestIds(
     bytes32[] memory ids
   ) internal pure returns (RequestId[] memory result) {
