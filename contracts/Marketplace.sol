@@ -399,15 +399,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return s == RequestState.New || s == RequestState.Started;
   }
 
-  function _toBytes32s(
-    RequestId[] memory array
-  ) private pure returns (bytes32[] memory result) {
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      result := array
-    }
-  }
-
   function _toSlotId(
     RequestId requestId,
     uint256 slotIndex
