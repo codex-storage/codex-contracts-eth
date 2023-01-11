@@ -5,7 +5,6 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
-  mapping(SlotId => uint256) private starts;
   mapping(SlotId => uint256) private ends;
 
   constructor(
@@ -17,10 +16,6 @@ contract TestProofs is Proofs {
   // solhint-disable-next-line no-empty-blocks
   {
 
-  }
-
-  function proofStart(SlotId slotId) public view override returns (uint256) {
-    return starts[slotId];
   }
 
   function proofEnd(SlotId slotId) public view override returns (uint256) {
@@ -57,10 +52,6 @@ contract TestProofs is Proofs {
 
   function markProofAsMissing(SlotId id, Period _period) public {
     _markProofAsMissing(id, _period);
-  }
-
-  function setProofStart(SlotId id, uint256 start) public {
-    starts[id] = start;
   }
 
   function setProofEnd(SlotId id, uint256 end) public {
