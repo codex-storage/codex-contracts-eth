@@ -56,9 +56,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     require(requests[id].client == address(0), "Request already exists");
 
     requests[id] = request;
-    RequestContext storage context = _context(id);
-    // set contract end time to `duration` from now (time request was created)
-    context.endsAt = block.timestamp + request.ask.duration;
+    requestContexts[id].endsAt = block.timestamp + request.ask.duration;
 
     addToMyRequests(request.client, id);
 
@@ -91,7 +89,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
-    RequestContext storage context = _context(requestId);
+    RequestContext storage context = requestContexts[requestId];
     context.slotsFilled += 1;
 
     addToMySlots(slot.host, slotId);
@@ -172,7 +170,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     SlotId slotId
   ) private marketplaceInvariant {
-    RequestContext storage context = _context(requestId);
+    RequestContext storage context = requestContexts[requestId];
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
     removeFromMyRequests(request.client, requestId);
@@ -194,7 +192,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     Request storage request = requests[requestId];
     require(block.timestamp > request.expiry, "Request not yet timed out");
     require(request.client == msg.sender, "Invalid client address");
-    RequestContext storage context = _context(requestId);
+    RequestContext storage context = requestContexts[requestId];
     require(context.state == RequestState.New, "Invalid state");
 
     // Update request state to Cancelled. Handle in the withdraw transaction
@@ -249,18 +247,12 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return slot;
   }
 
-  function _context(
-    RequestId requestId
-  ) internal view returns (RequestContext storage) {
-    return requestContexts[requestId];
-  }
-
   function proofPeriod() public view returns (uint256) {
     return secondsPerPeriod;
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
-    uint256 end = _context(requestId).endsAt;
+    uint256 end = requestContexts[requestId].endsAt;
     RequestState state = requestState(requestId);
     if (state == RequestState.New || state == RequestState.Started) {
       return end;
@@ -317,7 +309,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function requestState(
     RequestId requestId
   ) public view returns (RequestState) {
-    RequestContext storage context = _context(requestId);
+    RequestContext storage context = requestContexts[requestId];
     if (
       context.state == RequestState.New &&
       block.timestamp > _request(requestId).expiry
