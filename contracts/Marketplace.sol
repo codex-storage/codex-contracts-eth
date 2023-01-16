@@ -261,7 +261,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
     uint256 end = _context(requestId).endsAt;
-    if (_requestAcceptsProofs(requestId)) {
+    RequestState state = requestState(requestId);
+    if (state == RequestState.New || state == RequestState.Started) {
       return end;
     } else {
       return Math.min(end, block.timestamp - 1);
@@ -349,16 +350,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     } else {
       return slot.state;
     }
-  }
-
-  /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
-  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
-  /// @param requestId id of the request for which to obtain state info
-  function _requestAcceptsProofs(
-    RequestId requestId
-  ) internal view returns (bool) {
-    RequestState state = requestState(requestId);
-    return state == RequestState.New || state == RequestState.Started;
   }
 
   struct RequestContext {
