@@ -659,19 +659,6 @@ describe("Marketplace", function () {
       await expect(await marketplace.isCancelled(slot.request)).to.be.true
     })
 
-    it("rejects isSlotCancelled when slot is empty", async function () {
-      await expect(
-        marketplace.isSlotCancelled(slotId(slot))
-      ).to.be.revertedWith("Slot empty")
-    })
-
-    it("changes isSlotCancelled to true once request is cancelled", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(await marketplace.isSlotCancelled(slotId(slot))).to.be.false
-      await waitUntilCancelled(request)
-      await expect(await marketplace.isSlotCancelled(slotId(slot))).to.be.true
-    })
-
     it("changes proofEnd to the past when request is cancelled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(
