@@ -11,6 +11,7 @@ const {
   advanceTimeTo,
 } = require("./evm")
 const { periodic } = require("./time")
+const { SlotState } = require("./requests")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
@@ -37,14 +38,7 @@ describe("Proofs", function () {
 
   describe("general", function () {
     beforeEach(async function () {
-      await proofs.setProofEnd(slotId, (await currentTime()) + duration)
-    })
-
-    it("does not allow ids to be reused", async function () {
-      await proofs.startRequiringProofs(slotId, probability)
-      await expect(
-        proofs.startRequiringProofs(slotId, probability)
-      ).to.be.revertedWith("Proofs already required for slot")
+      await proofs.setSlotState(slotId, SlotState.Filled)
     })
 
     it("requires proofs with an agreed upon probability", async function () {
@@ -70,26 +64,12 @@ describe("Proofs", function () {
       }
     })
 
-    it("requires no proofs in the end period", async function () {
-      const probability = 1
-      await proofs.startRequiringProofs(slotId, probability)
-      await advanceTime(duration)
-      expect(await proofs.isProofRequired(slotId)).to.be.false
-    })
-
-    it("requires no proofs after the end time", async function () {
-      const probability = 1
-      await proofs.startRequiringProofs(slotId, probability)
-      await advanceTime(duration + timeout)
-      expect(await proofs.isProofRequired(slotId)).to.be.false
-    })
-
     it("requires proofs for different ids at different times", async function () {
       let id1 = hexlify(randomBytes(32))
       let id2 = hexlify(randomBytes(32))
       let id3 = hexlify(randomBytes(32))
       for (let slotId of [id1, id2, id3]) {
-        await proofs.setProofEnd(slotId, (await currentTime()) + duration)
+        await proofs.setSlotState(slotId, SlotState.Filled)
         await proofs.startRequiringProofs(slotId, probability)
       }
       let req1, req2, req3
@@ -120,7 +100,7 @@ describe("Proofs", function () {
     }
 
     beforeEach(async function () {
-      await proofs.setProofEnd(slotId, (await currentTime()) + duration)
+      await proofs.setSlotState(slotId, SlotState.Filled)
       await proofs.startRequiringProofs(slotId, probability)
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
@@ -142,10 +122,10 @@ describe("Proofs", function () {
       expect(await proofs.isProofRequired(slotId)).to.be.true
     })
 
-    it("will not require proofs when no longer expected", async function () {
+    it("will not require proofs when slot is finished", async function () {
       expect(await proofs.getPointer(slotId)).to.be.lt(downtime)
       expect(await proofs.willProofBeRequired(slotId)).to.be.true
-      await proofs.stopRequiringProofs(slotId)
+      await proofs.setSlotState(slotId, SlotState.Finished)
       expect(await proofs.willProofBeRequired(slotId)).to.be.false
     })
   })
@@ -154,7 +134,7 @@ describe("Proofs", function () {
     const proof = hexlify(randomBytes(42))
 
     beforeEach(async function () {
-      await proofs.setProofEnd(slotId, (await currentTime()) + duration)
+      await proofs.setSlotState(slotId, SlotState.Filled)
       await proofs.startRequiringProofs(slotId, probability)
     })
 
@@ -268,10 +248,10 @@ describe("Proofs", function () {
       ).to.be.revertedWith("Proof already marked as missing")
     })
 
-    it("requires no proofs when no longer expected", async function () {
+    it("requires no proofs when slot is finished", async function () {
       await waitUntilProofIsRequired(slotId)
-      await proofs.stopRequiringProofs(slotId)
-      await expect(await proofs.isProofRequired(slotId)).to.be.false
+      await proofs.setSlotState(slotId, SlotState.Finished)
+      expect(await proofs.isProofRequired(slotId)).to.be.false
     })
   })
 })

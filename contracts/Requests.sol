@@ -45,6 +45,12 @@ enum RequestState {
   Failed // too many nodes have failed to provide proofs, data lost
 }
 
+enum SlotState {
+  Free, // [default] not filled yet, or host has freed slot
+  Filled, // host has filled slot
+  Finished // successfully or unsuccessfully completed
+}
+
 library Requests {
   function id(Request memory request) internal pure returns (RequestId) {
     return RequestId.wrap(keccak256(abi.encode(request)));

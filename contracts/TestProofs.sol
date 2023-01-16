@@ -5,7 +5,7 @@ import "./Proofs.sol";
 
 // exposes internal functions of Proofs for testing
 contract TestProofs is Proofs {
-  mapping(SlotId => uint256) private ends;
+  mapping(SlotId => SlotState) private states;
 
   constructor(
     uint256 __period,
@@ -18,16 +18,12 @@ contract TestProofs is Proofs {
 
   }
 
-  function proofEnd(SlotId slotId) public view override returns (uint256) {
-    return ends[slotId];
+  function slotState(SlotId slotId) internal view override returns (SlotState) {
+    return states[slotId];
   }
 
   function startRequiringProofs(SlotId slot, uint256 _probability) public {
     _startRequiringProofs(slot, _probability);
-  }
-
-  function stopRequiringProofs(SlotId id) public {
-    _stopRequiringProofs(id);
   }
 
   function isProofRequired(SlotId id) public view returns (bool) {
@@ -50,7 +46,7 @@ contract TestProofs is Proofs {
     _markProofAsMissing(id, _period);
   }
 
-  function setProofEnd(SlotId id, uint256 end) public {
-    ends[id] = end;
+  function setSlotState(SlotId id, SlotState state) public {
+    states[id] = state;
   }
 }

@@ -6,13 +6,13 @@ const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
 const { periodic, hours, minutes } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
+const { RequestState } = require("./requests")
 const {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
-  RequestState,
 } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
@@ -152,11 +152,6 @@ describe("Marketplace", function () {
       expect(await marketplace.getHost(slotId(slot))).to.equal(host.address)
     })
 
-    it("starts requiring storage proofs", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(0)
-    })
-
     it("is rejected when proof is incorrect", async function () {
       let invalid = hexlify([])
       await expect(
@@ -233,66 +228,6 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("proof end", function () {
-    var requestTime
-    beforeEach(async function () {
-      switchAccount(client)
-      await token.approve(marketplace.address, price(request))
-      await marketplace.requestStorage(request)
-      requestTime = await currentTime()
-      switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
-    })
-
-    it("shares proof end time for all slots in request", async function () {
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i < lastSlot; i++) {
-        await marketplace.fillSlot(slot.request, i, proof)
-      }
-      advanceTime(minutes(10))
-      await marketplace.fillSlot(slot.request, lastSlot, proof)
-      let slot0 = { ...slot, index: 0 }
-      let end = await marketplace.proofEnd(slotId(slot0))
-      for (let i = 1; i <= lastSlot; i++) {
-        let sloti = { ...slot, index: i }
-        await expect((await marketplace.proofEnd(slotId(sloti))) === end)
-      }
-    })
-
-    it("sets the proof end time to now + duration", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(
-        (await marketplace.proofEnd(slotId(slot))).toNumber()
-      ).to.be.closeTo(requestTime + request.ask.duration, 1)
-    })
-
-    it("sets proof end time to the past once failed", async function () {
-      await waitUntilStarted(marketplace, request, proof)
-      await waitUntilFailed(marketplace, request)
-      let slot0 = { ...slot, index: request.ask.maxSlotLoss + 1 }
-      const now = await currentTime()
-      await expect(await marketplace.proofEnd(slotId(slot0))).to.be.eq(now - 1)
-    })
-
-    it("sets proof end time to the past once cancelled", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await waitUntilCancelled(request)
-      const now = await currentTime()
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(now - 1)
-    })
-
-    it("checks that proof end time is in the past once finished", async function () {
-      await waitUntilStarted(marketplace, request, proof)
-      await waitUntilFinished(marketplace, requestId(request))
-      const now = await currentTime()
-      // in the process of calling currentTime and proofEnd,
-      // block.timestamp has advanced by 1, so the expected proof end time will
-      // be block.timestamp - 1.
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.eq(now - 1)
-    })
-  })
-
   describe("request end", function () {
     var requestTime
     beforeEach(async function () {
@@ -303,21 +238,6 @@ describe("Marketplace", function () {
       switchAccount(host)
       await token.approve(marketplace.address, collateral)
       await marketplace.deposit(collateral)
-    })
-
-    it("shares request end time for all slots in request", async function () {
-      const lastSlot = request.ask.slots - 1
-      for (let i = 0; i < lastSlot; i++) {
-        await marketplace.fillSlot(slot.request, i, proof)
-      }
-      advanceTime(minutes(10))
-      await marketplace.fillSlot(slot.request, lastSlot, proof)
-      let slot0 = { ...slot, index: 0 }
-      let end = await marketplace.requestEnd(requestId(request))
-      for (let i = 1; i <= lastSlot; i++) {
-        let sloti = { ...slot, index: i }
-        await expect((await marketplace.proofEnd(slotId(sloti))) === end)
-      }
     })
 
     it("sets the request end time to now + duration", async function () {
@@ -350,7 +270,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFinished(marketplace, requestId(request))
       const now = await currentTime()
-      // in the process of calling currentTime and proofEnd,
+      // in the process of calling currentTime and requestEnd,
       // block.timestamp has advanced by 1, so the expected proof end time will
       // be block.timestamp - 1.
       await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
@@ -652,17 +572,6 @@ describe("Marketplace", function () {
         RequestState.Cancelled
       )
     })
-
-    it("changes proofEnd to the past when request is cancelled", async function () {
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(
-        await currentTime()
-      )
-      await waitUntilCancelled(request)
-      await expect(await marketplace.proofEnd(slotId(slot))).to.be.lt(
-        await currentTime()
-      )
-    })
   })
 
   describe("proof requirements", function () {
@@ -697,6 +606,12 @@ describe("Marketplace", function () {
         await advanceTime(period)
       }
     }
+
+    it("requires proofs when slot is filled", async function () {
+      const id = slotId(slot)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilProofWillBeRequired(id)
+    })
 
     it("will not require proofs once cancelled", async function () {
       const id = slotId(slot)
