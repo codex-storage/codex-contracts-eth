@@ -113,15 +113,13 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
       payoutSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       removeFromMySlots(msg.sender, slotId);
-    } else {
+    } else if (state == SlotState.Filled) {
       _forciblyFreeSlot(slotId);
     }
   }
 
-  function markProofAsMissing(
-    SlotId slotId,
-    Period period
-  ) public slotMustAcceptProofs(slotId) {
+  function markProofAsMissing(SlotId slotId, Period period) public {
+    require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);
     address host = getHost(slotId);
     if (missingProofs(slotId) % slashMisses == 0) {
@@ -136,14 +134,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  function _forciblyFreeSlot(
-    SlotId slotId
-  )
-    internal
-    slotMustAcceptProofs(slotId)
-    marketplaceInvariant
-  // TODO: restrict senders that can call this function
-  {
+  function _forciblyFreeSlot(SlotId slotId) internal marketplaceInvariant {
     Slot storage slot = _slot(slotId);
     RequestId requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
@@ -400,15 +391,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     assert(funds.received >= oldFunds.received);
     assert(funds.sent >= oldFunds.sent);
     assert(funds.received == funds.balance + funds.sent);
-  }
-
-  /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.
-  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
-  /// @param slotId id of the slot, that is mapped to a request, for which to obtain state info
-  modifier slotMustAcceptProofs(SlotId slotId) {
-    RequestId requestId = _getRequestIdForSlot(slotId);
-    require(_requestAcceptsProofs(requestId), "Slot not accepting proofs");
-    _;
   }
 
   struct MarketplaceFunds {
