@@ -105,10 +105,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function freeSlot(SlotId slotId) public {
     Slot storage slot = _slot(slotId);
     require(slot.host == msg.sender, "Slot filled by other host");
-    RequestState s = state(slot.requestId);
-    if (s == RequestState.Finished || s == RequestState.Cancelled) {
+    RequestState state = requestState(slot.requestId);
+    if (state == RequestState.Finished || state == RequestState.Cancelled) {
       payoutSlot(slot.requestId, slotId);
-    } else if (s == RequestState.Failed) {
+    } else if (state == RequestState.Failed) {
       removeFromMySlots(msg.sender, slotId);
     } else {
       _forciblyFreeSlot(slotId);
@@ -179,10 +179,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     SlotId slotId
   ) private marketplaceInvariant {
-    RequestState requestState = state(requestId);
+    RequestState state = requestState(requestId);
     require(
-      requestState == RequestState.Finished ||
-        requestState == RequestState.Cancelled,
+      state == RequestState.Finished || state == RequestState.Cancelled,
       "Contract not ended"
     );
     RequestContext storage context = _context(requestId);
@@ -331,7 +330,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return request.ask.duration * request.ask.reward;
   }
 
-  function state(RequestId requestId) public view returns (RequestState) {
+  function requestState(
+    RequestId requestId
+  ) public view returns (RequestState) {
     RequestContext storage context = _context(requestId);
     if (
       context.state == RequestState.New &&
@@ -361,8 +362,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function _requestAcceptsProofs(
     RequestId requestId
   ) internal view returns (bool) {
-    RequestState s = state(requestId);
-    return s == RequestState.New || s == RequestState.Started;
+    RequestState state = requestState(requestId);
+    return state == RequestState.New || state == RequestState.Started;
   }
 
   struct RequestContext {
