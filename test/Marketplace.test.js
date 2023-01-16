@@ -486,7 +486,7 @@ describe("Marketplace", function () {
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.fillSlot(slot.request, i, proof)
       }
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Started
       )
     })
@@ -595,7 +595,7 @@ describe("Marketplace", function () {
     })
 
     it("changes state to Cancelled when client withdraws funds", async function () {
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.New
       )
     })
@@ -604,14 +604,14 @@ describe("Marketplace", function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       await marketplace.withdrawFunds(slot.request)
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Cancelled
       )
     })
 
     it("changes state to Started once all slots are filled", async function () {
       await waitUntilStarted(marketplace, request, proof)
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Started
       )
     })
@@ -619,7 +619,7 @@ describe("Marketplace", function () {
     it("state is Failed once too many slots are freed", async function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFailed(marketplace, request)
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Failed
       )
     })
@@ -628,7 +628,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Finished
       )
     })
@@ -641,14 +641,14 @@ describe("Marketplace", function () {
         let id = slotId(slot)
         await marketplace.forciblyFreeSlot(id)
       }
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.New
       )
     })
 
     it("changes state to Cancelled once request is cancelled", async function () {
       await waitUntilCancelled(request)
-      await expect(await marketplace.state(slot.request)).to.equal(
+      await expect(await marketplace.requestState(slot.request)).to.equal(
         RequestState.Cancelled
       )
     })
