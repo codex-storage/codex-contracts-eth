@@ -734,43 +734,6 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("modifiers", function () {
-    beforeEach(async function () {
-      switchAccount(client)
-      await token.approve(marketplace.address, price(request))
-      await marketplace.requestStorage(request)
-      switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
-    })
-
-    describe("accepting proofs", function () {
-      it("fails when request Cancelled", async function () {
-        await marketplace.fillSlot(slot.request, slot.index, proof)
-        await waitUntilCancelled(request)
-        await expect(
-          marketplace.testAcceptsProofs(slotId(slot))
-        ).to.be.revertedWith("Slot not accepting proofs")
-      })
-
-      it("fails when request Finished", async function () {
-        await waitUntilStarted(marketplace, request, proof)
-        await waitUntilFinished(marketplace, requestId(request))
-        await expect(
-          marketplace.testAcceptsProofs(slotId(slot))
-        ).to.be.revertedWith("Slot not accepting proofs")
-      })
-
-      it("fails when request Failed", async function () {
-        await waitUntilStarted(marketplace, request, proof)
-        await waitUntilFailed(marketplace, request)
-        await expect(
-          marketplace.testAcceptsProofs(slotId(slot))
-        ).to.be.revertedWith("Slot empty")
-      })
-    })
-  })
-
   describe("list of active requests", function () {
     beforeEach(async function () {
       switchAccount(host)
