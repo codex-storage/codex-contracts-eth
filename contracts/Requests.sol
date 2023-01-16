@@ -37,6 +37,14 @@ struct PoR {
   bytes name; // random name
 }
 
+enum RequestState {
+  New, // [default] waiting to fill slots
+  Started, // all slots filled, accepting regular proofs
+  Cancelled, // not enough slots filled before expiry
+  Finished, // successfully completed
+  Failed // too many nodes have failed to provide proofs, data lost
+}
+
 library Requests {
   function id(Request memory request) internal pure returns (RequestId) {
     return RequestId.wrap(keccak256(abi.encode(request)));
