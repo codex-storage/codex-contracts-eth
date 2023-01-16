@@ -653,12 +653,6 @@ describe("Marketplace", function () {
       )
     })
 
-    it("changes isCancelled to true once request is cancelled", async function () {
-      await expect(await marketplace.isCancelled(slot.request)).to.be.false
-      await waitUntilCancelled(request)
-      await expect(await marketplace.isCancelled(slot.request)).to.be.true
-    })
-
     it("changes proofEnd to the past when request is cancelled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await expect(await marketplace.proofEnd(slotId(slot))).to.be.gt(
@@ -836,7 +830,7 @@ describe("Marketplace", function () {
     })
 
     describe("accepting proofs", function () {
-      it("fails when request Cancelled (isCancelled is true)", async function () {
+      it("fails when request Cancelled", async function () {
         await marketplace.fillSlot(slot.request, slot.index, proof)
         await waitUntilCancelled(request)
         await expect(
@@ -844,28 +838,9 @@ describe("Marketplace", function () {
         ).to.be.revertedWith("Slot not accepting proofs")
       })
 
-      it("fails when request Cancelled (state set to Cancelled)", async function () {
-        await marketplace.fillSlot(slot.request, slot.index, proof)
-        await waitUntilCancelled(request)
-        switchAccount(client)
-        await marketplace.withdrawFunds(slot.request)
-        await expect(
-          marketplace.testAcceptsProofs(slotId(slot))
-        ).to.be.revertedWith("Slot not accepting proofs")
-      })
-
-      it("fails when request Finished (isFinished is true)", async function () {
+      it("fails when request Finished", async function () {
         await waitUntilStarted(marketplace, request, proof)
         await waitUntilFinished(marketplace, requestId(request))
-        await expect(
-          marketplace.testAcceptsProofs(slotId(slot))
-        ).to.be.revertedWith("Slot not accepting proofs")
-      })
-
-      it("fails when request Finished (state set to Finished)", async function () {
-        await waitUntilStarted(marketplace, request, proof)
-        await waitUntilFinished(marketplace, requestId(request))
-        await marketplace.freeSlot(slotId(slot))
         await expect(
           marketplace.testAcceptsProofs(slotId(slot))
         ).to.be.revertedWith("Slot not accepting proofs")
