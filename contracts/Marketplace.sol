@@ -235,7 +235,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     SlotId slotId
   ) internal view returns (RequestId) {
     Slot memory slot = _slot(slotId);
-    require(_notEqual(slot.requestId, 0), "Missing request id");
+    require(RequestId.unwrap(slot.requestId) != 0, "Missing request id");
     return slot.requestId;
   }
 
@@ -363,10 +363,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   ) internal view returns (bool) {
     RequestState s = state(requestId);
     return s == RequestState.New || s == RequestState.Started;
-  }
-
-  function _notEqual(RequestId a, uint256 b) internal pure returns (bool) {
-    return RequestId.unwrap(a) != bytes32(b);
   }
 
   enum RequestState {
