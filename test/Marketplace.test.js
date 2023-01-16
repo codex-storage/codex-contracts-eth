@@ -4,7 +4,7 @@ const { AddressZero } = ethers.constants
 const { BigNumber } = ethers
 const { expect } = require("chai")
 const { exampleRequest } = require("./examples")
-const { periodic, hours, minutes } = require("./time")
+const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
 const { RequestState } = require("./requests")
 const {
