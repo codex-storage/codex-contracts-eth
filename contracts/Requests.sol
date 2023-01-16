@@ -48,7 +48,9 @@ enum RequestState {
 enum SlotState {
   Free, // [default] not filled yet, or host has freed slot
   Filled, // host has filled slot
-  Finished // successfully or unsuccessfully completed
+  Finished, // successfully completed
+  Failed, // host has missed too many proofs
+  Paid // host has been paid
 }
 
 library Requests {
