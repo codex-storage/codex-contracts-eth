@@ -173,7 +173,7 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Slot already filled")
+      ).to.be.revertedWith("Slot is not free")
     })
 
     it("is rejected when request is unknown", async function () {
@@ -191,7 +191,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await expect(
         marketplace.fillSlot(requestId(expired), slot.index, proof)
-      ).to.be.revertedWith("Request not accepting proofs")
+      ).to.be.revertedWith("Slot is not free")
     })
 
     it("is rejected when request is finished", async function () {
@@ -199,7 +199,7 @@ describe("Marketplace", function () {
       await waitUntilFinished(marketplace, requestId(request))
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Request not accepting proofs")
+      ).to.be.revertedWith("Slot is not free")
     })
 
     it("is rejected when request is failed", async function () {
@@ -207,7 +207,7 @@ describe("Marketplace", function () {
       await waitUntilFailed(marketplace, request)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Request not accepting proofs")
+      ).to.be.revertedWith("Slot is not free")
     })
 
     it("is rejected when slot index not in range", async function () {
@@ -224,7 +224,7 @@ describe("Marketplace", function () {
       }
       await expect(
         marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Slot already filled")
+      ).to.be.revertedWith("Slot is not free")
     })
   })
 
@@ -417,7 +417,7 @@ describe("Marketplace", function () {
       }
       await expect(
         marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Slot already filled")
+      ).to.be.revertedWith("Slot is not free")
     })
   })
 

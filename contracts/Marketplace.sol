@@ -74,7 +74,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     uint256 slotIndex,
     bytes calldata proof
-  ) public requestMustAcceptProofs(requestId) marketplaceInvariant {
+  ) public {
     Request storage request = _request(requestId);
     require(slotIndex < request.ask.slots, "Invalid slot");
 
@@ -82,7 +82,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     Slot storage slot = slots[slotId];
     slot.requestId = requestId;
 
-    require(slotState(slotId) == SlotState.Free, "Slot already filled");
+    require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
@@ -408,14 +408,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   modifier slotMustAcceptProofs(SlotId slotId) {
     RequestId requestId = _getRequestIdForSlot(slotId);
     require(_requestAcceptsProofs(requestId), "Slot not accepting proofs");
-    _;
-  }
-
-  /// @notice Modifier that requires the request state to be that which is accepting proof submissions from hosts occupying slots.
-  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
-  /// @param requestId id of the request, for which to obtain state info
-  modifier requestMustAcceptProofs(RequestId requestId) {
-    require(_requestAcceptsProofs(requestId), "Request not accepting proofs");
     _;
   }
 
