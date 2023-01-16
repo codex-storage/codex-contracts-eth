@@ -308,10 +308,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return secondsPerPeriod;
   }
 
-  function proofTimeout() public view returns (uint256) {
-    return _timeout();
-  }
-
   function proofEnd(SlotId slotId) public view override returns (uint256) {
     return requestEnd(_slot(slotId).requestId);
   }

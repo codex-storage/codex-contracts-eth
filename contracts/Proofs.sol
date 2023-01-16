@@ -5,7 +5,7 @@ import "./Requests.sol";
 import "./Periods.sol";
 
 abstract contract Proofs is Periods {
-  uint256 private immutable timeout;
+  uint256 public immutable proofTimeout;
   uint8 private immutable downtime;
 
   constructor(
@@ -14,7 +14,7 @@ abstract contract Proofs is Periods {
     uint8 __downtime
   ) Periods(__period) {
     require(block.number > 256, "Insufficient block height");
-    timeout = __timeout;
+    proofTimeout = __timeout;
     downtime = __downtime;
   }
 
@@ -24,10 +24,6 @@ abstract contract Proofs is Periods {
   mapping(SlotId => uint256) private missed;
   mapping(SlotId => mapping(Period => bool)) private received;
   mapping(SlotId => mapping(Period => bool)) private missing;
-
-  function _timeout() internal view returns (uint256) {
-    return timeout;
-  }
 
   // Override this to let the proving system know when proofs for a
   // slot are no longer required.
@@ -130,7 +126,7 @@ abstract contract Proofs is Periods {
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 periodEnd = periodEnd(missedPeriod);
     require(periodEnd < block.timestamp, "Period has not ended yet");
-    require(block.timestamp < periodEnd + timeout, "Validation timed out");
+    require(block.timestamp < periodEnd + proofTimeout, "Validation timed out");
     require(!received[id][missedPeriod], "Proof was submitted, not missing");
     require(_isProofRequired(id, missedPeriod), "Proof was not required");
     require(!missing[id][missedPeriod], "Proof already marked as missing");
