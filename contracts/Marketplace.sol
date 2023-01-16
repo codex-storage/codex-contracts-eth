@@ -47,10 +47,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return !hasSlots(msg.sender);
   }
 
-  function _equals(RequestId a, RequestId b) internal pure returns (bool) {
-    return RequestId.unwrap(a) == RequestId.unwrap(b);
-  }
-
   function requestStorage(
     Request calldata request
   ) public marketplaceInvariant {
