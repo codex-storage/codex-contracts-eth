@@ -179,8 +179,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     SlotId slotId
   ) private marketplaceInvariant {
+    RequestState requestState = state(requestId);
     require(
-      _isFinished(requestId) || _isCancelled(requestId),
+      requestState == RequestState.Finished ||
+        requestState == RequestState.Cancelled,
       "Contract not ended"
     );
     RequestContext storage context = _context(requestId);
@@ -223,30 +225,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     funds.sent += amount;
     funds.balance -= amount;
     require(token.transfer(msg.sender, amount), "Withdraw failed");
-  }
-
-  /// @notice Return true if the request state is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
-  /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
-  /// @param requestId the id of the request
-  /// @return true if request is cancelled
-  function _isCancelled(RequestId requestId) internal view returns (bool) {
-    RequestContext storage context = _context(requestId);
-    return
-      context.state == RequestState.Cancelled ||
-      (context.state == RequestState.New &&
-        block.timestamp > _request(requestId).expiry);
-  }
-
-  /// @notice Return true if the request state is RequestState.Finished or if the request duration has elapsed and the request was started.
-  /// @dev Handles the case when a request may have been finished, but the state has not yet been updated by a transaction.
-  /// @param requestId the id of the request
-  /// @return true if request is finished
-  function _isFinished(RequestId requestId) internal view returns (bool) {
-    RequestContext memory context = _context(requestId);
-    return
-      context.state == RequestState.Finished ||
-      (context.state == RequestState.Started &&
-        block.timestamp > context.endsAt);
   }
 
   /// @notice Return id of request that slot belongs to
@@ -354,12 +332,17 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function state(RequestId requestId) public view returns (RequestState) {
-    if (_isCancelled(requestId)) {
+    RequestContext storage context = _context(requestId);
+    if (
+      context.state == RequestState.New &&
+      block.timestamp > _request(requestId).expiry
+    ) {
       return RequestState.Cancelled;
-    } else if (_isFinished(requestId)) {
+    } else if (
+      context.state == RequestState.Started && block.timestamp > context.endsAt
+    ) {
       return RequestState.Finished;
     } else {
-      RequestContext storage context = _context(requestId);
       return context.state;
     }
   }
