@@ -211,18 +211,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
-  /// @notice Return id of request that slot belongs to
-  /// @dev Returns requestId that is mapped to the slotId
-  /// @param slotId id of the slot
-  /// @return if of the request the slot belongs to
-  function _getRequestIdForSlot(
-    SlotId slotId
-  ) internal view returns (RequestId) {
-    Slot memory slot = _slot(slotId);
-    require(RequestId.unwrap(slot.requestId) != 0, "Missing request id");
-    return slot.requestId;
-  }
-
   function getHost(SlotId slotId) public view returns (address) {
     return slots[slotId].host;
   }
