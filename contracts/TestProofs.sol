@@ -22,10 +22,6 @@ contract TestProofs is Proofs {
     return ends[slotId];
   }
 
-  function timeout() public view returns (uint256) {
-    return _timeout();
-  }
-
   function startRequiringProofs(SlotId slot, uint256 _probability) public {
     _startRequiringProofs(slot, _probability);
   }
