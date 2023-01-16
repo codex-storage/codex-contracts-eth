@@ -34,10 +34,6 @@ contract TestMarketplace is Marketplace {
     return _isCancelled(requestId);
   }
 
-  function isSlotCancelled(SlotId slotId) public view returns (bool) {
-    return _isSlotCancelled(slotId);
-  }
-
   function forciblyFreeSlot(SlotId slotId) public {
     _forciblyFreeSlot(slotId);
   }

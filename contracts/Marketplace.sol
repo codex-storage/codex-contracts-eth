@@ -261,15 +261,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return slot.requestId;
   }
 
-  /// @notice Return true if the request state the slot belongs to is RequestState.Cancelled or if the request expiry time has elapsed and the request was never started.
-  /// @dev Handles the case when a request may have been cancelled, but the client has not withdrawn its funds yet, and therefore the state has not yet been updated.
-  /// @param slotId the id of the slot
-  /// @return true if request is cancelled
-  function _isSlotCancelled(SlotId slotId) internal view returns (bool) {
-    RequestId requestId = _getRequestIdForSlot(slotId);
-    return _isCancelled(requestId);
-  }
-
   function getHost(SlotId slotId) public view returns (address) {
     return slots[slotId].host;
   }
