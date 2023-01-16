@@ -80,7 +80,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     Slot storage slot = slots[slotId];
-    require(slot.host == address(0), "Slot already filled");
+    slot.requestId = requestId;
+
+    require(slotState(slotId) == SlotState.Free, "Slot already filled");
 
     require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
 
@@ -88,7 +90,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
-    slot.requestId = requestId;
+    slot.state = SlotState.Filled;
     RequestContext storage context = _context(requestId);
     context.slotsFilled += 1;
 
@@ -150,10 +152,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     // Slot collateral is not yet implemented as the design decision was
     // not finalised.
 
-    _stopRequiringProofs(slotId);
-
     removeFromMySlots(slot.host, slotId);
 
+    slot.state = SlotState.Free;
     slot.host = address(0);
     slot.requestId = RequestId.wrap(0);
     context.slotsFilled -= 1;
@@ -258,7 +259,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   function _slot(SlotId slotId) internal view returns (Slot storage) {
     Slot storage slot = slots[slotId];
-    require(slot.host != address(0), "Slot empty");
+    require(slot.state == SlotState.Filled, "Slot empty");
     return slot;
   }
 
@@ -272,10 +273,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return secondsPerPeriod;
   }
 
-  function proofEnd(SlotId slotId) public view override returns (uint256) {
-    return requestEnd(_slot(slotId).requestId);
-  }
-
   function requestEnd(RequestId requestId) public view returns (uint256) {
     uint256 end = _context(requestId).endsAt;
     if (_requestAcceptsProofs(requestId)) {
@@ -286,21 +283,21 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function isProofRequired(SlotId slotId) public view returns (bool) {
-    if (!_slotAcceptsProofs(slotId)) {
+    if (slotState(slotId) != SlotState.Filled) {
       return false;
     }
     return _isProofRequired(slotId);
   }
 
   function willProofBeRequired(SlotId slotId) public view returns (bool) {
-    if (!_slotAcceptsProofs(slotId)) {
+    if (slotState(slotId) != SlotState.Filled) {
       return false;
     }
     return _willProofBeRequired(slotId);
   }
 
   function getChallenge(SlotId slotId) public view returns (bytes32) {
-    if (!_slotAcceptsProofs(slotId)) {
+    if (slotState(slotId) != SlotState.Filled) {
       return bytes32(0);
     }
     return _getChallenge(slotId);
@@ -348,12 +345,18 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
-  /// @dev Request state must be new or started, and must not be cancelled, finished, or failed.
-  /// @param slotId id of the slot, that is mapped to a request, for which to obtain state info
-  function _slotAcceptsProofs(SlotId slotId) internal view returns (bool) {
-    RequestId requestId = _getRequestIdForSlot(slotId);
-    return _requestAcceptsProofs(requestId);
+  function slotState(SlotId slotId) internal view override returns (SlotState) {
+    Slot storage slot = slots[slotId];
+    RequestState reqState = requestState(slot.requestId);
+    if (
+      reqState == RequestState.Finished ||
+      reqState == RequestState.Cancelled ||
+      reqState == RequestState.Failed
+    ) {
+      return SlotState.Finished;
+    } else {
+      return slot.state;
+    }
   }
 
   /// @notice returns true when the request is accepting proof submissions from hosts occupying slots.
@@ -367,13 +370,14 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   struct RequestContext {
-    uint256 slotsFilled;
     RequestState state;
+    uint256 slotsFilled;
     uint256 startedAt;
     uint256 endsAt;
   }
 
   struct Slot {
+    SlotState state;
     address host;
     bool hostPaid;
     RequestId requestId;

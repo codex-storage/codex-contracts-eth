@@ -18,16 +18,13 @@ abstract contract Proofs is Periods {
     downtime = __downtime;
   }
 
-  mapping(SlotId => bool) private slotIds;
   mapping(SlotId => uint256) private slotStarts;
   mapping(SlotId => uint256) private probabilities;
   mapping(SlotId => uint256) private missed;
   mapping(SlotId => mapping(Period => bool)) private received;
   mapping(SlotId => mapping(Period => bool)) private missing;
 
-  // Override this to let the proving system know when proofs for a
-  // slot are no longer required.
-  function proofEnd(SlotId id) public view virtual returns (uint256);
+  function slotState(SlotId id) internal view virtual returns (SlotState);
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return missed[slotId];
@@ -37,15 +34,8 @@ abstract contract Proofs is Periods {
   /// @dev Requires that the id is not already in use
   /// @param probability The probability that a proof should be expected
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
-    require(!slotIds[id], "Proofs already required for slot");
-    slotIds[id] = true;
     slotStarts[id] = block.timestamp;
     probabilities[id] = probability;
-  }
-
-  function _stopRequiringProofs(SlotId id) internal {
-    require(slotIds[id], "Proofs not required for slot");
-    slotIds[id] = false;
   }
 
   function _getPointer(
@@ -84,15 +74,15 @@ abstract contract Proofs is Periods {
     SlotId id,
     Period proofPeriod
   ) internal view returns (bool isRequired, uint8 pointer) {
+    SlotState state = slotState(id);
     Period start = periodOf(slotStarts[id]);
-    Period end = periodOf(proofEnd(id));
-    if (!isAfter(proofPeriod, start) || !isBefore(proofPeriod, end)) {
+    if (state != SlotState.Filled || !isAfter(proofPeriod, start)) {
       return (false, 0);
     }
     pointer = _getPointer(id, proofPeriod);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
-    isRequired = slotIds[id] && uint256(challenge) % probability == 0;
+    isRequired = uint256(challenge) % probability == 0;
   }
 
   function _isProofRequired(
