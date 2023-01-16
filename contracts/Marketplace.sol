@@ -107,10 +107,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function freeSlot(SlotId slotId) public {
     Slot storage slot = _slot(slotId);
     require(slot.host == msg.sender, "Slot filled by other host");
-    RequestState state = requestState(slot.requestId);
-    if (state == RequestState.Finished || state == RequestState.Cancelled) {
+    SlotState state = slotState(slotId);
+    require(state != SlotState.Paid, "Already paid");
+    if (state == SlotState.Finished) {
       payoutSlot(slot.requestId, slotId);
-    } else if (state == RequestState.Failed) {
+    } else if (state == SlotState.Failed) {
       removeFromMySlots(msg.sender, slotId);
     } else {
       _forciblyFreeSlot(slotId);
@@ -180,24 +181,18 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     SlotId slotId
   ) private marketplaceInvariant {
-    RequestState state = requestState(requestId);
-    require(
-      state == RequestState.Finished || state == RequestState.Cancelled,
-      "Contract not ended"
-    );
     RequestContext storage context = _context(requestId);
     Request storage request = _request(requestId);
     context.state = RequestState.Finished;
     removeFromMyRequests(request.client, requestId);
     Slot storage slot = _slot(slotId);
-    require(!slot.hostPaid, "Already paid");
 
     removeFromMySlots(slot.host, slotId);
 
     uint256 amount = pricePerSlot(requests[requestId]);
     funds.sent += amount;
     funds.balance -= amount;
-    slot.hostPaid = true;
+    slot.state = SlotState.Paid;
     require(token.transfer(slot.host, amount), "Payment failed");
   }
 
@@ -259,7 +254,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   function _slot(SlotId slotId) internal view returns (Slot storage) {
     Slot storage slot = slots[slotId];
-    require(slot.state == SlotState.Filled, "Slot empty");
+    require(slot.state != SlotState.Free, "Slot empty");
     return slot;
   }
 
@@ -348,10 +343,16 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function slotState(SlotId slotId) internal view override returns (SlotState) {
     Slot storage slot = slots[slotId];
     RequestState reqState = requestState(slot.requestId);
-    if (
+    if (slot.state == SlotState.Paid) {
+      return SlotState.Paid;
+    } else if (
+      slot.state == SlotState.Failed || reqState == RequestState.Failed
+    ) {
+      return SlotState.Failed;
+    } else if (
+      slot.state == SlotState.Finished ||
       reqState == RequestState.Finished ||
-      reqState == RequestState.Cancelled ||
-      reqState == RequestState.Failed
+      reqState == RequestState.Cancelled
     ) {
       return SlotState.Finished;
     } else {
@@ -378,9 +379,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   struct Slot {
     SlotState state;
-    address host;
-    bool hostPaid;
     RequestId requestId;
+    address host;
   }
 
   event StorageRequested(RequestId requestId, Ask ask);
