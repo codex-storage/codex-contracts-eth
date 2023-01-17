@@ -297,7 +297,7 @@ describe("Marketplace", function () {
       slot.index = 5
       let nonExistentId = slotId(slot)
       await expect(marketplace.freeSlot(nonExistentId)).to.be.revertedWith(
-        "Slot empty"
+        "Slot is free"
       )
     })
 
@@ -319,12 +319,6 @@ describe("Marketplace", function () {
       await expect(await marketplace.freeSlot(id))
         .to.emit(marketplace, "SlotFreed")
         .withArgs(slot.request, id)
-    })
-
-    it("cannot get slot once freed", async function () {
-      await waitUntilStarted(marketplace, request, proof)
-      await marketplace.freeSlot(id)
-      await expect(marketplace.slot(id)).to.be.revertedWith("Slot empty")
     })
   })
 

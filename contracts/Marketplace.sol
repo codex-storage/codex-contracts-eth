@@ -102,8 +102,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  function freeSlot(SlotId slotId) public {
-    Slot storage slot = _slot(slotId);
+  function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
+    Slot storage slot = slots[slotId];
     require(slot.host == msg.sender, "Slot filled by other host");
     SlotState state = slotState(slotId);
     require(state != SlotState.Paid, "Already paid");
@@ -133,7 +133,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function _forciblyFreeSlot(SlotId slotId) internal marketplaceInvariant {
-    Slot storage slot = _slot(slotId);
+    Slot storage slot = slots[slotId];
     RequestId requestId = slot.requestId;
     RequestContext storage context = requestContexts[requestId];
 
@@ -174,7 +174,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     Request storage request = requests[requestId];
     context.state = RequestState.Finished;
     removeFromMyRequests(request.client, requestId);
-    Slot storage slot = _slot(slotId);
+    Slot storage slot = slots[slotId];
 
     removeFromMySlots(slot.host, slotId);
 
@@ -226,10 +226,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return requests[requestId];
   }
 
-  function _slot(SlotId slotId) internal view returns (Slot storage) {
-    Slot storage slot = slots[slotId];
-    require(slot.state != SlotState.Free, "Slot empty");
-    return slot;
+  modifier slotIsNotFree(SlotId slotId) {
+    require(slots[slotId].state != SlotState.Free, "Slot is free");
+    _;
   }
 
   function proofPeriod() public view returns (uint256) {
