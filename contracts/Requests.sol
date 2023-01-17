@@ -82,4 +82,14 @@ library Requests {
       result := ids
     }
   }
+
+  function pricePerSlot(
+    Request memory request
+  ) internal pure returns (uint256) {
+    return request.ask.duration * request.ask.reward;
+  }
+
+  function price(Request memory request) internal pure returns (uint256) {
+    return request.ask.slots * pricePerSlot(request);
+  }
 }
