@@ -72,8 +72,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     uint256 slotIndex,
     bytes calldata proof
-  ) public {
-    Request storage request = _request(requestId);
+  ) public requestIsKnown(requestId) {
+    Request storage request = requests[requestId];
     require(slotIndex < request.ask.slots, "Invalid slot");
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
@@ -150,7 +150,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
 
-    Request storage request = _request(requestId);
+    Request storage request = requests[requestId];
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
     if (
       slotsLost > request.ask.maxSlotLoss &&
@@ -169,9 +169,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function payoutSlot(
     RequestId requestId,
     SlotId slotId
-  ) private marketplaceInvariant {
+  ) private requestIsKnown(requestId) marketplaceInvariant {
     RequestContext storage context = requestContexts[requestId];
-    Request storage request = _request(requestId);
+    Request storage request = requests[requestId];
     context.state = RequestState.Finished;
     removeFromMyRequests(request.client, requestId);
     Slot storage slot = _slot(slotId);
@@ -215,18 +215,15 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return slots[slotId].host;
   }
 
-  function _request(
-    RequestId requestId
-  ) internal view returns (Request storage) {
-    Request storage request = requests[requestId];
-    require(request.client != address(0), "Unknown request");
-    return request;
+  modifier requestIsKnown(RequestId requestId) {
+    require(requests[requestId].client != address(0), "Unknown request");
+    _;
   }
 
   function getRequest(
     RequestId requestId
-  ) public view returns (Request memory) {
-    return _request(requestId);
+  ) public view requestIsKnown(requestId) returns (Request memory) {
+    return requests[requestId];
   }
 
   function _slot(SlotId slotId) internal view returns (Slot storage) {
@@ -271,11 +268,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   function requestState(
     RequestId requestId
-  ) public view returns (RequestState) {
+  ) public view requestIsKnown(requestId) returns (RequestState) {
     RequestContext storage context = requestContexts[requestId];
     if (
       context.state == RequestState.New &&
-      block.timestamp > _request(requestId).expiry
+      block.timestamp > requests[requestId].expiry
     ) {
       return RequestState.Cancelled;
     } else if (
