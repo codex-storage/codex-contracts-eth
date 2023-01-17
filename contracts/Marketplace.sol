@@ -60,7 +60,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     addToMyRequests(request.client, id);
 
-    uint256 amount = price(request);
+    uint256 amount = request.price();
     funds.received += amount;
     funds.balance += amount;
     transferFrom(msg.sender, amount);
@@ -178,7 +178,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = pricePerSlot(requests[requestId]);
+    uint256 amount = requests[requestId].pricePerSlot();
     funds.sent += amount;
     funds.balance -= amount;
     slot.state = SlotState.Paid;
@@ -205,7 +205,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     // TODO: To be changed once we start paying out hosts for the time they
     // fill a slot. The amount that we paid to hosts will then have to be
     // deducted from the price.
-    uint256 amount = _price(request);
+    uint256 amount = request.price();
     funds.sent += amount;
     funds.balance -= amount;
     require(token.transfer(msg.sender, amount), "Withdraw failed");
@@ -239,26 +239,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     } else {
       return Math.min(end, block.timestamp - 1);
     }
-  }
-
-  function _price(
-    uint64 numSlots,
-    uint256 duration,
-    uint256 reward
-  ) internal pure returns (uint256) {
-    return numSlots * duration * reward;
-  }
-
-  function _price(Request memory request) internal pure returns (uint256) {
-    return _price(request.ask.slots, request.ask.duration, request.ask.reward);
-  }
-
-  function price(Request calldata request) private pure returns (uint256) {
-    return _price(request.ask.slots, request.ask.duration, request.ask.reward);
-  }
-
-  function pricePerSlot(Request memory request) private pure returns (uint256) {
-    return request.ask.duration * request.ask.reward;
   }
 
   function requestState(
