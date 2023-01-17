@@ -3,7 +3,7 @@ const { hexlify, randomBytes } = ethers.utils
 const { AddressZero } = ethers.constants
 const { BigNumber } = ethers
 const { expect } = require("chai")
-const { exampleRequest } = require("./examples")
+const { exampleConfiguration, exampleRequest } = require("./examples")
 const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
 const { RequestState } = require("./requests")
@@ -26,14 +26,8 @@ const {
 } = require("./evm")
 
 describe("Marketplace", function () {
-  const collateral = 100
-  const minCollateralThreshold = 40
-  const slashMisses = 3
-  const slashPercentage = 10
-  const proofPeriod = 10
-  const proofTimeout = 5
-  const proofDowntime = 64
   const proof = hexlify(randomBytes(42))
+  const config = exampleConfiguration()
 
   let marketplace
   let token
@@ -54,16 +48,7 @@ describe("Marketplace", function () {
     }
 
     const Marketplace = await ethers.getContractFactory("TestMarketplace")
-    marketplace = await Marketplace.deploy(
-      token.address,
-      collateral,
-      minCollateralThreshold,
-      slashMisses,
-      slashPercentage,
-      proofPeriod,
-      proofTimeout,
-      proofDowntime
-    )
+    marketplace = await Marketplace.deploy(token.address, config)
 
     request = await exampleRequest()
     request.client = client.address
@@ -136,8 +121,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("emits event when slot is filled", async function () {
@@ -160,7 +145,7 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when collateral is insufficient", async function () {
-      let insufficient = collateral - 1
+      let insufficient = config.collateral.initialAmount - 1
       await marketplace.withdraw()
       await token.approve(marketplace.address, insufficient)
       await marketplace.deposit(insufficient)
@@ -236,8 +221,8 @@ describe("Marketplace", function () {
       await marketplace.requestStorage(request)
       requestTime = await currentTime()
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("sets the request end time to now + duration", async function () {
@@ -289,8 +274,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("fails to free slot when slot not filled", async function () {
@@ -328,8 +313,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("pays the host when contract has finished", async function () {
@@ -382,8 +367,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("emits event when all slots are filled", async function () {
@@ -421,8 +406,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("rejects withdraw when request not yet timed out", async function () {
@@ -476,8 +461,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("locks collateral of host when it fills a slot", async function () {
@@ -504,8 +489,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("changes state to Cancelled when client withdraws funds", async function () {
@@ -572,15 +557,15 @@ describe("Marketplace", function () {
     let period, periodOf, periodEnd
 
     beforeEach(async function () {
-      period = (await marketplace.proofPeriod()).toNumber()
+      period = config.proofs.period
       ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     async function waitUntilProofWillBeRequired(id) {
@@ -652,15 +637,15 @@ describe("Marketplace", function () {
     let period, periodOf, periodEnd
 
     beforeEach(async function () {
-      period = (await marketplace.proofPeriod()).toNumber()
+      period = config.proofs.period
       ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     async function waitUntilProofIsRequired(id) {
@@ -687,14 +672,16 @@ describe("Marketplace", function () {
     describe("slashing when missing proofs", function () {
       it("reduces collateral when too many proofs are missing", async function () {
         const id = slotId(slot)
+        const { slashCriterion, slashPercentage, initialAmount } =
+          config.collateral
         await marketplace.fillSlot(slot.request, slot.index, proof)
-        for (let i = 0; i < slashMisses; i++) {
+        for (let i = 0; i < slashCriterion; i++) {
           await waitUntilProofIsRequired(id)
           let missedPeriod = periodOf(await currentTime())
           await advanceTime(period)
           await marketplace.markProofAsMissing(id, missedPeriod)
         }
-        const expectedBalance = (collateral * (100 - slashPercentage)) / 100
+        const expectedBalance = (initialAmount * (100 - slashPercentage)) / 100
         expect(await marketplace.balanceOf(host.address)).to.equal(
           expectedBalance
         )
@@ -707,8 +694,8 @@ describe("Marketplace", function () {
 
         await waitUntilStarted(marketplace, request, proof)
 
-        // max slashes before dropping below collateral threshold
-        const maxSlashes = 10
+        const maxSlashes = 10 // slashes before going below collateral minimum
+        const slashMisses = config.collateral.slashCriterion
         for (let i = 0; i < maxSlashes; i++) {
           for (let j = 0; j < slashMisses; j++) {
             await waitUntilProofIsRequired(id)
@@ -731,8 +718,8 @@ describe("Marketplace", function () {
   describe("list of active requests", function () {
     beforeEach(async function () {
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
     })
@@ -781,8 +768,8 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateral)
-      await marketplace.deposit(collateral)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
     })
 
     it("adds slot to list when filling slot", async function () {

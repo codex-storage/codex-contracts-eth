@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
+import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
 
 abstract contract Proofs is Periods {
-  uint256 public immutable proofTimeout;
-  uint8 private immutable downtime;
+  ProofConfig private config;
 
-  constructor(
-    uint256 __period,
-    uint256 __timeout,
-    uint8 __downtime
-  ) Periods(__period) {
+  constructor(ProofConfig memory _config) Periods(_config.period) {
     require(block.number > 256, "Insufficient block height");
-    proofTimeout = __timeout;
-    downtime = __downtime;
+    config = _config;
   }
 
   mapping(SlotId => uint256) private slotStarts;
@@ -25,10 +20,6 @@ abstract contract Proofs is Periods {
   mapping(SlotId => mapping(Period => bool)) private missing;
 
   function slotState(SlotId id) internal view virtual returns (SlotState);
-
-  function proofPeriod() public view returns (uint256) {
-    return secondsPerPeriod;
-  }
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return missed[slotId];
@@ -79,7 +70,7 @@ abstract contract Proofs is Periods {
     }
     pointer = getPointer(id, period);
     bytes32 challenge = getChallenge(pointer);
-    uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
+    uint256 probability = (probabilities[id] * (256 - config.downtime)) / 256;
     isRequired = uint256(challenge) % probability == 0;
   }
 
@@ -90,7 +81,7 @@ abstract contract Proofs is Periods {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, period);
-    return isRequired && pointer >= downtime;
+    return isRequired && pointer >= config.downtime;
   }
 
   function isProofRequired(SlotId id) public view returns (bool) {
@@ -101,7 +92,7 @@ abstract contract Proofs is Periods {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, blockPeriod());
-    return isRequired && pointer < downtime;
+    return isRequired && pointer < config.downtime;
   }
 
   function submitProof(SlotId id, bytes calldata proof) public {
@@ -112,9 +103,9 @@ abstract contract Proofs is Periods {
   }
 
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
-    uint256 periodEnd = periodEnd(missedPeriod);
-    require(periodEnd < block.timestamp, "Period has not ended yet");
-    require(block.timestamp < periodEnd + proofTimeout, "Validation timed out");
+    uint256 end = periodEnd(missedPeriod);
+    require(end < block.timestamp, "Period has not ended yet");
+    require(block.timestamp < end + config.timeout, "Validation timed out");
     require(!received[id][missedPeriod], "Proof was submitted, not missing");
     require(isProofRequired(id, missedPeriod), "Proof was not required");
     require(!missing[id][missedPeriod], "Proof already marked as missing");
