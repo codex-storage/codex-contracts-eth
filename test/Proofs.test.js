@@ -15,11 +15,9 @@ const { SlotState } = require("./requests")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
-  const requestId = hexlify(randomBytes(32))
   const period = 30 * 60
   const timeout = 5
   const downtime = 64
-  const duration = 1000 * period
   const probability = 4 // require a proof roughly once every 4 periods
   const { periodOf, periodEnd } = periodic(period)
 
