@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 const { hours } = require("./time")
 const { currentTime } = require("./evm")
-const { getAddress, hexlify, randomBytes } = ethers.utils
+const { hexlify, randomBytes } = ethers.utils
 
 const exampleRequest = async () => {
   const now = await currentTime()
@@ -30,15 +30,5 @@ const exampleRequest = async () => {
     nonce: hexlify(randomBytes(32)),
   }
 }
-const exampleLock = async () => {
-  const now = await currentTime()
-  return {
-    id: hexlify(randomBytes(32)),
-    expiry: now + hours(1),
-  }
-}
-const exampleAddress = () => {
-  return getAddress(hexlify(randomBytes(20)))
-}
 
-module.exports = { exampleRequest, exampleLock, exampleAddress }
+module.exports = { exampleRequest }
