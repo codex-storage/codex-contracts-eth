@@ -26,22 +26,6 @@ contract TestProofs is Proofs {
     _startRequiringProofs(slot, _probability);
   }
 
-  function isProofRequired(SlotId id) public view returns (bool) {
-    return _isProofRequired(id);
-  }
-
-  function willProofBeRequired(SlotId id) public view returns (bool) {
-    return _willProofBeRequired(id);
-  }
-
-  function getChallenge(SlotId id) public view returns (bytes32) {
-    return _getChallenge(id);
-  }
-
-  function getPointer(SlotId id) public view returns (uint8) {
-    return _getPointer(id);
-  }
-
   function markProofAsMissing(SlotId id, Period _period) public {
     _markProofAsMissing(id, _period);
   }

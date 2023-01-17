@@ -35,7 +35,7 @@ abstract contract Proofs is Periods {
     probabilities[id] = probability;
   }
 
-  function _getPointer(
+  function getPointer(
     SlotId id,
     Period proofPeriod
   ) internal view returns (uint8) {
@@ -46,25 +46,25 @@ abstract contract Proofs is Periods {
     return uint8(pointer);
   }
 
-  function _getPointer(SlotId id) internal view returns (uint8) {
-    return _getPointer(id, blockPeriod());
+  function getPointer(SlotId id) public view returns (uint8) {
+    return getPointer(id, blockPeriod());
   }
 
-  function _getChallenge(uint8 pointer) internal view returns (bytes32) {
+  function getChallenge(uint8 pointer) internal view returns (bytes32) {
     bytes32 hash = blockhash(block.number - 1 - pointer);
     assert(uint256(hash) != 0);
     return keccak256(abi.encode(hash));
   }
 
-  function _getChallenge(
+  function getChallenge(
     SlotId id,
     Period proofPeriod
   ) internal view returns (bytes32) {
-    return _getChallenge(_getPointer(id, proofPeriod));
+    return getChallenge(getPointer(id, proofPeriod));
   }
 
-  function _getChallenge(SlotId id) internal view returns (bytes32) {
-    return _getChallenge(id, blockPeriod());
+  function getChallenge(SlotId id) public view returns (bytes32) {
+    return getChallenge(id, blockPeriod());
   }
 
   function _getProofRequirement(
@@ -76,13 +76,13 @@ abstract contract Proofs is Periods {
     if (state != SlotState.Filled || !isAfter(proofPeriod, start)) {
       return (false, 0);
     }
-    pointer = _getPointer(id, proofPeriod);
-    bytes32 challenge = _getChallenge(pointer);
+    pointer = getPointer(id, proofPeriod);
+    bytes32 challenge = getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
     isRequired = uint256(challenge) % probability == 0;
   }
 
-  function _isProofRequired(
+  function isProofRequired(
     SlotId id,
     Period proofPeriod
   ) internal view returns (bool) {
@@ -92,11 +92,11 @@ abstract contract Proofs is Periods {
     return isRequired && pointer >= downtime;
   }
 
-  function _isProofRequired(SlotId id) internal view returns (bool) {
-    return _isProofRequired(id, blockPeriod());
+  function isProofRequired(SlotId id) public view returns (bool) {
+    return isProofRequired(id, blockPeriod());
   }
 
-  function _willProofBeRequired(SlotId id) internal view returns (bool) {
+  function willProofBeRequired(SlotId id) public view returns (bool) {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, blockPeriod());
@@ -115,7 +115,7 @@ abstract contract Proofs is Periods {
     require(periodEnd < block.timestamp, "Period has not ended yet");
     require(block.timestamp < periodEnd + proofTimeout, "Validation timed out");
     require(!received[id][missedPeriod], "Proof was submitted, not missing");
-    require(_isProofRequired(id, missedPeriod), "Proof was not required");
+    require(isProofRequired(id, missedPeriod), "Proof was not required");
     require(!missing[id][missedPeriod], "Proof already marked as missing");
     missing[id][missedPeriod] = true;
     missed[id] += 1;
