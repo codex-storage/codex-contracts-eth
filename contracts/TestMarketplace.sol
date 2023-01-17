@@ -33,8 +33,4 @@ contract TestMarketplace is Marketplace {
   function forciblyFreeSlot(SlotId slotId) public {
     _forciblyFreeSlot(slotId);
   }
-
-  function slot(SlotId slotId) public view returns (Slot memory) {
-    return _slot(slotId);
-  }
 }
