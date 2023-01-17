@@ -483,7 +483,9 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("contract state", function () {
+  describe("request state", function () {
+    const { New, Cancelled, Started, Failed, Finished } = RequestState
+
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
@@ -493,45 +495,34 @@ describe("Marketplace", function () {
       await marketplace.deposit(config.collateral.initialAmount)
     })
 
-    it("changes state to Cancelled when client withdraws funds", async function () {
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.New
-      )
+    it("is 'New' initially", async function () {
+      expect(await marketplace.requestState(slot.request)).to.equal(New)
     })
 
-    it("state is Cancelled when client withdraws funds", async function () {
+    it("changes to 'Cancelled' once request is cancelled", async function () {
+      await waitUntilCancelled(request)
+      expect(await marketplace.requestState(slot.request)).to.equal(Cancelled)
+    })
+
+    it("remains 'Cancelled' when client withdraws funds", async function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       await marketplace.withdrawFunds(slot.request)
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Cancelled
-      )
+      expect(await marketplace.requestState(slot.request)).to.equal(Cancelled)
     })
 
-    it("changes state to Started once all slots are filled", async function () {
+    it("changes to 'Started' once all slots are filled", async function () {
       await waitUntilStarted(marketplace, request, proof)
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Started
-      )
+      expect(await marketplace.requestState(slot.request)).to.equal(Started)
     })
 
-    it("state is Failed once too many slots are freed", async function () {
+    it("changes to 'Failed' once too many slots are freed", async function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFailed(marketplace, request)
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Failed
-      )
+      expect(await marketplace.requestState(slot.request)).to.equal(Failed)
     })
 
-    it("state is Finished once slot is paid out", async function () {
-      await waitUntilStarted(marketplace, request, proof)
-      await waitUntilFinished(marketplace, requestId(request))
-      await marketplace.freeSlot(slotId(slot))
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Finished
-      )
-    })
-    it("does not change state to Failed if too many slots freed but contract not started", async function () {
+    it("does not change to 'Failed' before it is started", async function () {
       for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
         await marketplace.fillSlot(slot.request, i, proof)
       }
@@ -540,16 +531,20 @@ describe("Marketplace", function () {
         let id = slotId(slot)
         await marketplace.forciblyFreeSlot(id)
       }
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.New
-      )
+      expect(await marketplace.requestState(slot.request)).to.equal(New)
     })
 
-    it("changes state to Cancelled once request is cancelled", async function () {
-      await waitUntilCancelled(request)
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Cancelled
-      )
+    it("changes to 'Finished' when the time has expired", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      expect(await marketplace.requestState(slot.request)).to.equal(Finished)
+    })
+
+    it("remains 'Finished' once a slot is paid out", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.requestState(slot.request)).to.equal(Finished)
     })
   })
 
