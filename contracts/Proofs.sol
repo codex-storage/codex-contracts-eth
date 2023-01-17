@@ -26,6 +26,10 @@ abstract contract Proofs is Periods {
 
   function slotState(SlotId id) internal view virtual returns (SlotState);
 
+  function proofPeriod() public view returns (uint256) {
+    return secondsPerPeriod;
+  }
+
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return missed[slotId];
   }
@@ -35,12 +39,9 @@ abstract contract Proofs is Periods {
     probabilities[id] = probability;
   }
 
-  function getPointer(
-    SlotId id,
-    Period proofPeriod
-  ) internal view returns (uint8) {
+  function getPointer(SlotId id, Period period) internal view returns (uint8) {
     uint256 blockNumber = block.number % 256;
-    uint256 periodNumber = Period.unwrap(proofPeriod) % 256;
+    uint256 periodNumber = Period.unwrap(period) % 256;
     uint256 idOffset = uint256(SlotId.unwrap(id)) % 256;
     uint256 pointer = (blockNumber + periodNumber + idOffset) % 256;
     return uint8(pointer);
@@ -58,9 +59,9 @@ abstract contract Proofs is Periods {
 
   function getChallenge(
     SlotId id,
-    Period proofPeriod
+    Period period
   ) internal view returns (bytes32) {
-    return getChallenge(getPointer(id, proofPeriod));
+    return getChallenge(getPointer(id, period));
   }
 
   function getChallenge(SlotId id) public view returns (bytes32) {
@@ -69,14 +70,14 @@ abstract contract Proofs is Periods {
 
   function _getProofRequirement(
     SlotId id,
-    Period proofPeriod
+    Period period
   ) internal view returns (bool isRequired, uint8 pointer) {
     SlotState state = slotState(id);
     Period start = periodOf(slotStarts[id]);
-    if (state != SlotState.Filled || !isAfter(proofPeriod, start)) {
+    if (state != SlotState.Filled || !isAfter(period, start)) {
       return (false, 0);
     }
-    pointer = getPointer(id, proofPeriod);
+    pointer = getPointer(id, period);
     bytes32 challenge = getChallenge(pointer);
     uint256 probability = (probabilities[id] * (256 - downtime)) / 256;
     isRequired = uint256(challenge) % probability == 0;
@@ -84,11 +85,11 @@ abstract contract Proofs is Periods {
 
   function isProofRequired(
     SlotId id,
-    Period proofPeriod
+    Period period
   ) internal view returns (bool) {
     bool isRequired;
     uint8 pointer;
-    (isRequired, pointer) = _getProofRequirement(id, proofPeriod);
+    (isRequired, pointer) = _getProofRequirement(id, period);
     return isRequired && pointer >= downtime;
   }
 

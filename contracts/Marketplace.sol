@@ -231,10 +231,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     _;
   }
 
-  function proofPeriod() public view returns (uint256) {
-    return secondsPerPeriod;
-  }
-
   function requestEnd(RequestId requestId) public view returns (uint256) {
     uint256 end = requestContexts[requestId].endsAt;
     RequestState state = requestState(requestId);
