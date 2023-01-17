@@ -3,6 +3,20 @@ const { hours } = require("./time")
 const { currentTime } = require("./evm")
 const { hexlify, randomBytes } = ethers.utils
 
+const exampleConfiguration = () => ({
+  collateral: {
+    initialAmount: 100,
+    minimumAmount: 40,
+    slashCriterion: 3,
+    slashPercentage: 10,
+  },
+  proofs: {
+    period: 10,
+    timeout: 5,
+    downtime: 64,
+  },
+})
+
 const exampleRequest = async () => {
   const now = await currentTime()
   return {
@@ -31,4 +45,4 @@ const exampleRequest = async () => {
   }
 }
 
-module.exports = { exampleRequest }
+module.exports = { exampleConfiguration, exampleRequest }

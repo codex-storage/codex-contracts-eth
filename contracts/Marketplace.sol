@@ -4,6 +4,7 @@ pragma solidity ^0.8.8;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./Configuration.sol";
 import "./Requests.sol";
 import "./Collateral.sol";
 import "./Proofs.sol";
@@ -13,10 +14,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
-  uint256 public immutable collateral;
-  uint256 public immutable minCollateralThreshold;
-  uint256 public immutable slashMisses;
-  uint256 public immutable slashPercentage;
+  MarketplaceConfig public config;
 
   MarketplaceFunds private funds;
   mapping(RequestId => Request) private requests;
@@ -24,23 +22,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   mapping(SlotId => Slot) private slots;
 
   constructor(
-    IERC20 _token,
-    uint256 _collateral,
-    uint256 _minCollateralThreshold,
-    uint256 _slashMisses,
-    uint256 _slashPercentage,
-    uint256 _proofPeriod,
-    uint256 _proofTimeout,
-    uint8 _proofDowntime
-  )
-    Collateral(_token)
-    Proofs(_proofPeriod, _proofTimeout, _proofDowntime)
-    marketplaceInvariant
-  {
-    collateral = _collateral;
-    minCollateralThreshold = _minCollateralThreshold;
-    slashMisses = _slashMisses;
-    slashPercentage = _slashPercentage;
+    IERC20 token,
+    MarketplaceConfig memory configuration
+  ) Collateral(token) Proofs(configuration.proofs) marketplaceInvariant {
+    config = configuration;
   }
 
   function isWithdrawAllowed() internal view override returns (bool) {
@@ -82,7 +67,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
-    require(balanceOf(msg.sender) >= collateral, "Insufficient collateral");
+    require(
+      balanceOf(msg.sender) >= config.collateral.initialAmount,
+      "Insufficient collateral"
+    );
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
@@ -120,10 +108,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);
     address host = getHost(slotId);
-    if (missingProofs(slotId) % slashMisses == 0) {
-      _slash(host, slashPercentage);
+    if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
+      _slash(host, config.collateral.slashPercentage);
 
-      if (balanceOf(host) < minCollateralThreshold) {
+      if (balanceOf(host) < config.collateral.minimumAmount) {
         // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).

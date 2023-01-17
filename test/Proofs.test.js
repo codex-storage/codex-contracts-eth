@@ -27,7 +27,7 @@ describe("Proofs", function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
-    proofs = await Proofs.deploy(period, timeout, downtime)
+    proofs = await Proofs.deploy({ period, timeout, downtime })
   })
 
   afterEach(async function () {

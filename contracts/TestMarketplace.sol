@@ -6,26 +6,9 @@ import "./Marketplace.sol";
 // exposes internal functions of Marketplace for testing
 contract TestMarketplace is Marketplace {
   constructor(
-    IERC20 _token,
-    uint256 _collateral,
-    uint256 _minCollateralThreshold,
-    uint256 _slashMisses,
-    uint256 _slashPercentage,
-    uint256 _proofPeriod,
-    uint256 _proofTimeout,
-    uint8 _proofDowntime
-  )
-    Marketplace(
-      _token,
-      _collateral,
-      _minCollateralThreshold,
-      _slashMisses,
-      _slashPercentage,
-      _proofPeriod,
-      _proofTimeout,
-      _proofDowntime
-    )
-  // solhint-disable-next-line no-empty-blocks
+    IERC20 token,
+    MarketplaceConfig memory config
+  ) Marketplace(token, config) // solhint-disable-next-line no-empty-blocks
   {
 
   }

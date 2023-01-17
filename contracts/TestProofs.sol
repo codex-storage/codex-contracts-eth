@@ -7,16 +7,8 @@ import "./Proofs.sol";
 contract TestProofs is Proofs {
   mapping(SlotId => SlotState) private states;
 
-  constructor(
-    uint256 __period,
-    uint256 __timeout,
-    uint8 __downtime
-  )
-    Proofs(__period, __timeout, __downtime)
   // solhint-disable-next-line no-empty-blocks
-  {
-
-  }
+  constructor(ProofConfig memory config) Proofs(config) {}
 
   function slotState(SlotId slotId) internal view override returns (SlotState) {
     return states[slotId];
