@@ -249,31 +249,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  function isProofRequired(SlotId slotId) public view returns (bool) {
-    if (slotState(slotId) != SlotState.Filled) {
-      return false;
-    }
-    return _isProofRequired(slotId);
-  }
-
-  function willProofBeRequired(SlotId slotId) public view returns (bool) {
-    if (slotState(slotId) != SlotState.Filled) {
-      return false;
-    }
-    return _willProofBeRequired(slotId);
-  }
-
-  function getChallenge(SlotId slotId) public view returns (bytes32) {
-    if (slotState(slotId) != SlotState.Filled) {
-      return bytes32(0);
-    }
-    return _getChallenge(slotId);
-  }
-
-  function getPointer(SlotId slotId) public view returns (uint8) {
-    return _getPointer(slotId);
-  }
-
   function _price(
     uint64 numSlots,
     uint256 duration,
