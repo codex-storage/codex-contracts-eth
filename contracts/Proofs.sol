@@ -30,9 +30,6 @@ abstract contract Proofs is Periods {
     return missed[slotId];
   }
 
-  /// @notice Informs the contract that proofs should be expected for id
-  /// @dev Requires that the id is not already in use
-  /// @param probability The probability that a proof should be expected
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
     slotStarts[id] = block.timestamp;
     probabilities[id] = probability;
