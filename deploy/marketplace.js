@@ -1,22 +1,19 @@
 async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
-  const proofPeriod = 10
-  const proofTimeout = 5
-  const proofDowntime = 64
-  const collateralAmount = 100
-  const slashMisses = 3
-  const slashPercentage = 10
-  const minCollateralThreshold = 40
-  const args = [
-    token.address,
-    collateralAmount,
-    minCollateralThreshold,
-    slashMisses,
-    slashPercentage,
-    proofPeriod,
-    proofTimeout,
-    proofDowntime,
-  ]
+  const configuration = {
+    collateral: {
+      initialAmount: 100,
+      minimumAmount: 40,
+      slashCriterion: 3,
+      slashPercentage: 10,
+    },
+    proofs: {
+      period: 10,
+      timeout: 5,
+      downtime: 64,
+    },
+  }
+  const args = [token.address, configuration]
   const { deployer } = await getNamedAccounts()
   await deployments.deploy("Marketplace", { args, from: deployer })
 }
