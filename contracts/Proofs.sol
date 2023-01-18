@@ -71,7 +71,7 @@ abstract contract Proofs is Periods {
     pointer = _getPointer(id, period);
     bytes32 challenge = _getChallenge(pointer);
     uint256 probability = (_probabilities[id] * (256 - _config.downtime)) / 256;
-    isRequired = uint256(challenge) % probability == 0;
+    isRequired = probability == 0 || uint256(challenge) % probability == 0;
   }
 
   function _isProofRequired(

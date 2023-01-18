@@ -41,6 +41,7 @@ describe("Proofs", function () {
 
     it("requires proofs with an agreed upon probability", async function () {
       await proofs.startRequiringProofs(slotId, probability)
+      await advanceTime(period)
       let amount = 0
       for (let i = 0; i < 100; i++) {
         if (await proofs.isProofRequired(slotId)) {
@@ -50,6 +51,15 @@ describe("Proofs", function () {
       }
       let expected = 100 / probability
       expect(amount).to.be.closeTo(expected, expected / 2)
+    })
+
+    it("supports probability 1 (proofs are always required)", async function () {
+      await proofs.startRequiringProofs(slotId, 1)
+      await advanceTime(period)
+      while ((await proofs.getPointer(slotId)) < downtime) {
+        await mine()
+      }
+      expect(await proofs.isProofRequired(slotId)).to.be.true
     })
 
     it("requires no proofs in the start period", async function () {
