@@ -763,30 +763,18 @@ describe("Marketplace", function () {
       })
     })
 
-    describe("freeing a slot", function () {
-      it("frees slot when collateral slashed below minimum threshold", async function () {
-        const id = slotId(slot)
-
-        await waitUntilStarted(marketplace, request, proof)
-
-        const maxSlashes = 10 // slashes before going below collateral minimum
-        const slashMisses = config.collateral.slashCriterion
-        for (let i = 0; i < maxSlashes; i++) {
-          for (let j = 0; j < slashMisses; j++) {
-            await waitUntilProofIsRequired(id)
-            let missedPeriod = periodOf(await currentTime())
-            await advanceTime(period)
-            if (i === maxSlashes - 1 && j === slashMisses - 1) {
-              await expect(
-                await marketplace.markProofAsMissing(id, missedPeriod)
-              ).to.emit(marketplace, "SlotFreed")
-              expect(await marketplace.getHost(id)).to.equal(AddressZero)
-            } else {
-              await marketplace.markProofAsMissing(id, missedPeriod)
-            }
-          }
-        }
-      })
+    it("frees slot when collateral slashed below minimum threshold", async function () {
+      const minimum = config.collateral.minimumAmount
+      await waitUntilStarted(marketplace, request, proof)
+      while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
+        expect(await marketplace.balanceOf(host.address)).to.be.gt(minimum)
+        await waitUntilProofIsRequired(slotId(slot))
+        const missedPeriod = periodOf(await currentTime())
+        await advanceTime(period)
+        await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
+      }
+      expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
+      expect(await marketplace.balanceOf(host.address)).to.be.lte(minimum)
     })
   })
 
