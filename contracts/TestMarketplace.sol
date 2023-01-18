@@ -8,10 +8,9 @@ contract TestMarketplace is Marketplace {
   constructor(
     IERC20 token,
     MarketplaceConfig memory config
-  ) Marketplace(token, config) // solhint-disable-next-line no-empty-blocks
-  {
-
-  }
+  )
+    Marketplace(token, config) // solhint-disable-next-line no-empty-blocks
+  {}
 
   function forciblyFreeSlot(SlotId slotId) public {
     _forciblyFreeSlot(slotId);

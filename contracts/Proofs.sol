@@ -19,7 +19,7 @@ abstract contract Proofs is Periods {
   mapping(SlotId => mapping(Period => bool)) private received;
   mapping(SlotId => mapping(Period => bool)) private missing;
 
-  function slotState(SlotId id) internal view virtual returns (SlotState);
+  function slotState(SlotId id) public view virtual returns (SlotState);
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
     return missed[slotId];

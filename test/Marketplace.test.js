@@ -6,7 +6,7 @@ const { expect } = require("chai")
 const { exampleConfiguration, exampleRequest } = require("./examples")
 const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
-const { RequestState } = require("./requests")
+const { RequestState, SlotState } = require("./requests")
 const {
   waitUntilCancelled,
   waitUntilStarted,
@@ -545,6 +545,86 @@ describe("Marketplace", function () {
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
       expect(await marketplace.requestState(slot.request)).to.equal(Finished)
+    })
+  })
+
+  describe("slot state", function () {
+    const { Free, Filled, Finished, Failed, Paid } = SlotState
+    let period, periodEnd
+
+    beforeEach(async function () {
+      period = config.proofs.period
+      ;({ periodOf, periodEnd } = periodic(period))
+
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, config.collateral.initialAmount)
+      await marketplace.deposit(config.collateral.initialAmount)
+    })
+
+    async function waitUntilProofIsRequired(id) {
+      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      while (
+        !(
+          (await marketplace.isProofRequired(id)) &&
+          (await marketplace.getPointer(id)) < 250
+        )
+      ) {
+        await advanceTime(period)
+      }
+    }
+
+    it("is 'Free' initially", async function () {
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Free)
+    })
+
+    it("changes to 'Filled' when slot is filled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Filled)
+    })
+
+    it("changes to 'Finished' when request finishes", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, slot.request)
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Finished)
+    })
+
+    it("changes to 'Finished' when request is cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Finished)
+    })
+
+    it("changes to 'Free' when host frees the slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Free)
+    })
+
+    it("changes to 'Free' when too many proofs are missed", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      while ((await marketplace.slotState(slotId(slot))) === Filled) {
+        await waitUntilProofIsRequired(slotId(slot))
+        const missedPeriod = periodOf(await currentTime())
+        await advanceTime(period)
+        await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
+      }
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Free)
+    })
+
+    it("changes to 'Failed' when request fails", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilSlotFailed(marketplace, request, slot)
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Failed)
+    })
+
+    it("changes to 'Paid' when host has been paid", async function () {
+      await waitUntilStarted(marketplace, request, proof)
+      await waitUntilFinished(marketplace, slot.request)
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.slotState(slotId(slot))).to.equal(Paid)
     })
   })
 
