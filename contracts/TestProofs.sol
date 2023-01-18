@@ -10,7 +10,7 @@ contract TestProofs is Proofs {
   // solhint-disable-next-line no-empty-blocks
   constructor(ProofConfig memory config) Proofs(config) {}
 
-  function slotState(SlotId slotId) internal view override returns (SlotState) {
+  function slotState(SlotId slotId) public view override returns (SlotState) {
     return states[slotId];
   }
 

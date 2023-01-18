@@ -247,24 +247,25 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  function slotState(SlotId slotId) internal view override returns (SlotState) {
+  function slotState(SlotId slotId) public view override returns (SlotState) {
     Slot storage slot = slots[slotId];
+    if (RequestId.unwrap(slot.requestId) == 0) {
+      return SlotState.Free;
+    }
     RequestState reqState = requestState(slot.requestId);
     if (slot.state == SlotState.Paid) {
       return SlotState.Paid;
-    } else if (
-      slot.state == SlotState.Failed || reqState == RequestState.Failed
-    ) {
-      return SlotState.Failed;
-    } else if (
-      slot.state == SlotState.Finished ||
-      reqState == RequestState.Finished ||
-      reqState == RequestState.Cancelled
-    ) {
-      return SlotState.Finished;
-    } else {
-      return slot.state;
     }
+    if (reqState == RequestState.Cancelled) {
+      return SlotState.Finished;
+    }
+    if (reqState == RequestState.Finished) {
+      return SlotState.Finished;
+    }
+    if (reqState == RequestState.Failed) {
+      return SlotState.Failed;
+    }
+    return slot.state;
   }
 
   struct RequestContext {
