@@ -17,44 +17,44 @@ abstract contract Collateral {
     return balances[account];
   }
 
-  function add(address account, uint256 amount) private {
+  function _add(address account, uint256 amount) private {
     balances[account] += amount;
     funds.balance += amount;
   }
 
-  function subtract(address account, uint256 amount) private {
+  function _subtract(address account, uint256 amount) private {
     balances[account] -= amount;
     funds.balance -= amount;
   }
 
-  function transferFrom(address sender, uint256 amount) internal {
+  function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
     require(token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
   function deposit(uint256 amount) public collateralInvariant {
-    transferFrom(msg.sender, amount);
+    _transferFrom(msg.sender, amount);
     funds.deposited += amount;
-    add(msg.sender, amount);
+    _add(msg.sender, amount);
   }
 
-  function isWithdrawAllowed() internal virtual returns (bool);
+  function _isWithdrawAllowed() internal virtual returns (bool);
 
   function withdraw() public collateralInvariant {
-    require(isWithdrawAllowed(), "Account locked");
+    require(_isWithdrawAllowed(), "Account locked");
     uint256 amount = balanceOf(msg.sender);
     funds.withdrawn += amount;
-    subtract(msg.sender, amount);
+    _subtract(msg.sender, amount);
     assert(token.transfer(msg.sender, amount));
   }
 
-  function _slash(address account, uint256 percentage)
-    internal
-    collateralInvariant
-  {
+  function _slash(
+    address account,
+    uint256 percentage
+  ) internal collateralInvariant {
     uint256 amount = (balanceOf(account) * percentage) / 100;
     funds.slashed += amount;
-    subtract(account, amount);
+    _subtract(account, amount);
   }
 
   modifier collateralInvariant() {

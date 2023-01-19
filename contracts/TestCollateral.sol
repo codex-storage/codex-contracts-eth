@@ -12,7 +12,7 @@ contract TestCollateral is Collateral {
     _slash(account, percentage);
   }
 
-  function isWithdrawAllowed() internal pure override returns (bool) {
+  function _isWithdrawAllowed() internal pure override returns (bool) {
     return true;
   }
 }
