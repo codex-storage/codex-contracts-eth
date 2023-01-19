@@ -216,6 +216,16 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return _slots[slotId].host;
   }
 
+  function getRequestFromSlotId(SlotId slotId)
+    public
+    view
+    slotIsNotFree(slotId)
+    returns (Request memory)
+  {
+    Slot storage slot = slots[slotId];
+    return requests[slot.requestId];
+  }
+
   modifier requestIsKnown(RequestId requestId) {
     require(_requests[requestId].client != address(0), "Unknown request");
     _;
