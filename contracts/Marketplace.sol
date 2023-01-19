@@ -41,8 +41,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     config = configuration;
   }
 
-  function isWithdrawAllowed() internal view override returns (bool) {
-    return !hasSlots(msg.sender);
+  function _isWithdrawAllowed() internal view override returns (bool) {
+    return !_hasSlots(msg.sender);
   }
 
   function requestStorage(
@@ -56,12 +56,12 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     requests[id] = request;
     requestContexts[id].endsAt = block.timestamp + request.ask.duration;
 
-    addToMyRequests(request.client, id);
+    _addToMyRequests(request.client, id);
 
     uint256 amount = request.price();
     funds.received += amount;
     funds.balance += amount;
-    transferFrom(msg.sender, amount);
+    _transferFrom(msg.sender, amount);
 
     emit StorageRequested(id, request.ask);
   }
@@ -93,7 +93,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestContext storage context = requestContexts[requestId];
     context.slotsFilled += 1;
 
-    addToMySlots(slot.host, slotId);
+    _addToMySlots(slot.host, slotId);
 
     emit SlotFilled(requestId, slotIndex, slotId);
     if (context.slotsFilled == request.ask.slots) {
@@ -109,9 +109,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     SlotState state = slotState(slotId);
     require(state != SlotState.Paid, "Already paid");
     if (state == SlotState.Finished) {
-      payoutSlot(slot.requestId, slotId);
+      _payoutSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
-      removeFromMySlots(msg.sender, slotId);
+      _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
       _forciblyFreeSlot(slotId);
     }
@@ -143,7 +143,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     // Slot collateral is not yet implemented as the design decision was
     // not finalised.
 
-    removeFromMySlots(slot.host, slotId);
+    _removeFromMySlots(slot.host, slotId);
 
     slot.state = SlotState.Free;
     slot.host = address(0);
@@ -167,17 +167,17 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     }
   }
 
-  function payoutSlot(
+  function _payoutSlot(
     RequestId requestId,
     SlotId slotId
   ) private requestIsKnown(requestId) marketplaceInvariant {
     RequestContext storage context = requestContexts[requestId];
     Request storage request = requests[requestId];
     context.state = RequestState.Finished;
-    removeFromMyRequests(request.client, requestId);
+    _removeFromMyRequests(request.client, requestId);
     Slot storage slot = slots[slotId];
 
-    removeFromMySlots(slot.host, slotId);
+    _removeFromMySlots(slot.host, slotId);
 
     uint256 amount = requests[requestId].pricePerSlot();
     funds.sent += amount;
@@ -199,7 +199,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
     context.state = RequestState.Cancelled;
-    removeFromMyRequests(request.client, requestId);
+    _removeFromMyRequests(request.client, requestId);
 
     emit RequestCancelled(requestId);
 

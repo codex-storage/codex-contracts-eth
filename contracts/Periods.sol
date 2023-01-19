@@ -10,31 +10,31 @@ contract Periods {
     secondsPerPeriod = _secondsPerPeriod;
   }
 
-  function periodOf(uint256 timestamp) internal view returns (Period) {
+  function _periodOf(uint256 timestamp) internal view returns (Period) {
     return Period.wrap(timestamp / secondsPerPeriod);
   }
 
-  function blockPeriod() internal view returns (Period) {
-    return periodOf(block.timestamp);
+  function _blockPeriod() internal view returns (Period) {
+    return _periodOf(block.timestamp);
   }
 
-  function nextPeriod(Period period) internal pure returns (Period) {
+  function _nextPeriod(Period period) internal pure returns (Period) {
     return Period.wrap(Period.unwrap(period) + 1);
   }
 
-  function periodStart(Period period) internal view returns (uint256) {
+  function _periodStart(Period period) internal view returns (uint256) {
     return Period.unwrap(period) * secondsPerPeriod;
   }
 
-  function periodEnd(Period period) internal view returns (uint256) {
-    return periodStart(nextPeriod(period));
+  function _periodEnd(Period period) internal view returns (uint256) {
+    return _periodStart(_nextPeriod(period));
   }
 
-  function isBefore(Period a, Period b) internal pure returns (bool) {
+  function _isBefore(Period a, Period b) internal pure returns (bool) {
     return Period.unwrap(a) < Period.unwrap(b);
   }
 
-  function isAfter(Period a, Period b) internal pure returns (bool) {
-    return isBefore(b, a);
+  function _isAfter(Period a, Period b) internal pure returns (bool) {
+    return _isBefore(b, a);
   }
 }

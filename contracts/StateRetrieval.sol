@@ -19,23 +19,23 @@ contract StateRetrieval {
     return slotsPerHost[msg.sender].values().toSlotIds();
   }
 
-  function hasSlots(address host) internal view returns (bool) {
+  function _hasSlots(address host) internal view returns (bool) {
     return slotsPerHost[host].length() > 0;
   }
 
-  function addToMyRequests(address client, RequestId requestId) internal {
+  function _addToMyRequests(address client, RequestId requestId) internal {
     requestsPerClient[client].add(RequestId.unwrap(requestId));
   }
 
-  function addToMySlots(address host, SlotId slotId) internal {
+  function _addToMySlots(address host, SlotId slotId) internal {
     slotsPerHost[host].add(SlotId.unwrap(slotId));
   }
 
-  function removeFromMyRequests(address client, RequestId requestId) internal {
+  function _removeFromMyRequests(address client, RequestId requestId) internal {
     requestsPerClient[client].remove(RequestId.unwrap(requestId));
   }
 
-  function removeFromMySlots(address host, SlotId slotId) internal {
+  function _removeFromMySlots(address host, SlotId slotId) internal {
     slotsPerHost[host].remove(SlotId.unwrap(slotId));
   }
 }
