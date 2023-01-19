@@ -534,7 +534,7 @@ describe("Marketplace", function () {
       expect(await marketplace.requestState(slot.request)).to.equal(New)
     })
 
-    it("changes to 'Finished' when the time has expired", async function () {
+    it("changes to 'Finished' when the request ends", async function () {
       await waitUntilStarted(marketplace, request, proof)
       await waitUntilFinished(marketplace, requestId(request))
       expect(await marketplace.requestState(slot.request)).to.equal(Finished)
