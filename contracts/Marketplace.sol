@@ -21,6 +21,19 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   mapping(RequestId => RequestContext) private requestContexts;
   mapping(SlotId => Slot) private slots;
 
+  struct RequestContext {
+    RequestState state;
+    uint256 slotsFilled;
+    uint256 startedAt;
+    uint256 endsAt;
+  }
+
+  struct Slot {
+    SlotState state;
+    RequestId requestId;
+    address host;
+  }
+
   constructor(
     IERC20 token,
     MarketplaceConfig memory configuration
@@ -266,19 +279,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
       return SlotState.Failed;
     }
     return slot.state;
-  }
-
-  struct RequestContext {
-    RequestState state;
-    uint256 slotsFilled;
-    uint256 startedAt;
-    uint256 endsAt;
-  }
-
-  struct Slot {
-    SlotState state;
-    RequestId requestId;
-    address host;
   }
 
   event StorageRequested(RequestId requestId, Ask ask);
