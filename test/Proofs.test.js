@@ -12,6 +12,7 @@ const {
 } = require("./evm")
 const { periodic } = require("./time")
 const { SlotState } = require("./requests")
+const binomialTest = require("@stdlib/stats-binomial-test")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
@@ -40,17 +41,23 @@ describe("Proofs", function () {
     })
 
     it("requires proofs with an agreed upon probability", async function () {
+      const samples = 256 // 256 samples avoids bias due to pointer downtime
+
       await proofs.startRequiringProofs(slotId, probability)
       await advanceTime(period)
       let amount = 0
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < samples; i++) {
         if (await proofs.isProofRequired(slotId)) {
           amount += 1
         }
         await advanceTime(period)
       }
-      let expected = 100 / probability
-      expect(amount).to.be.closeTo(expected, expected / 2)
+
+      const p = 1 / probability // expected probability
+      const alpha = 1 / 1000 // unit test can fail once every 1000 runs
+
+      // use binomial test to check that the measured amount is likely to occur
+      expect(binomialTest(amount, samples, { p, alpha }).rejected).to.be.false
     })
 
     it("supports probability 1 (proofs are always required)", async function () {
