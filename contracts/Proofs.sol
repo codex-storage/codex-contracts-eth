@@ -6,28 +6,28 @@ import "./Requests.sol";
 import "./Periods.sol";
 
 abstract contract Proofs is Periods {
-  ProofConfig private config;
+  ProofConfig private _config;
 
-  constructor(ProofConfig memory _config) Periods(_config.period) {
+  constructor(ProofConfig memory config) Periods(config.period) {
     require(block.number > 256, "Insufficient block height");
-    config = _config;
+    _config = config;
   }
 
-  mapping(SlotId => uint256) private slotStarts;
-  mapping(SlotId => uint256) private probabilities;
-  mapping(SlotId => uint256) private missed;
-  mapping(SlotId => mapping(Period => bool)) private received;
-  mapping(SlotId => mapping(Period => bool)) private missing;
+  mapping(SlotId => uint256) private _slotStarts;
+  mapping(SlotId => uint256) private _probabilities;
+  mapping(SlotId => uint256) private _missed;
+  mapping(SlotId => mapping(Period => bool)) private _received;
+  mapping(SlotId => mapping(Period => bool)) private _missing;
 
   function slotState(SlotId id) public view virtual returns (SlotState);
 
   function missingProofs(SlotId slotId) public view returns (uint256) {
-    return missed[slotId];
+    return _missed[slotId];
   }
 
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
-    slotStarts[id] = block.timestamp;
-    probabilities[id] = probability;
+    _slotStarts[id] = block.timestamp;
+    _probabilities[id] = probability;
   }
 
   function _getPointer(SlotId id, Period period) internal view returns (uint8) {
@@ -64,13 +64,13 @@ abstract contract Proofs is Periods {
     Period period
   ) internal view returns (bool isRequired, uint8 pointer) {
     SlotState state = slotState(id);
-    Period start = _periodOf(slotStarts[id]);
+    Period start = _periodOf(_slotStarts[id]);
     if (state != SlotState.Filled || !_isAfter(period, start)) {
       return (false, 0);
     }
     pointer = _getPointer(id, period);
     bytes32 challenge = _getChallenge(pointer);
-    uint256 probability = (probabilities[id] * (256 - config.downtime)) / 256;
+    uint256 probability = (_probabilities[id] * (256 - _config.downtime)) / 256;
     isRequired = uint256(challenge) % probability == 0;
   }
 
@@ -81,7 +81,7 @@ abstract contract Proofs is Periods {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, period);
-    return isRequired && pointer >= config.downtime;
+    return isRequired && pointer >= _config.downtime;
   }
 
   function isProofRequired(SlotId id) public view returns (bool) {
@@ -92,25 +92,25 @@ abstract contract Proofs is Periods {
     bool isRequired;
     uint8 pointer;
     (isRequired, pointer) = _getProofRequirement(id, _blockPeriod());
-    return isRequired && pointer < config.downtime;
+    return isRequired && pointer < _config.downtime;
   }
 
   function submitProof(SlotId id, bytes calldata proof) public {
     require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
-    require(!received[id][_blockPeriod()], "Proof already submitted");
-    received[id][_blockPeriod()] = true;
+    require(!_received[id][_blockPeriod()], "Proof already submitted");
+    _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id, proof);
   }
 
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 end = _periodEnd(missedPeriod);
     require(end < block.timestamp, "Period has not ended yet");
-    require(block.timestamp < end + config.timeout, "Validation timed out");
-    require(!received[id][missedPeriod], "Proof was submitted, not missing");
+    require(block.timestamp < end + _config.timeout, "Validation timed out");
+    require(!_received[id][missedPeriod], "Proof was submitted, not missing");
     require(_isProofRequired(id, missedPeriod), "Proof was not required");
-    require(!missing[id][missedPeriod], "Proof already marked as missing");
-    missing[id][missedPeriod] = true;
-    missed[id] += 1;
+    require(!_missing[id][missedPeriod], "Proof already marked as missing");
+    _missing[id][missedPeriod] = true;
+    _missed[id] += 1;
   }
 
   event ProofSubmitted(SlotId id, bytes proof);

@@ -16,10 +16,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
   MarketplaceConfig public config;
 
-  MarketplaceFunds private funds;
-  mapping(RequestId => Request) private requests;
-  mapping(RequestId => RequestContext) private requestContexts;
-  mapping(SlotId => Slot) private slots;
+  MarketplaceFunds private _funds;
+  mapping(RequestId => Request) private _requests;
+  mapping(RequestId => RequestContext) private _requestContexts;
+  mapping(SlotId => Slot) private _slots;
 
   struct RequestContext {
     RequestState state;
@@ -51,16 +51,16 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     require(request.client == msg.sender, "Invalid client address");
 
     RequestId id = request.id();
-    require(requests[id].client == address(0), "Request already exists");
+    require(_requests[id].client == address(0), "Request already exists");
 
-    requests[id] = request;
-    requestContexts[id].endsAt = block.timestamp + request.ask.duration;
+    _requests[id] = request;
+    _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
 
     _addToMyRequests(request.client, id);
 
     uint256 amount = request.price();
-    funds.received += amount;
-    funds.balance += amount;
+    _funds.received += amount;
+    _funds.balance += amount;
     _transferFrom(msg.sender, amount);
 
     emit StorageRequested(id, request.ask);
@@ -71,11 +71,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     uint256 slotIndex,
     bytes calldata proof
   ) public requestIsKnown(requestId) {
-    Request storage request = requests[requestId];
+    Request storage request = _requests[requestId];
     require(slotIndex < request.ask.slots, "Invalid slot");
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
-    Slot storage slot = slots[slotId];
+    Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
 
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
@@ -90,7 +90,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
 
     _addToMySlots(slot.host, slotId);
@@ -104,7 +104,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
-    Slot storage slot = slots[slotId];
+    Slot storage slot = _slots[slotId];
     require(slot.host == msg.sender, "Slot filled by other host");
     SlotState state = slotState(slotId);
     require(state != SlotState.Paid, "Already paid");
@@ -134,9 +134,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function _forciblyFreeSlot(SlotId slotId) internal marketplaceInvariant {
-    Slot storage slot = slots[slotId];
+    Slot storage slot = _slots[slotId];
     RequestId requestId = slot.requestId;
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _requestContexts[requestId];
 
     // TODO: burn host's slot collateral except for repair costs + mark proof
     // missing reward
@@ -151,7 +151,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
 
-    Request storage request = requests[requestId];
+    Request storage request = _requests[requestId];
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
     if (
       slotsLost > request.ask.maxSlotLoss &&
@@ -171,17 +171,17 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId,
     SlotId slotId
   ) private requestIsKnown(requestId) marketplaceInvariant {
-    RequestContext storage context = requestContexts[requestId];
-    Request storage request = requests[requestId];
+    RequestContext storage context = _requestContexts[requestId];
+    Request storage request = _requests[requestId];
     context.state = RequestState.Finished;
     _removeFromMyRequests(request.client, requestId);
-    Slot storage slot = slots[slotId];
+    Slot storage slot = _slots[slotId];
 
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = requests[requestId].pricePerSlot();
-    funds.sent += amount;
-    funds.balance -= amount;
+    uint256 amount = _requests[requestId].pricePerSlot();
+    _funds.sent += amount;
+    _funds.balance -= amount;
     slot.state = SlotState.Paid;
     require(token.transfer(slot.host, amount), "Payment failed");
   }
@@ -190,10 +190,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.
   /// @param requestId the id of the request
   function withdrawFunds(RequestId requestId) public marketplaceInvariant {
-    Request storage request = requests[requestId];
+    Request storage request = _requests[requestId];
     require(block.timestamp > request.expiry, "Request not yet timed out");
     require(request.client == msg.sender, "Invalid client address");
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _requestContexts[requestId];
     require(context.state == RequestState.New, "Invalid state");
 
     // Update request state to Cancelled. Handle in the withdraw transaction
@@ -207,33 +207,33 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     // fill a slot. The amount that we paid to hosts will then have to be
     // deducted from the price.
     uint256 amount = request.price();
-    funds.sent += amount;
-    funds.balance -= amount;
+    _funds.sent += amount;
+    _funds.balance -= amount;
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
   function getHost(SlotId slotId) public view returns (address) {
-    return slots[slotId].host;
+    return _slots[slotId].host;
   }
 
   modifier requestIsKnown(RequestId requestId) {
-    require(requests[requestId].client != address(0), "Unknown request");
+    require(_requests[requestId].client != address(0), "Unknown request");
     _;
   }
 
   function getRequest(
     RequestId requestId
   ) public view requestIsKnown(requestId) returns (Request memory) {
-    return requests[requestId];
+    return _requests[requestId];
   }
 
   modifier slotIsNotFree(SlotId slotId) {
-    require(slots[slotId].state != SlotState.Free, "Slot is free");
+    require(_slots[slotId].state != SlotState.Free, "Slot is free");
     _;
   }
 
   function requestEnd(RequestId requestId) public view returns (uint256) {
-    uint256 end = requestContexts[requestId].endsAt;
+    uint256 end = _requestContexts[requestId].endsAt;
     RequestState state = requestState(requestId);
     if (state == RequestState.New || state == RequestState.Started) {
       return end;
@@ -245,10 +245,10 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function requestState(
     RequestId requestId
   ) public view requestIsKnown(requestId) returns (RequestState) {
-    RequestContext storage context = requestContexts[requestId];
+    RequestContext storage context = _requestContexts[requestId];
     if (
       context.state == RequestState.New &&
-      block.timestamp > requests[requestId].expiry
+      block.timestamp > _requests[requestId].expiry
     ) {
       return RequestState.Cancelled;
     } else if (
@@ -261,7 +261,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   }
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
-    Slot storage slot = slots[slotId];
+    Slot storage slot = _slots[slotId];
     if (RequestId.unwrap(slot.requestId) == 0) {
       return SlotState.Free;
     }
@@ -293,11 +293,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   event RequestCancelled(RequestId indexed requestId);
 
   modifier marketplaceInvariant() {
-    MarketplaceFunds memory oldFunds = funds;
+    MarketplaceFunds memory oldFunds = _funds;
     _;
-    assert(funds.received >= oldFunds.received);
-    assert(funds.sent >= oldFunds.sent);
-    assert(funds.received == funds.balance + funds.sent);
+    assert(_funds.received >= oldFunds.received);
+    assert(_funds.sent >= oldFunds.sent);
+    assert(_funds.received == _funds.balance + _funds.sent);
   }
 
   struct MarketplaceFunds {

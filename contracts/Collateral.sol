@@ -5,26 +5,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 abstract contract Collateral {
   IERC20 public immutable token;
-  CollateralFunds private funds;
+  CollateralFunds private _funds;
 
-  mapping(address => uint256) private balances;
+  mapping(address => uint256) private _balances;
 
-  constructor(IERC20 _token) collateralInvariant {
-    token = _token;
+  constructor(IERC20 token_) collateralInvariant {
+    token = token_;
   }
 
   function balanceOf(address account) public view returns (uint256) {
-    return balances[account];
+    return _balances[account];
   }
 
   function _add(address account, uint256 amount) private {
-    balances[account] += amount;
-    funds.balance += amount;
+    _balances[account] += amount;
+    _funds.balance += amount;
   }
 
   function _subtract(address account, uint256 amount) private {
-    balances[account] -= amount;
-    funds.balance -= amount;
+    _balances[account] -= amount;
+    _funds.balance -= amount;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {
@@ -34,7 +34,7 @@ abstract contract Collateral {
 
   function deposit(uint256 amount) public collateralInvariant {
     _transferFrom(msg.sender, amount);
-    funds.deposited += amount;
+    _funds.deposited += amount;
     _add(msg.sender, amount);
   }
 
@@ -43,7 +43,7 @@ abstract contract Collateral {
   function withdraw() public collateralInvariant {
     require(_isWithdrawAllowed(), "Account locked");
     uint256 amount = balanceOf(msg.sender);
-    funds.withdrawn += amount;
+    _funds.withdrawn += amount;
     _subtract(msg.sender, amount);
     assert(token.transfer(msg.sender, amount));
   }
@@ -53,17 +53,19 @@ abstract contract Collateral {
     uint256 percentage
   ) internal collateralInvariant {
     uint256 amount = (balanceOf(account) * percentage) / 100;
-    funds.slashed += amount;
+    _funds.slashed += amount;
     _subtract(account, amount);
   }
 
   modifier collateralInvariant() {
-    CollateralFunds memory oldFunds = funds;
+    CollateralFunds memory oldFunds = _funds;
     _;
-    assert(funds.deposited >= oldFunds.deposited);
-    assert(funds.withdrawn >= oldFunds.withdrawn);
-    assert(funds.slashed >= oldFunds.slashed);
-    assert(funds.deposited == funds.balance + funds.withdrawn + funds.slashed);
+    assert(_funds.deposited >= oldFunds.deposited);
+    assert(_funds.withdrawn >= oldFunds.withdrawn);
+    assert(_funds.slashed >= oldFunds.slashed);
+    assert(
+      _funds.deposited == _funds.balance + _funds.withdrawn + _funds.slashed
+    );
   }
 
   struct CollateralFunds {
