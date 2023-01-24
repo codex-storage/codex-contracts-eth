@@ -222,8 +222,8 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     slotIsNotFree(slotId)
     returns (Request memory)
   {
-    Slot storage slot = slots[slotId];
-    return requests[slot.requestId];
+    Slot storage slot = _slots[slotId];
+    return _requests[slot.requestId];
   }
 
   modifier requestIsKnown(RequestId requestId) {
