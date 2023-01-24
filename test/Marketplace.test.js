@@ -6,7 +6,11 @@ const { expect } = require("chai")
 const { exampleConfiguration, exampleRequest } = require("./examples")
 const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
-const { RequestState, SlotState } = require("./requests")
+const {
+  RequestState,
+  SlotState,
+  enableRequestAssertions,
+} = require("./requests")
 const {
   waitUntilCancelled,
   waitUntilStarted,
@@ -34,6 +38,8 @@ describe("Marketplace", function () {
   let client, host, host1, host2, host3
   let request
   let slot
+
+  enableRequestAssertions()
 
   beforeEach(async function () {
     await snapshot()
@@ -84,10 +90,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await marketplace.requestStorage(request)
       const id = requestId(request)
-      const retrieved = await marketplace.getRequest(id)
-      expect(retrieved.client).to.equal(request.client)
-      expect(retrieved.expiry).to.equal(request.expiry)
-      expect(retrieved.nonce).to.equal(request.nonce)
+      expect(await marketplace.getRequest(id)).to.be.request(request)
     })
 
     it("rejects request with invalid client address", async function () {
@@ -135,6 +138,19 @@ describe("Marketplace", function () {
       expect(await marketplace.getHost(slotId(slot))).to.equal(AddressZero)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       expect(await marketplace.getHost(slotId(slot))).to.equal(host.address)
+    })
+
+    it("fails to retrieve a request of an empty slot", async function () {
+      expect(marketplace.getRequestFromSlotId(slotId(slot))).to.be.revertedWith(
+        "Slot is free"
+      )
+    })
+
+    it("allows retrieval of request of a filled slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      expect(
+        await marketplace.getRequestFromSlotId(slotId(slot))
+      ).to.be.request(request)
     })
 
     it("is rejected when proof is incorrect", async function () {
