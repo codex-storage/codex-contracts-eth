@@ -5,7 +5,8 @@
     "test": "npm run lint && hardhat test",
     "start": "hardhat node --export deployment-localhost.json",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
-    "lint": "solhint contracts/**.sol"
+    "lint": "solhint contracts/**.sol",
+    "modelcheck": "hardhat compile --config hardhat.modelcheck.config.js --force"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",
