@@ -12,6 +12,11 @@ module.exports = {
       },
     },
   },
+  mocha: {
+    bail: true,
+    slow: 200,
+    timeout: 30 * 1000,
+  },
   namedAccounts: {
     deployer: { default: 0 },
   },
