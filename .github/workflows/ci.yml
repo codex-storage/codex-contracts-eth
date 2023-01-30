@@ -7,12 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-
       - run: npm install
-
       - run: npm test
-
+      - uses: actions/cache@v3
+        with:
+          path: fuzzing/corpus
+          key: fuzzing
+      - run: npm run fuzz
