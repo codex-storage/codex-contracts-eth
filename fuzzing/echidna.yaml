@@ -1,0 +1,6 @@
+# configure Echidna fuzzing tests
+
+testMode: "assertion"       # check that solidity asserts are never triggered
+multi-abi: true             # allow calls to e.g. TestToken in test scenarios
+corpusDir: "fuzzing/corpus" # collect coverage maximizing corpus in this dir
+format: "text"              # disable interactive ui
