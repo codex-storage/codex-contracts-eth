@@ -150,7 +150,7 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       expect(
         await marketplace.getRequestFromSlotId(slotId(slot))
-      ).to.be.request(request)
+      ).to.be.request((request, slot.index))
     })
 
     it("is rejected when proof is incorrect", async function () {
