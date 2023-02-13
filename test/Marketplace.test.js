@@ -148,9 +148,9 @@ describe("Marketplace", function () {
 
     it("allows retrieval of request of a filled slot", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      expect(await marketplace.getActiveSlot(slotId(slot))).to.be.request(
-        (request, slot.index)
-      )
+      let activeSlot = await marketplace.getActiveSlot(slotId(slot))
+      expect(activeSlot[0]).to.be.request(request)
+      expect(activeSlot[1]).to.equal(slot.index)
     })
 
     it("is rejected when proof is incorrect", async function () {
