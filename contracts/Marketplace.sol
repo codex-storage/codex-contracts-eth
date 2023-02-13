@@ -219,7 +219,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return _slots[slotId].host;
   }
 
-  function getRequestFromSlotId(SlotId slotId)
+  function getActiveSlot(SlotId slotId)
     public
     view
     slotIsNotFree(slotId)
