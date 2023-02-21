@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
 import "./Requests.sol";
-import "./Collateral.sol";
 import "./Proofs.sol";
 import "./StateRetrieval.sol";
 
-contract Marketplace is Collateral, Proofs, StateRetrieval {
+contract Marketplace is Proofs, StateRetrieval {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
+  IERC20 public immutable token;
   MarketplaceConfig public config;
 
   MarketplaceFunds private _funds;
@@ -31,18 +31,20 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
+
+    /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
+    /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
+    /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
+    uint256 currentCollateral;
     address host;
   }
 
   constructor(
-    IERC20 token,
+    IERC20 token_,
     MarketplaceConfig memory configuration
-  ) Collateral(token) Proofs(configuration.proofs) marketplaceInvariant {
+  ) Proofs(configuration.proofs) marketplaceInvariant {
+    token = token_;
     config = configuration;
-  }
-
-  function _isWithdrawAllowed() internal view override returns (bool) {
-    return !_hasSlots(msg.sender);
   }
 
   function requestStorage(
@@ -52,6 +54,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     RequestId id = request.id();
     require(_requests[id].client == address(0), "Request already exists");
+
+    require(
+      request.ask.collateral >= config.collateral.minimalInitialAmount,
+      "Not enough collateral"
+    );
 
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
@@ -80,11 +87,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
-    require(
-      balanceOf(msg.sender) >= config.collateral.initialAmount,
-      "Insufficient collateral"
-    );
-
     _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
 
@@ -92,6 +94,13 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     slot.state = SlotState.Filled;
     RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
+
+    // Collect collateral
+    uint256 collateralAmount = request.ask.collateral;
+    _transferFrom(msg.sender, collateralAmount);
+    _funds.received += collateralAmount;
+    _funds.balance += collateralAmount;
+    slot.currentCollateral = collateralAmount;
 
     _addToMySlots(slot.host, slotId);
 
@@ -108,6 +117,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     require(slot.host == msg.sender, "Slot filled by other host");
     SlotState state = slotState(slotId);
     require(state != SlotState.Paid, "Already paid");
+
     if (state == SlotState.Finished) {
       _payoutSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
@@ -120,11 +130,13 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   function markProofAsMissing(SlotId slotId, Period period) public {
     require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);
-    address host = getHost(slotId);
-    if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
-      _slash(host, config.collateral.slashPercentage);
+    Slot storage slot = _slots[slotId];
 
-      if (balanceOf(host) < config.collateral.minimumAmount) {
+    if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
+      uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
+      slot.currentCollateral -= slashedAmount;
+
+      if (slot.currentCollateral < config.collateral.minimumAmount) {
         // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
@@ -138,16 +150,9 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     RequestId requestId = slot.requestId;
     RequestContext storage context = _requestContexts[requestId];
 
-    // TODO: burn host's slot collateral except for repair costs + mark proof
-    // missing reward
-    // Slot collateral is not yet implemented as the design decision was
-    // not finalised.
-
     _removeFromMySlots(slot.host, slotId);
 
-    slot.state = SlotState.Free;
-    slot.host = address(0);
-    slot.requestId = RequestId.wrap(0);
+    delete _slots[slotId];
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
 
@@ -161,8 +166,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
       context.endsAt = block.timestamp - 1;
       emit RequestFailed(requestId);
 
-      // TODO: burn all remaining slot collateral (note: slot collateral not
-      // yet implemented)
       // TODO: send client remaining funds
     }
   }
@@ -179,7 +182,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
 
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _requests[requestId].pricePerSlot();
+    uint256 amount = _requests[requestId].pricePerSlot() + slot.currentCollateral;
     _funds.sent += amount;
     _funds.balance -= amount;
     slot.state = SlotState.Paid;
@@ -210,10 +213,6 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     _funds.sent += amount;
     _funds.balance -= amount;
     require(token.transfer(msg.sender, amount), "Withdraw failed");
-  }
-
-  function getHost(SlotId slotId) public view returns (address) {
-    return _slots[slotId].host;
   }
 
   function getRequestFromSlotId(SlotId slotId)
@@ -289,6 +288,11 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
       return SlotState.Failed;
     }
     return slot.state;
+  }
+
+  function _transferFrom(address sender, uint256 amount) internal {
+    address receiver = address(this);
+    require(token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
   event StorageRequested(RequestId requestId, Ask ask);
