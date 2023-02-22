@@ -215,6 +215,10 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
+  function getHost(SlotId slotId) public view returns (address) {
+    return _slots[slotId].host;
+  }
+  
   function getRequestFromSlotId(SlotId slotId)
     public
     view
