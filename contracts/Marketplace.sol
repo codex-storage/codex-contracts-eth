@@ -19,7 +19,7 @@ contract Marketplace is Proofs, StateRetrieval {
   MarketplaceFunds private _funds;
   mapping(RequestId => Request) private _requests;
   mapping(RequestId => RequestContext) private _requestContexts;
-  mapping(SlotId => Slot) private _slots;
+  mapping(SlotId => Slot) internal _slots;
 
   struct RequestContext {
     RequestState state;
@@ -215,10 +215,6 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
-  function getHost(SlotId slotId) public view returns (address) {
-    return _slots[slotId].host;
-  }
-  
   function getRequestFromSlotId(SlotId slotId)
     public
     view

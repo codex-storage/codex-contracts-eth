@@ -5,7 +5,7 @@ const { hexlify, randomBytes } = ethers.utils
 
 const exampleConfiguration = () => ({
   collateral: {
-    initialAmount: 100,
+    minimalInitialAmount: 100,
     minimumAmount: 40,
     slashCriterion: 3,
     slashPercentage: 10,
@@ -28,6 +28,7 @@ const exampleRequest = async () => {
       proofProbability: 4, // require a proof roughly once every 4 periods
       reward: 84,
       maxSlotLoss: 2,
+      collateral: 200,
     },
     content: {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
