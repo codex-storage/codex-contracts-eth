@@ -8,6 +8,7 @@ if command -v echidna-test; then
     echidna-test ${root} \
       --config ${root}/fuzzing/echidna.yaml \
       --corpus-dir ${root}/fuzzing/corpus \
+      --crytic-args --ignore-compile \
       --contract $1
   }
 else

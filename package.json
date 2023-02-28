@@ -3,7 +3,7 @@
   "license": "MIT",
   "scripts": {
     "test": "npm run lint && hardhat test",
-    "fuzz": "fuzzing/fuzz.sh",
+    "fuzz": "hardhat compile && fuzzing/fuzz.sh",
     "start": "hardhat node --export deployment-localhost.json",
     "compile": "hardhat compile",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
