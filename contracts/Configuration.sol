@@ -9,7 +9,6 @@ struct MarketplaceConfig {
 }
 
 struct CollateralConfig {
-  uint256 minimalInitialAmount; // amount of collateral necessary to fill a slot
   uint256 minimumAmount; // frees slot when collateral drops below this minimum
   uint256 slashCriterion; // amount of proofs missed that lead to slashing
   uint256 slashPercentage; // percentage of the collateral that is slashed

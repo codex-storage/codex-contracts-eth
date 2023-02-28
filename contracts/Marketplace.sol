@@ -55,11 +55,6 @@ contract Marketplace is Proofs, StateRetrieval {
     RequestId id = request.id();
     require(_requests[id].client == address(0), "Request already exists");
 
-    require(
-      request.ask.collateral >= config.collateral.minimalInitialAmount,
-      "Not enough collateral"
-    );
-
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
 
