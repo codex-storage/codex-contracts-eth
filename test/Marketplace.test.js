@@ -118,7 +118,7 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("filling a slot", function () {
+  describe("filling a slot with collateral", function () {
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(marketplace.address, price(request))
@@ -126,8 +126,6 @@ describe("Marketplace", function () {
       switchAccount(host)
       await token.approve(marketplace.address, request.ask.collateral)
     })
-
-    // TODO: Test when not enough tokens are approved for the collateral `reverted with reason string 'ERC20: insufficient allowance'`
 
     it("emits event when slot is filled", async function () {
       await expect(marketplace.fillSlot(slot.request, slot.index, proof))
@@ -160,16 +158,6 @@ describe("Marketplace", function () {
         marketplace.fillSlot(slot.request, slot.index, invalid)
       ).to.be.revertedWith("Invalid proof")
     })
-
-    // it("is rejected when collateral is insufficient", async function () {
-    //   let insufficient = config.collateral.minimalInitialAmount - 1
-    //   await marketplace.withdraw()
-    //   await token.approve(marketplace.address, insufficient)
-    //   await marketplace.deposit(insufficient)
-    //   await expect(
-    //     marketplace.fillSlot(slot.request, slot.index, proof)
-    //   ).to.be.revertedWith("Insufficient collateral")
-    // })
 
     it("is rejected when slot already filled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -232,6 +220,31 @@ describe("Marketplace", function () {
     })
   })
 
+  describe("filling slot without collateral", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+    })
+
+    it("is rejected when approved collateral is insufficient", async function () {
+      let insufficient = request.ask.collateral - 1
+      await token.approve(marketplace.address, insufficient)
+      await expect(
+        marketplace.fillSlot(slot.request, slot.index, proof)
+      ).to.be.revertedWith("ERC20: insufficient allowance")
+    })
+
+    it("collects only requested collateral and not more", async function () {
+      await token.approve(marketplace.address, request.ask.collateral*2)
+      const startBalanace = await token.balanceOf(host.address)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      const endBalance = await token.balanceOf(host.address)
+      expect(startBalanace-endBalance).to.eq(request.ask.collateral)
+    })
+  })
+
   describe("request end", function () {
     var requestTime
     beforeEach(async function () {
@@ -283,7 +296,8 @@ describe("Marketplace", function () {
   })
 
   describe("freeing a slot", function () {
-    var id
+    let id
+
     beforeEach(async function () {
       slot.index = 0
       id = slotId(slot)
@@ -333,7 +347,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, request.ask.collateral)
     })
 
-    it("pays the host when contract has finished", async function () {
+    it("pays the host when contract has finished and returns collateral", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       const startBalance = await token.balanceOf(host.address)
