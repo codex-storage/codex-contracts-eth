@@ -131,6 +131,7 @@ contract Marketplace is Proofs, StateRetrieval {
       uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
       _funds.slashed += slashedAmount;
+      _funds.balance -= slashedAmount;
 
       if (slot.currentCollateral < config.collateral.minimumAmount) {
         // When the collateral drops below the minimum threshold, the slot
