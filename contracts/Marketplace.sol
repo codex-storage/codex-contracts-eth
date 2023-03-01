@@ -130,6 +130,7 @@ contract Marketplace is Proofs, StateRetrieval {
     if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
       uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
+      _funds.slashed += slashedAmount;
 
       if (slot.currentCollateral < config.collateral.minimumAmount) {
         // When the collateral drops below the minimum threshold, the slot
@@ -306,12 +307,14 @@ contract Marketplace is Proofs, StateRetrieval {
     _;
     assert(_funds.received >= oldFunds.received);
     assert(_funds.sent >= oldFunds.sent);
-    assert(_funds.received == _funds.balance + _funds.sent);
+    assert(_funds.slashed >= oldFunds.slashed);
+    assert(_funds.received == _funds.balance + _funds.sent + _funds.slashed);
   }
 
   struct MarketplaceFunds {
     uint256 balance;
     uint256 received;
     uint256 sent;
+    uint256 slashed;
   }
 }
