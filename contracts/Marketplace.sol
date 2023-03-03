@@ -248,6 +248,10 @@ contract Marketplace is Proofs, StateRetrieval {
     }
   }
 
+  function getHost(SlotId slotId) public view returns (address) {
+    return _slots[slotId].host;
+  }
+
   function requestState(
     RequestId requestId
   ) public view requestIsKnown(requestId) returns (RequestState) {

@@ -19,8 +19,4 @@ contract TestMarketplace is Marketplace {
   function getSlotCollateral(SlotId slotId) public view returns (uint256) {
     return _slots[slotId].currentCollateral;
   }
-
-  function getHost(SlotId slotId) public view returns (address) {
-    return _slots[slotId].host;
-  }
 }
