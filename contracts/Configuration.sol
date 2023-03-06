@@ -9,9 +9,10 @@ struct MarketplaceConfig {
 }
 
 struct CollateralConfig {
-  uint256 minimumAmount; // frees slot when collateral drops below this minimum
-  uint256 slashCriterion; // amount of proofs missed that lead to slashing
-  uint256 slashPercentage; // percentage of the collateral that is slashed
+  uint8 repairRewardPercentage; // percentage of `minimumAmountPercentage` amount to be used as repair reward when the slot is freed
+  uint8 minimumAmountPercentage; // frees slot when collateral drops below this minimum
+  uint16 slashCriterion; // amount of proofs missed that lead to slashing
+  uint8 slashPercentage; // percentage of the collateral that is slashed
 }
 
 struct ProofConfig {

@@ -765,7 +765,7 @@ describe("Marketplace", function () {
     })
 
     it("frees slot when collateral slashed below minimum threshold", async function () {
-      const minimum = config.collateral.minimumAmount
+      const minimum = (request.ask.collateral / 100) * config.collateral.minimumAmountPercentage
       await waitUntilStarted(marketplace, request, proof, token)
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
         expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(minimum)

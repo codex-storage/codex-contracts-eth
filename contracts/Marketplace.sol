@@ -44,6 +44,10 @@ contract Marketplace is Proofs, StateRetrieval {
     MarketplaceConfig memory configuration
   ) Proofs(configuration.proofs) marketplaceInvariant {
     token = token_;
+
+    require(configuration.collateral.minimumAmountPercentage <= 100, "Too big percentage");
+    require(configuration.collateral.repairRewardPercentage <= 100, "Too big percentage");
+    require(configuration.collateral.slashPercentage <= 100, "Too big percentage");
     config = configuration;
   }
 
@@ -126,6 +130,7 @@ contract Marketplace is Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);
     Slot storage slot = _slots[slotId];
+    Request storage request = _requests[slot.requestId];
 
     if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
       uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
@@ -133,7 +138,7 @@ contract Marketplace is Proofs, StateRetrieval {
       _funds.slashed += slashedAmount;
       _funds.balance -= slashedAmount;
 
-      if (slot.currentCollateral < config.collateral.minimumAmount) {
+      if (slot.currentCollateral < minimumAmount(request)) {
         // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
@@ -290,6 +295,10 @@ contract Marketplace is Proofs, StateRetrieval {
       return SlotState.Failed;
     }
     return slot.state;
+  }
+
+  function minimumAmount(Request memory request) private view returns(uint256) {
+    return (request.ask.collateral / 100) * config.collateral.minimumAmountPercentage;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {
