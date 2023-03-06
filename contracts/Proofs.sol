@@ -25,6 +25,10 @@ abstract contract Proofs is Periods {
     return _missed[slotId];
   }
 
+  function resetMissingProofs(SlotId slotId) internal {
+    _missed[slotId] = 0;
+  }
+
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
     _slotStarts[id] = block.timestamp;
     _probabilities[id] = probability;

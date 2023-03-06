@@ -777,6 +777,24 @@ describe("Marketplace", function () {
       expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
       expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(minimum)
     })
+
+    it("free slot when minimum reached and resets missed proof counter", async function () {
+      const minimum = config.collateral.minimumAmount
+      await waitUntilStarted(marketplace, request, proof, token)
+      let missedProofs = 0
+      while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
+        expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(minimum)
+        await waitUntilProofIsRequired(slotId(slot))
+        const missedPeriod = periodOf(await currentTime())
+        await advanceTime(period)
+        expect(await marketplace.missingProofs(slotId(slot))).to.equal(missedProofs)
+        await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
+        missedProofs += 1
+      }
+      expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
+      expect(await marketplace.missingProofs(slotId(slot))).to.equal(0)
+      expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(minimum)
+    })
   })
 
   describe("list of active requests", function () {
