@@ -152,6 +152,7 @@ contract Marketplace is Proofs, StateRetrieval {
     delete _slots[slotId];
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
+    resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
