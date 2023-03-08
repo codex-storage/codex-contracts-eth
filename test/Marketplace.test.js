@@ -29,6 +29,39 @@ const {
   currentTime,
 } = require("./evm")
 
+describe('Marketplace constructor', function () {
+  let Marketplace, token, config
+
+  beforeEach(async function () {
+    await snapshot()
+    await ensureMinimumBlockHeight(256)
+
+    const TestToken = await ethers.getContractFactory("TestToken")
+    token = await TestToken.deploy()
+
+    Marketplace = await ethers.getContractFactory("TestMarketplace")
+    config = exampleConfiguration()
+  })
+
+  afterEach(async function () {
+    await revert()
+  })
+
+  function testPercentageOverflow(property) {
+    it(`should reject for ${property} overflowing percentage values`, async () => {
+      config.collateral[property] = 101
+
+      await expect(Marketplace.deploy(token.address, config)).to.be.revertedWith(
+        "Too big percentage"
+      )
+    })
+  }
+
+  testPercentageOverflow('minimumAmountPercentage')
+  testPercentageOverflow('repairRewardPercentage')
+  testPercentageOverflow('slashPercentage')
+})
+
 describe("Marketplace", function () {
   const proof = hexlify(randomBytes(42))
   const config = exampleConfiguration()
@@ -765,7 +798,7 @@ describe("Marketplace", function () {
     })
 
     it("frees slot when collateral slashed below minimum threshold", async function () {
-      const minimum = (request.ask.collateral / 100) * config.collateral.minimumAmountPercentage
+      const minimum = (request.ask.collateral * config.collateral.minimumAmountPercentage) / 100
       await waitUntilStarted(marketplace, request, proof, token)
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
         expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(minimum)

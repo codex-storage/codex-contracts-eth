@@ -298,7 +298,7 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   function minimumAmount(Request memory request) private view returns(uint256) {
-    return (request.ask.collateral / 100) * config.collateral.minimumAmountPercentage;
+    return (request.ask.collateral * config.collateral.minimumAmountPercentage ) / 100;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {
