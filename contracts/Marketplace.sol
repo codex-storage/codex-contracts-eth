@@ -45,9 +45,9 @@ contract Marketplace is Proofs, StateRetrieval {
   ) Proofs(configuration.proofs) marketplaceInvariant {
     token = token_;
 
-    require(configuration.collateral.minimumAmountPercentage <= 100, "Too big percentage");
-    require(configuration.collateral.repairRewardPercentage <= 100, "Too big percentage");
-    require(configuration.collateral.slashPercentage <= 100, "Too big percentage");
+    require(configuration.collateral.repairRewardPercentage <= 100, "Must be less than 100");
+    require(configuration.collateral.slashPercentage <= 100, "Must be less than 100");
+    require(configuration.collateral.maxNumberOfSlashes * configuration.collateral.slashPercentage <= 100, "Total slash percentage must be less then 100");
     config = configuration;
   }
 
@@ -133,12 +133,12 @@ contract Marketplace is Proofs, StateRetrieval {
     Request storage request = _requests[slot.requestId];
 
     if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
+      uint256 slashedAmount = (request.ask.collateral * config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
       _funds.slashed += slashedAmount;
       _funds.balance -= slashedAmount;
 
-      if (slot.currentCollateral < minimumAmount(request)) {
+      if (missingProofs(slotId) / config.collateral.slashCriterion >= config.collateral.maxNumberOfSlashes) {
         // When the collateral drops below the minimum threshold, the slot
         // needs to be freed so that there is enough remaining collateral to be
         // distributed for repairs and rewards (with any leftover to be burnt).
@@ -295,10 +295,6 @@ contract Marketplace is Proofs, StateRetrieval {
       return SlotState.Failed;
     }
     return slot.state;
-  }
-
-  function minimumAmount(Request memory request) private view returns(uint256) {
-    return (request.ask.collateral * config.collateral.minimumAmountPercentage ) / 100;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {

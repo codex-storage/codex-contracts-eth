@@ -9,8 +9,11 @@ struct MarketplaceConfig {
 }
 
 struct CollateralConfig {
-  uint8 repairRewardPercentage; // percentage of `minimumAmountPercentage` amount to be used as repair reward when the slot is freed
-  uint8 minimumAmountPercentage; // frees slot when collateral drops below this minimum
+  /// @dev percentage of remaining collateral slot after it has been freed
+  ///  (eq. of amount `collateral - (collateral*maxNumberOfSlashes*slashPercentage)/100`)
+  uint8 repairRewardPercentage;
+
+  uint8 maxNumberOfSlashes; // frees slot when the number of slashing reaches this value
   uint16 slashCriterion; // amount of proofs missed that lead to slashing
   uint8 slashPercentage; // percentage of the collateral that is slashed
 }

@@ -52,14 +52,22 @@ describe('Marketplace constructor', function () {
       config.collateral[property] = 101
 
       await expect(Marketplace.deploy(token.address, config)).to.be.revertedWith(
-        "Too big percentage"
+        "Must be less than 100"
       )
     })
   }
 
-  testPercentageOverflow('minimumAmountPercentage')
   testPercentageOverflow('repairRewardPercentage')
   testPercentageOverflow('slashPercentage')
+
+  it('should reject when total slash percentage exceeds 100%', async () => {
+    config.collateral.slashPercentage = 1
+    config.collateral.maxNumberOfSlashes = 101
+
+    await expect(Marketplace.deploy(token.address, config)).to.be.revertedWith(
+      "Total slash percentage must be less then 100"
+    )
+  })
 })
 
 describe("Marketplace", function () {
@@ -798,7 +806,7 @@ describe("Marketplace", function () {
     })
 
     it("frees slot when collateral slashed below minimum threshold", async function () {
-      const minimum = (request.ask.collateral * config.collateral.minimumAmountPercentage) / 100
+      const minimum = request.ask.collateral - (request.ask.collateral*config.collateral.maxNumberOfSlashes*config.collateral.slashPercentage)/100
       await waitUntilStarted(marketplace, request, proof, token)
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
         expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(minimum)
@@ -812,7 +820,7 @@ describe("Marketplace", function () {
     })
 
     it("free slot when minimum reached and resets missed proof counter", async function () {
-      const minimum = config.collateral.minimumAmount
+      const minimum = request.ask.collateral - (request.ask.collateral*config.collateral.maxNumberOfSlashes*config.collateral.slashPercentage)/100
       await waitUntilStarted(marketplace, request, proof, token)
       let missedProofs = 0
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {

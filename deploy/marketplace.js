@@ -3,7 +3,7 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
   const configuration = {
     collateral: {
       repairRewardPercentage: 10,
-      minimumAmountPercentage: 25,
+      maxNumberOfSlashes: 5,
       slashCriterion: 3,
       slashPercentage: 10,
     },
