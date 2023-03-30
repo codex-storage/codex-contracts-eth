@@ -31,7 +31,13 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
+    uint256 slotIndex;
     address host;
+  }
+
+  struct ActiveSlot {
+    Request request;
+    uint256 slotIndex;
   }
 
   constructor(
@@ -77,6 +83,7 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
+    slot.slotIndex = slotIndex;
 
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
@@ -216,14 +223,17 @@ contract Marketplace is Collateral, Proofs, StateRetrieval {
     return _slots[slotId].host;
   }
 
-  function getRequestFromSlotId(SlotId slotId)
+  function getActiveSlot(SlotId slotId)
     public
     view
     slotIsNotFree(slotId)
-    returns (Request memory)
+    returns (ActiveSlot memory)
   {
     Slot storage slot = _slots[slotId];
-    return _requests[slot.requestId];
+    ActiveSlot memory activeSlot;
+    activeSlot.request = _requests[slot.requestId];
+    activeSlot.slotIndex = slot.slotIndex;
+    return activeSlot;
   }
 
   modifier requestIsKnown(RequestId requestId) {

@@ -141,16 +141,16 @@ describe("Marketplace", function () {
     })
 
     it("fails to retrieve a request of an empty slot", async function () {
-      expect(marketplace.getRequestFromSlotId(slotId(slot))).to.be.revertedWith(
+      expect(marketplace.getActiveSlot(slotId(slot))).to.be.revertedWith(
         "Slot is free"
       )
     })
 
     it("allows retrieval of request of a filled slot", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      expect(
-        await marketplace.getRequestFromSlotId(slotId(slot))
-      ).to.be.request(request)
+      let activeSlot = await marketplace.getActiveSlot(slotId(slot))
+      expect(activeSlot.request).to.be.request(request)
+      expect(activeSlot.slotIndex).to.equal(slot.index)
     })
 
     it("is rejected when proof is incorrect", async function () {
