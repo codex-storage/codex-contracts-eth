@@ -4,6 +4,7 @@
   "scripts": {
     "test": "npm run lint && hardhat test",
     "start": "hardhat node --export deployment-localhost.json",
+    "compile": "hardhat compile",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
     "lint": "solhint contracts/**.sol"
   },

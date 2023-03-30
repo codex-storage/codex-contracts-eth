@@ -2,7 +2,8 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
   const configuration = {
     collateral: {
-      minimumAmount: 40,
+      repairRewardPercentage: 10,
+      maxNumberOfSlashes: 5,
       slashCriterion: 3,
       slashPercentage: 10,
     },

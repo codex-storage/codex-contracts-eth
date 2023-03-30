@@ -44,6 +44,10 @@ contract Marketplace is Proofs, StateRetrieval {
     MarketplaceConfig memory configuration
   ) Proofs(configuration.proofs) marketplaceInvariant {
     token = token_;
+
+    require(configuration.collateral.repairRewardPercentage <= 100, "Must be less than 100");
+    require(configuration.collateral.slashPercentage <= 100, "Must be less than 100");
+    require(configuration.collateral.maxNumberOfSlashes * configuration.collateral.slashPercentage <= 100, "Total slash percentage must be less then 100");
     config = configuration;
   }
 
@@ -126,17 +130,17 @@ contract Marketplace is Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);
     Slot storage slot = _slots[slotId];
+    Request storage request = _requests[slot.requestId];
 
     if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (slot.currentCollateral * config.collateral.slashPercentage) / 100;
+      uint256 slashedAmount = (request.ask.collateral * config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
       _funds.slashed += slashedAmount;
       _funds.balance -= slashedAmount;
 
-      if (slot.currentCollateral < config.collateral.minimumAmount) {
-        // When the collateral drops below the minimum threshold, the slot
-        // needs to be freed so that there is enough remaining collateral to be
-        // distributed for repairs and rewards (with any leftover to be burnt).
+      if (missingProofs(slotId) / config.collateral.slashCriterion >= config.collateral.maxNumberOfSlashes) {
+        // When the number of slashings is at or above the allowed amount,
+        // free the slot.
         _forciblyFreeSlot(slotId);
       }
     }

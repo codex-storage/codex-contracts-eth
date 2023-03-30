@@ -5,7 +5,8 @@ const { hexlify, randomBytes } = ethers.utils
 
 const exampleConfiguration = () => ({
   collateral: {
-    minimumAmount: 40,
+    repairRewardPercentage: 10,
+    maxNumberOfSlashes: 5,
     slashCriterion: 3,
     slashPercentage: 10,
   },
