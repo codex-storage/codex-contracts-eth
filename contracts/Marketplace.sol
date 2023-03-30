@@ -139,9 +139,8 @@ contract Marketplace is Proofs, StateRetrieval {
       _funds.balance -= slashedAmount;
 
       if (missingProofs(slotId) / config.collateral.slashCriterion >= config.collateral.maxNumberOfSlashes) {
-        // When the collateral drops below the minimum threshold, the slot
-        // needs to be freed so that there is enough remaining collateral to be
-        // distributed for repairs and rewards (with any leftover to be burnt).
+        // When the number of slashings is at or above the allowed amount,
+        // free the slot.
         _forciblyFreeSlot(slotId);
       }
     }
