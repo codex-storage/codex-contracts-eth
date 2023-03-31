@@ -5,7 +5,7 @@ module.exports = async ({ deployments, getNamedAccounts, getUnnamedAccounts }) =
   const tokenDeployment = await deployments.deploy("TestToken", { from: deployer })
   const token = await hre.ethers.getContractAt("TestToken", tokenDeployment.address)
 
-  const accounts = await getUnnamedAccounts()
+  const accounts = [...Object.values(await getNamedAccounts()), ...(await getUnnamedAccounts())]
   for (const account of accounts) {
     console.log(`Minting ${MINTED_TOKENS} tokens to address ${account}`)
 
