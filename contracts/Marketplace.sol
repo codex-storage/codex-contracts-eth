@@ -31,12 +31,18 @@ contract Marketplace is Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
+    uint256 slotIndex;
 
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
     uint256 currentCollateral;
     address host;
+  }
+
+  struct ActiveSlot {
+    Request request;
+    uint256 slotIndex;
   }
 
   constructor(
@@ -83,6 +89,7 @@ contract Marketplace is Proofs, StateRetrieval {
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
+    slot.slotIndex = slotIndex;
 
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
@@ -217,14 +224,17 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
-  function getRequestFromSlotId(SlotId slotId)
+  function getActiveSlot(SlotId slotId)
     public
     view
     slotIsNotFree(slotId)
-    returns (Request memory)
+    returns (ActiveSlot memory)
   {
     Slot storage slot = _slots[slotId];
-    return _requests[slot.requestId];
+    ActiveSlot memory activeSlot;
+    activeSlot.request = _requests[slot.requestId];
+    activeSlot.slotIndex = slot.slotIndex;
+    return activeSlot;
   }
 
   modifier requestIsKnown(RequestId requestId) {
