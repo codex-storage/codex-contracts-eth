@@ -9,9 +9,9 @@ module.exports = async ({ deployments, getNamedAccounts, getUnnamedAccounts }) =
   for (const account of accounts) {
     console.log(`Minting ${MINTED_TOKENS} tokens to address ${account}`)
 
-    await token.mint(account, MINTED_TOKENS, { from: deployer })
+    const transaction = await token.mint(account, MINTED_TOKENS, { from: deployer })
+    await transaction.wait()
   }
-
 }
 
 module.exports.tags = ["TestToken"]
