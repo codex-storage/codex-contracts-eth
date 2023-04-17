@@ -6,7 +6,8 @@
     "start": "hardhat node --export deployment-localhost.json",
     "compile": "hardhat compile",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
-    "lint": "solhint contracts/**.sol"
+    "lint": "solhint contracts/**.sol",
+    "deploy": "hardhat deploy"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",

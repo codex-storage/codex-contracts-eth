@@ -24,5 +24,8 @@ module.exports = {
     hardhat: {
       tags: ["local"],
     },
+    codexdisttestnetwork: {
+      url: process.env.DISTTEST_NETWORK_URL
+    }
   },
 }
