@@ -25,7 +25,7 @@ module.exports = {
       tags: ["local"],
     },
     codexdisttestnetwork: {
-      url: process.env.DISTTEST_NETWORK_URL
-    }
+      url: `${process.env.DISTTEST_NETWORK_URL}`,
+    },
   },
 }
