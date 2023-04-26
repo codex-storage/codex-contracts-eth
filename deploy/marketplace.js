@@ -31,7 +31,6 @@ async function aliasContract({deployments, network}) {
     const marketplaceDeployment = await deployments.get("Marketplace")
 
     if (marketplaceDeployment.address === MARKETPLACE_HARDCODED_ADDRESS) {
-      console.log('Marketplace is deployed to expected address. Aborting aliasing.')
       return 
     }
 
