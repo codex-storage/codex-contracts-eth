@@ -106,10 +106,10 @@ References
 ----------
 
    * [A marketplace for storage
-     durability](https://github.com/status-im/codex-research/blob/main/design/marketplace.md)
+     durability](https://github.com/codex-storage/codex-research/blob/master/design/marketplace.md)
      (design document)
    * [Timing of Storage
-     Proofs](https://github.com/status-im/codex-research/blob/main/design/storage-proof-timing.md)
+     Proofs](https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md)
      (design document)
 
 To Do
