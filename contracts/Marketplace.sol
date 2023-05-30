@@ -33,7 +33,6 @@ contract Marketplace is Proofs, StateRetrieval {
     SlotState state;
     RequestId requestId;
     uint256 slotIndex;
-
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
@@ -52,9 +51,20 @@ contract Marketplace is Proofs, StateRetrieval {
   ) Proofs(configuration.proofs) {
     token = token_;
 
-    require(configuration.collateral.repairRewardPercentage <= 100, "Must be less than 100");
-    require(configuration.collateral.slashPercentage <= 100, "Must be less than 100");
-    require(configuration.collateral.maxNumberOfSlashes * configuration.collateral.slashPercentage <= 100, "Total slash percentage must be less then 100");
+    require(
+      configuration.collateral.repairRewardPercentage <= 100,
+      "Must be less than 100"
+    );
+    require(
+      configuration.collateral.slashPercentage <= 100,
+      "Must be less than 100"
+    );
+    require(
+      configuration.collateral.maxNumberOfSlashes *
+        configuration.collateral.slashPercentage <=
+        100,
+      "Maximum slashing exceeds 100%"
+    );
     config = configuration;
   }
 
@@ -137,9 +147,13 @@ contract Marketplace is Proofs, StateRetrieval {
     Request storage request = _requests[slot.requestId];
 
     if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (request.ask.collateral * config.collateral.slashPercentage) / 100;
+      uint256 slashedAmount = (request.ask.collateral *
+        config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
-      if (missingProofs(slotId) / config.collateral.slashCriterion >= config.collateral.maxNumberOfSlashes) {
+      if (
+        missingProofs(slotId) / config.collateral.slashCriterion >=
+        config.collateral.maxNumberOfSlashes
+      ) {
         // When the number of slashings is at or above the allowed amount,
         // free the slot.
         _forciblyFreeSlot(slotId);
@@ -157,7 +171,7 @@ contract Marketplace is Proofs, StateRetrieval {
     delete _slots[slotId];
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotId);
-    resetMissingProofs(slotId);
+    _resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
@@ -185,7 +199,8 @@ contract Marketplace is Proofs, StateRetrieval {
 
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _requests[requestId].pricePerSlot() + slot.currentCollateral;
+    uint256 amount = _requests[requestId].pricePerSlot() +
+      slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
     require(token.transfer(slot.host, amount), "Payment failed");
@@ -216,12 +231,9 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transfer(msg.sender, amount), "Withdraw failed");
   }
 
-  function getActiveSlot(SlotId slotId)
-    public
-    view
-    slotIsNotFree(slotId)
-    returns (ActiveSlot memory)
-  {
+  function getActiveSlot(
+    SlotId slotId
+  ) public view slotIsNotFree(slotId) returns (ActiveSlot memory) {
     Slot storage slot = _slots[slotId];
     ActiveSlot memory activeSlot;
     activeSlot.request = _requests[slot.requestId];
