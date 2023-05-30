@@ -203,7 +203,7 @@ contract Marketplace is Proofs, StateRetrieval {
       slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
-    require(token.transfer(slot.host, amount), "Payment failed");
+    assert(token.transfer(slot.host, amount));
   }
 
   /// @notice Withdraws storage request funds back to the client that deposited them.
@@ -228,7 +228,7 @@ contract Marketplace is Proofs, StateRetrieval {
     // deducted from the price.
     uint256 amount = request.price();
     _marketplaceTotals.sent += amount;
-    require(token.transfer(msg.sender, amount), "Withdraw failed");
+    assert(token.transfer(msg.sender, amount));
   }
 
   function getActiveSlot(
