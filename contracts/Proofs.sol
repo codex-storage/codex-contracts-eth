@@ -25,7 +25,7 @@ abstract contract Proofs is Periods {
     return _missed[slotId];
   }
 
-  function resetMissingProofs(SlotId slotId) internal {
+  function _resetMissingProofs(SlotId slotId) internal {
     _missed[slotId] = 0;
   }
 
