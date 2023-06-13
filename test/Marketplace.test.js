@@ -5,7 +5,7 @@ const { BigNumber } = ethers
 const { expect } = require("chai")
 const { exampleConfiguration, exampleRequest } = require("./examples")
 const { periodic, hours } = require("./time")
-const { requestId, slotId, askToArray } = require("./ids")
+const { requestId, slotId, requestedToArray } = require("./ids")
 const {
   RequestState,
   SlotState,
@@ -81,9 +81,13 @@ describe("Marketplace", function () {
 
     it("emits event when storage is requested", async function () {
       await token.approve(marketplace.address, price(request))
+      console.log("collateral", request.ask.collateral)
+      console.log("expiry", request.expiry)
+      console.log("totalChunks", request.content.erasure.totalChunks)
+      console.log("slots", request.ask.slots)
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
-        .withArgs(requestId(request), askToArray(request.ask))
+        .withArgs(requestId(request), requestedToArray(request))
     })
 
     it("allows retrieval of request details", async function () {

@@ -23,6 +23,13 @@ function askToArray(ask) {
   ]
 }
 
+function requestedToArray(request) {
+  return [request.ask.collateral,
+          request.expiry,
+          request.content.erasure.totalChunks,
+          request.ask.slots]
+}
+
 function erasureToArray(erasure) {
   return [erasure.totalChunks]
 }
@@ -59,4 +66,5 @@ module.exports = {
   slotId,
   requestToArray,
   askToArray,
+  requestedToArray
 }

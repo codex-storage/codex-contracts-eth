@@ -4,6 +4,13 @@ pragma solidity ^0.8.8;
 type RequestId is bytes32;
 type SlotId is bytes32;
 
+struct Requested {
+  uint256 collateral;
+  uint256 expiry;
+  uint64 totalChunks;
+  uint64 slots;
+}
+
 struct Request {
   address client;
   Ask ask;
