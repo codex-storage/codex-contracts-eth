@@ -81,10 +81,6 @@ describe("Marketplace", function () {
 
     it("emits event when storage is requested", async function () {
       await token.approve(marketplace.address, price(request))
-      console.log("collateral", request.ask.collateral)
-      console.log("expiry", request.expiry)
-      console.log("totalChunks", request.content.erasure.totalChunks)
-      console.log("slots", request.ask.slots)
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
         .withArgs(requestId(request), requestedToArray(request))
