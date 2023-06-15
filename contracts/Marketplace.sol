@@ -83,7 +83,7 @@ contract Marketplace is Proofs, StateRetrieval {
     _marketplaceTotals.received += amount;
     _transferFrom(msg.sender, amount);
 
-    emit StorageRequested(id, request.ask);
+    emit StorageRequested(id, request.ask, request.expiry);
   }
 
   function fillSlot(
@@ -315,7 +315,7 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
-  event StorageRequested(RequestId requestId, Ask ask);
+  event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
   event RequestFulfilled(RequestId indexed requestId);
   event RequestFailed(RequestId indexed requestId);
   event SlotFilled(
