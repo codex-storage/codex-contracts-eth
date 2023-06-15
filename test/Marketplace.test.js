@@ -124,7 +124,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request))
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
-        .withArgs(requestId(request), askToArray(request.ask))
+        .withArgs(requestId(request), askToArray(request.ask), request.expiry)
     })
 
     it("allows retrieval of request details", async function () {
