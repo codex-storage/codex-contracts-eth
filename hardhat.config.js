@@ -27,5 +27,9 @@ module.exports = {
     codexdisttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
+    taiko_test: {
+      url: "https://rpc.test.taiko.xyz",
+      accounts: ["<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"],
+    },
   },
 }
