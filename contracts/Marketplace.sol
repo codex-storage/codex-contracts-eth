@@ -170,7 +170,7 @@ contract Marketplace is Proofs, StateRetrieval {
 
     delete _slots[slotId];
     context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slotId);
+    emit SlotFreed(requestId, slot.slotIndex, slotId);
     _resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
@@ -323,7 +323,11 @@ contract Marketplace is Proofs, StateRetrieval {
     uint256 indexed slotIndex,
     SlotId slotId
   );
-  event SlotFreed(RequestId indexed requestId, SlotId slotId);
+  event SlotFreed(
+    RequestId indexed requestId,
+    uint256 slotIndex,
+    SlotId slotId
+  );
   event RequestCancelled(RequestId indexed requestId);
 
   struct MarketplaceTotals {

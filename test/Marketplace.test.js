@@ -378,7 +378,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await expect(await marketplace.freeSlot(id))
         .to.emit(marketplace, "SlotFreed")
-        .withArgs(slot.request, id)
+        .withArgs(slot.request, slot.index, id)
     })
   })
 
