@@ -171,7 +171,7 @@ describe("Marketplace", function () {
     it("emits event when slot is filled", async function () {
       await expect(marketplace.fillSlot(slot.request, slot.index, proof))
         .to.emit(marketplace, "SlotFilled")
-        .withArgs(slot.request, slot.index, slotId(slot))
+        .withArgs(slot.request, slot.index)
     })
 
     it("allows retrieval of host that filled slot", async function () {
@@ -378,7 +378,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await expect(await marketplace.freeSlot(id))
         .to.emit(marketplace, "SlotFreed")
-        .withArgs(slot.request, slot.index, id)
+        .withArgs(slot.request, slot.index)
     })
   })
 
