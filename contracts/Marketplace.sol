@@ -110,7 +110,7 @@ contract Marketplace is Proofs, StateRetrieval {
 
     _addToMySlots(slot.host, slotId);
 
-    emit SlotFilled(requestId, slotIndex, slotId);
+    emit SlotFilled(requestId, slotIndex);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
@@ -160,9 +160,10 @@ contract Marketplace is Proofs, StateRetrieval {
 
     _removeFromMySlots(slot.host, slotId);
 
+    uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
     context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slot.slotIndex, slotId);
+    emit SlotFreed(requestId, slotIndex);
     resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
@@ -316,13 +317,11 @@ contract Marketplace is Proofs, StateRetrieval {
   event RequestFailed(RequestId indexed requestId);
   event SlotFilled(
     RequestId indexed requestId,
-    uint256 indexed slotIndex,
-    SlotId slotId
+    uint256 slotIndex
   );
   event SlotFreed(
     RequestId indexed requestId,
-    uint256 slotIndex,
-    SlotId slotId
+    uint256 slotIndex
   );
   event RequestCancelled(RequestId indexed requestId);
 
