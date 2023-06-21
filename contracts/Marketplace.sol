@@ -83,7 +83,7 @@ contract Marketplace is Proofs, StateRetrieval {
     _marketplaceTotals.received += amount;
     _transferFrom(msg.sender, amount);
 
-    emit StorageRequested(id, request.ask);
+    emit StorageRequested(id, request.ask, request.expiry);
   }
 
   function fillSlot(
@@ -117,7 +117,7 @@ contract Marketplace is Proofs, StateRetrieval {
 
     _addToMySlots(slot.host, slotId);
 
-    emit SlotFilled(requestId, slotIndex, slotId);
+    emit SlotFilled(requestId, slotIndex);
     if (context.slotsFilled == request.ask.slots) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
@@ -168,9 +168,10 @@ contract Marketplace is Proofs, StateRetrieval {
 
     _removeFromMySlots(slot.host, slotId);
 
+    uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
     context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slotId);
+    emit SlotFreed(requestId, slotIndex);
     _resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
@@ -315,15 +316,17 @@ contract Marketplace is Proofs, StateRetrieval {
     require(token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
-  event StorageRequested(RequestId requestId, Ask ask);
+  event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
   event RequestFulfilled(RequestId indexed requestId);
   event RequestFailed(RequestId indexed requestId);
   event SlotFilled(
     RequestId indexed requestId,
-    uint256 indexed slotIndex,
-    SlotId slotId
+    uint256 slotIndex
   );
-  event SlotFreed(RequestId indexed requestId, SlotId slotId);
+  event SlotFreed(
+    RequestId indexed requestId,
+    uint256 slotIndex
+  );
   event RequestCancelled(RequestId indexed requestId);
 
   struct MarketplaceTotals {
