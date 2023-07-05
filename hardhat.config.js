@@ -29,7 +29,9 @@ module.exports = {
     },
     taiko_test: {
       url: "https://rpc.test.taiko.xyz",
-      accounts: ["<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"],
+      accounts: [
+        // "<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"
+      ],
     },
   },
 }
