@@ -1,4 +1,4 @@
-name: Docker
+name: Docker Dist-Tests
 
 
 on:
@@ -11,15 +11,15 @@ on:
       - '**/*.md'
       - '.gitignore'
       - 'docker/**'
-      - '!docker/Dockerfile'
+      - '!docker/delpoy.*'
       - '.github/**'
-      - '!.github/workflows/docker.yml'
+      - '!.github/workflows/docker-dist-tests.yml'
   workflow_dispatch:
 
 
 env:
-  DOCKER_FILE: docker/Dockerfile
-  DOCKER_REPO: codexstorage/codex-contracts-eth
+  DOCKER_FILE: docker/deploy.Dockerfile
+  DOCKER_REPO: codexstorage/dist-tests-codex-contracts-eth
 
 
 jobs:
