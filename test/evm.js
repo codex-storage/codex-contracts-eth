@@ -36,7 +36,9 @@ async function advanceTime(seconds) {
 
 async function advanceTimeTo(timestamp) {
   if ((await currentTime()) !== timestamp) {
-    await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
+    // The `timestamp - 1` is there because the `mine()` advances the block timestamp by 1 second
+    // so in order to get really the passed `timestamp` for next block we do `timestamp - 1`.
+    await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp - 1])
     await mine()
   }
 }

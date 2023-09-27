@@ -51,7 +51,8 @@ enum SlotState {
   Filled, // host has filled slot
   Finished, // successfully completed
   Failed, // the request has failed
-  Paid // host has been paid
+  Paid, // host has been paid
+  Cancelled // when request was cancelled then slot is cancelled as well
 }
 
 library Requests {
