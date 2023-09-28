@@ -45,12 +45,14 @@ describe("Proofs", function () {
 
       await proofs.startRequiringProofs(slotId, probability)
       await advanceTime(period)
+      await mine()
       let amount = 0
       for (let i = 0; i < samples; i++) {
         if (await proofs.isProofRequired(slotId)) {
           amount += 1
         }
         await advanceTime(period)
+        await mine()
       }
 
       const p = 1 / probability // expected probability
@@ -63,6 +65,7 @@ describe("Proofs", function () {
     it("supports probability 1 (proofs are always required)", async function () {
       await proofs.startRequiringProofs(slotId, 1)
       await advanceTime(period)
+      await mine()
       while ((await proofs.getPointer(slotId)) < downtime) {
         await mine()
       }
@@ -76,6 +79,7 @@ describe("Proofs", function () {
       while (Math.floor((await currentTime()) / period) == startPeriod) {
         expect(await proofs.isProofRequired(slotId)).to.be.false
         await advanceTime(Math.floor(period / 10))
+        await mine()
       }
     })
 
@@ -93,11 +97,13 @@ describe("Proofs", function () {
         req2 = await proofs.isProofRequired(id2)
         req3 = await proofs.isProofRequired(id3)
         await advanceTime(period)
+        await mine()
       }
     })
 
     it("moves pointer one block at a time", async function () {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await mine()
       for (let i = 0; i < 256; i++) {
         let previous = await proofs.getPointer(slotId)
         await mine()
@@ -155,6 +161,8 @@ describe("Proofs", function () {
 
     async function waitUntilProofIsRequired(slotId) {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await mine()
+
       while (
         !(
           (await proofs.isProofRequired(slotId)) &&
@@ -162,6 +170,7 @@ describe("Proofs", function () {
         )
       ) {
         await advanceTime(period)
+        await mine()
       }
     }
 
@@ -211,6 +220,7 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(slotId)
       let missedPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(missedPeriod))
+      await mine()
       await proofs.markProofAsMissing(slotId, missedPeriod)
       expect(await proofs.missingProofs(slotId)).to.equal(1)
     })
@@ -237,6 +247,7 @@ describe("Proofs", function () {
       let submittedPeriod = periodOf(await currentTime())
       await proofs.submitProof(slotId, proof)
       await advanceTimeTo(periodEnd(submittedPeriod))
+      await mine()
       await expect(
         proofs.markProofAsMissing(slotId, submittedPeriod)
       ).to.be.revertedWith("Proof was submitted, not missing")
@@ -245,9 +256,11 @@ describe("Proofs", function () {
     it("does not mark proof as missing when not required", async function () {
       while (await proofs.isProofRequired(slotId)) {
         await advanceTime(period)
+        await mine()
       }
       let currentPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(currentPeriod))
+      await mine()
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
       ).to.be.revertedWith("Proof was not required")
@@ -257,6 +270,7 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(slotId)
       let missedPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(missedPeriod))
+      await mine()
       await proofs.markProofAsMissing(slotId, missedPeriod)
       await expect(
         proofs.markProofAsMissing(slotId, missedPeriod)

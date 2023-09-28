@@ -3,7 +3,7 @@ const { slotId, requestId } = require("./ids")
 const {price} = require("./price");
 
 async function waitUntilCancelled(request) {
-  await advanceTimeTo(request.expiry + 2)
+  await advanceTimeTo(request.expiry + 1)
 }
 
 async function waitUntilStarted(contract, request, proof, token) {

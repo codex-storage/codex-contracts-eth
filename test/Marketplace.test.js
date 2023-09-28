@@ -28,6 +28,7 @@ const {
   advanceTimeTo,
   currentTime,
 } = require("./evm")
+const { min } = require('hardhat/internal/util/bigint')
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000
 
@@ -319,18 +320,20 @@ describe("Marketplace", function () {
       )
     })
 
-    it.skip("sets request end time to the past once cancelled", async function () {
+    it("sets request end time to the past once cancelled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
+      await mine()
       const now = await currentTime()
       await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
         now - 1
       )
     })
 
-    it.skip("checks that request end time is in the past once finished", async function () {
+    it("checks that request end time is in the past once finished", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
+      await mine()
       const now = await currentTime()
       // in the process of calling currentTime and requestEnd,
       // block.timestamp has advanced by 1, so the expected proof end time will
@@ -406,7 +409,7 @@ describe("Marketplace", function () {
 
     it("pays the host when contract was cancelled", async function () {
       // Lets move the time into middle of the expiry window
-      const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2)
+      const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2) - 1
       await advanceTimeTo(fillTimestamp)
 
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -581,6 +584,7 @@ describe("Marketplace", function () {
 
     it("changes to 'Cancelled' once request is cancelled", async function () {
       await waitUntilCancelled(request)
+      await mine()
       expect(await marketplace.requestState(slot.request)).to.equal(Cancelled)
     })
 
@@ -599,6 +603,7 @@ describe("Marketplace", function () {
     it("changes to 'Failed' once too many slots are freed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFailed(marketplace, request)
+      await mine()
       expect(await marketplace.requestState(slot.request)).to.equal(Failed)
     })
 
@@ -621,6 +626,7 @@ describe("Marketplace", function () {
     it("changes to 'Finished' when the request ends", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
+      await mine()
       expect(await marketplace.requestState(slot.request)).to.equal(Finished)
     })
 
@@ -649,6 +655,7 @@ describe("Marketplace", function () {
 
     async function waitUntilProofIsRequired(id) {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await mine()
       while (
         !(
           (await marketplace.isProofRequired(id)) &&
@@ -656,6 +663,7 @@ describe("Marketplace", function () {
         )
       ) {
         await advanceTime(period)
+        await mine()
       }
     }
 
@@ -671,12 +679,14 @@ describe("Marketplace", function () {
     it("changes to 'Finished' when request finishes", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, slot.request)
+      await mine()
       expect(await marketplace.slotState(slotId(slot))).to.equal(Finished)
     })
 
     it("changes to 'Cancelled' when request is cancelled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
+      await mine()
       expect(await marketplace.slotState(slotId(slot))).to.equal(Cancelled)
     })
 
@@ -692,6 +702,7 @@ describe("Marketplace", function () {
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
         await advanceTime(period)
+        await mine()
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(Free)
@@ -700,6 +711,7 @@ describe("Marketplace", function () {
     it("changes to 'Failed' when request fails", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilSlotFailed(marketplace, request, slot)
+      await mine()
       expect(await marketplace.slotState(slotId(slot))).to.equal(Failed)
     })
 
@@ -740,6 +752,7 @@ describe("Marketplace", function () {
         )
       ) {
         await advanceTime(period)
+        await mine()
       }
     }
 
@@ -755,6 +768,7 @@ describe("Marketplace", function () {
       await waitUntilProofWillBeRequired(id)
       await expect(await marketplace.willProofBeRequired(id)).to.be.true
       await waitUntilCancelled(request)
+      await mine()
       await expect(await marketplace.willProofBeRequired(id)).to.be.false
     })
 
@@ -764,6 +778,7 @@ describe("Marketplace", function () {
       await waitUntilProofIsRequired(id)
       await expect(await marketplace.isProofRequired(id)).to.be.true
       await waitUntilCancelled(request)
+      await mine()
       await expect(await marketplace.isProofRequired(id)).to.be.false
     })
 
@@ -771,9 +786,11 @@ describe("Marketplace", function () {
       const id = slotId(slot)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofIsRequired(id)
+      await mine()
       const challenge1 = await marketplace.getChallenge(id)
       expect(BigNumber.from(challenge1).gt(0))
       await waitUntilCancelled(request)
+      await mine()
       const challenge2 = await marketplace.getChallenge(id)
       expect(BigNumber.from(challenge2).isZero())
     })
@@ -782,9 +799,11 @@ describe("Marketplace", function () {
       const id = slotId(slot)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofIsRequired(id)
+      await mine()
       const challenge1 = await marketplace.getChallenge(id)
       expect(BigNumber.from(challenge1).gt(0))
       await waitUntilCancelled(request)
+      await mine()
       const challenge2 = await marketplace.getChallenge(id)
       expect(BigNumber.from(challenge2).isZero())
     })
@@ -806,6 +825,7 @@ describe("Marketplace", function () {
 
     async function waitUntilProofIsRequired(id) {
       await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await mine()
       while (
         !(
           (await marketplace.isProofRequired(id)) &&
@@ -813,6 +833,7 @@ describe("Marketplace", function () {
         )
       ) {
         await advanceTime(period)
+        await mine()
       }
     }
 
@@ -833,7 +854,7 @@ describe("Marketplace", function () {
         for (let i = 0; i < slashCriterion; i++) {
           await waitUntilProofIsRequired(id)
           let missedPeriod = periodOf(await currentTime())
-          await advanceTime(period)
+          await advanceTime(period+1)
           await marketplace.markProofAsMissing(id, missedPeriod)
         }
         const expectedBalance =
@@ -861,7 +882,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
+        await advanceTime(period+1)
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
@@ -885,7 +906,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
+        await advanceTime(period+1)
         expect(await marketplace.missingProofs(slotId(slot))).to.equal(
           missedProofs
         )
@@ -916,6 +937,7 @@ describe("Marketplace", function () {
     it("keeps request in list when cancelled", async function () {
       await marketplace.requestStorage(request)
       await waitUntilCancelled(request)
+      await mine()
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
 
@@ -931,6 +953,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFailed(marketplace, request)
+      await mine()
       switchAccount(client)
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
@@ -983,6 +1006,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, request.ask.collateral)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await waitUntilCancelled(request)
+      await mine()
       expect(await marketplace.mySlots()).to.have.members([
         slotId(slot),
         slotId(slot1),
