@@ -7,8 +7,8 @@ const {
   mine,
   ensureMinimumBlockHeight,
   currentTime,
-  advanceTime,
-  advanceTimeTo,
+  advanceTimeForNextBlock,
+  advanceTimeToForNextBlock,
 } = require("./evm")
 const { periodic } = require("./time")
 const { SlotState } = require("./requests")
@@ -44,14 +44,14 @@ describe("Proofs", function () {
       const samples = 256 // 256 samples avoids bias due to pointer downtime
 
       await proofs.startRequiringProofs(slotId, probability)
-      await advanceTime(period)
+      await advanceTimeForNextBlock(period)
       await mine()
       let amount = 0
       for (let i = 0; i < samples; i++) {
         if (await proofs.isProofRequired(slotId)) {
           amount += 1
         }
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
 
@@ -64,7 +64,7 @@ describe("Proofs", function () {
 
     it("supports probability 1 (proofs are always required)", async function () {
       await proofs.startRequiringProofs(slotId, 1)
-      await advanceTime(period)
+      await advanceTimeForNextBlock(period)
       await mine()
       while ((await proofs.getPointer(slotId)) < downtime) {
         await mine()
@@ -78,7 +78,7 @@ describe("Proofs", function () {
       await proofs.startRequiringProofs(slotId, probability)
       while (Math.floor((await currentTime()) / period) == startPeriod) {
         expect(await proofs.isProofRequired(slotId)).to.be.false
-        await advanceTime(Math.floor(period / 10))
+        await advanceTimeForNextBlock(Math.floor(period / 10))
         await mine()
       }
     })
@@ -96,13 +96,13 @@ describe("Proofs", function () {
         req1 = await proofs.isProofRequired(id1)
         req2 = await proofs.isProofRequired(id2)
         req3 = await proofs.isProofRequired(id3)
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
     })
 
     it("moves pointer one block at a time", async function () {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await mine()
       for (let i = 0; i < 256; i++) {
         let previous = await proofs.getPointer(slotId)
@@ -123,7 +123,7 @@ describe("Proofs", function () {
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
       await proofs.startRequiringProofs(slotId, probability)
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
     })
 
@@ -160,7 +160,7 @@ describe("Proofs", function () {
     })
 
     async function waitUntilProofIsRequired(slotId) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await mine()
 
       while (
@@ -169,7 +169,7 @@ describe("Proofs", function () {
           (await proofs.getPointer(slotId)) < 250
         )
       ) {
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
     }
@@ -208,7 +208,7 @@ describe("Proofs", function () {
     })
 
     it("fails proof submission when already submitted", async function () {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await proofs.submitProof(slotId, proof)
       await expect(proofs.submitProof(slotId, proof)).to.be.revertedWith(
         "Proof already submitted"
@@ -219,7 +219,7 @@ describe("Proofs", function () {
       expect(await proofs.missingProofs(slotId)).to.equal(0)
       await waitUntilProofIsRequired(slotId)
       let missedPeriod = periodOf(await currentTime())
-      await advanceTimeTo(periodEnd(missedPeriod))
+      await advanceTimeToForNextBlock(periodEnd(missedPeriod))
       await mine()
       await proofs.markProofAsMissing(slotId, missedPeriod)
       expect(await proofs.missingProofs(slotId)).to.equal(1)
@@ -236,7 +236,7 @@ describe("Proofs", function () {
     it("does not mark a proof as missing after timeout", async function () {
       await waitUntilProofIsRequired(slotId)
       let currentPeriod = periodOf(await currentTime())
-      await advanceTimeTo(periodEnd(currentPeriod) + timeout)
+      await advanceTimeToForNextBlock(periodEnd(currentPeriod) + timeout)
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
       ).to.be.revertedWith("Validation timed out")
@@ -246,7 +246,7 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(slotId)
       let submittedPeriod = periodOf(await currentTime())
       await proofs.submitProof(slotId, proof)
-      await advanceTimeTo(periodEnd(submittedPeriod))
+      await advanceTimeToForNextBlock(periodEnd(submittedPeriod))
       await mine()
       await expect(
         proofs.markProofAsMissing(slotId, submittedPeriod)
@@ -255,11 +255,11 @@ describe("Proofs", function () {
 
     it("does not mark proof as missing when not required", async function () {
       while (await proofs.isProofRequired(slotId)) {
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
       let currentPeriod = periodOf(await currentTime())
-      await advanceTimeTo(periodEnd(currentPeriod))
+      await advanceTimeToForNextBlock(periodEnd(currentPeriod))
       await mine()
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
@@ -269,7 +269,7 @@ describe("Proofs", function () {
     it("does not mark proof as missing twice", async function () {
       await waitUntilProofIsRequired(slotId)
       let missedPeriod = periodOf(await currentTime())
-      await advanceTimeTo(periodEnd(missedPeriod))
+      await advanceTimeToForNextBlock(periodEnd(missedPeriod))
       await mine()
       await proofs.markProofAsMissing(slotId, missedPeriod)
       await expect(

@@ -1,9 +1,9 @@
-const { advanceTimeTo, currentTime } = require("./evm")
+const { advanceTimeToForNextBlock, currentTime } = require("./evm")
 const { slotId, requestId } = require("./ids")
 const {price} = require("./price");
 
 async function waitUntilCancelled(request) {
-  await advanceTimeTo(request.expiry + 1)
+  await advanceTimeToForNextBlock(request.expiry + 1)
 }
 
 async function waitUntilStarted(contract, request, proof, token) {
@@ -16,7 +16,7 @@ async function waitUntilStarted(contract, request, proof, token) {
 
 async function waitUntilFinished(contract, requestId) {
   const end = (await contract.requestEnd(requestId)).toNumber()
-  await advanceTimeTo(end + 1)
+  await advanceTimeToForNextBlock(end + 1)
 }
 
 async function waitUntilFailed(contract, request) {

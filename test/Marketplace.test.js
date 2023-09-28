@@ -24,8 +24,8 @@ const {
   revert,
   mine,
   ensureMinimumBlockHeight,
-  advanceTime,
-  advanceTimeTo,
+  advanceTimeForNextBlock,
+  advanceTimeToForNextBlock,
   currentTime,
 } = require("./evm")
 const { min } = require('hardhat/internal/util/bigint')
@@ -410,7 +410,7 @@ describe("Marketplace", function () {
     it("pays the host when contract was cancelled", async function () {
       // Lets move the time into middle of the expiry window
       const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2) - 1
-      await advanceTimeTo(fillTimestamp)
+      await advanceTimeToForNextBlock(fillTimestamp)
 
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
@@ -555,7 +555,7 @@ describe("Marketplace", function () {
 
     it("withdraws to the client for cancelled requests lowered by hosts payout", async function () {
       const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2)
-      await advanceTimeTo(fillTimestamp)
+      await advanceTimeToForNextBlock(fillTimestamp)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       const expectedPartialHostPayout = (request.expiry - fillTimestamp) * request.ask.reward
@@ -654,7 +654,7 @@ describe("Marketplace", function () {
     })
 
     async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await mine()
       while (
         !(
@@ -662,7 +662,7 @@ describe("Marketplace", function () {
           (await marketplace.getPointer(id)) < 250
         )
       ) {
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
     }
@@ -701,7 +701,7 @@ describe("Marketplace", function () {
       while ((await marketplace.slotState(slotId(slot))) === Filled) {
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
@@ -744,14 +744,14 @@ describe("Marketplace", function () {
     }
 
     async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       while (
         !(
           (await marketplace.isProofRequired(id)) &&
           (await marketplace.getPointer(id)) < 250
         )
       ) {
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
     }
@@ -824,7 +824,7 @@ describe("Marketplace", function () {
     })
 
     async function waitUntilProofIsRequired(id) {
-      await advanceTimeTo(periodEnd(periodOf(await currentTime())))
+      await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await mine()
       while (
         !(
@@ -832,7 +832,7 @@ describe("Marketplace", function () {
           (await marketplace.getPointer(id)) < 250
         )
       ) {
-        await advanceTime(period)
+        await advanceTimeForNextBlock(period)
         await mine()
       }
     }
@@ -854,7 +854,7 @@ describe("Marketplace", function () {
         for (let i = 0; i < slashCriterion; i++) {
           await waitUntilProofIsRequired(id)
           let missedPeriod = periodOf(await currentTime())
-          await advanceTime(period+1)
+          await advanceTimeForNextBlock(period+1)
           await marketplace.markProofAsMissing(id, missedPeriod)
         }
         const expectedBalance =
@@ -882,7 +882,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period+1)
+        await advanceTimeForNextBlock(period+1)
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
@@ -906,7 +906,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period+1)
+        await advanceTimeForNextBlock(period+1)
         expect(await marketplace.missingProofs(slotId(slot))).to.equal(
           missedProofs
         )

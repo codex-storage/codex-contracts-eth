@@ -45,7 +45,7 @@ async function currentTime() {
  * @param timestamp
  * @returns {Promise<void>}
  */
-async function advanceTime(seconds) {
+async function advanceTimeForNextBlock(seconds) {
   await ethers.provider.send("evm_increaseTime", [seconds])
 }
 
@@ -58,7 +58,7 @@ async function advanceTime(seconds) {
  * @param timestamp
  * @returns {Promise<void>}
  */
-async function advanceTimeTo(timestamp) {
+async function advanceTimeToForNextBlock(timestamp) {
   await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
 }
 
@@ -68,6 +68,6 @@ module.exports = {
   mine,
   ensureMinimumBlockHeight,
   currentTime,
-  advanceTime,
-  advanceTimeTo,
+  advanceTimeForNextBlock,
+  advanceTimeToForNextBlock,
 }
