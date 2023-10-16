@@ -26,7 +26,7 @@ contract Marketplace is Proofs, StateRetrieval {
     RequestState state;
     uint256 slotsFilled;
 
-    /// @notice Tracks how much funds should be returned when Request expiry to the Request creator
+    /// @notice Tracks how much funds should be returned when Request expires to the Request creator
     /// @dev The sum is deducted every time a host fills a Slot by precalculated amount that he should receive if the Request expires
     uint256 expiryFundsWithdraw;
     uint256 startedAt;
@@ -295,7 +295,7 @@ contract Marketplace is Proofs, StateRetrieval {
   /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
   function _expiryPayoutAmount(RequestId requestId, uint256 startingTimestamp) private view returns (uint256) {
     Request storage request = _requests[requestId];
-    require(startingTimestamp < request.expiry, "Hosting start should be before expiry");
+    require(startingTimestamp < request.expiry, "Start not before expiry");
 
     return (request.expiry - startingTimestamp) * request.ask.reward;
   }

@@ -28,7 +28,6 @@ const {
   advanceTimeToForNextBlock,
   currentTime,
 } = require("./evm")
-const { min } = require('hardhat/internal/util/bigint')
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000
 
