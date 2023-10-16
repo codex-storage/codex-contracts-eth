@@ -25,6 +25,10 @@ contract Marketplace is Proofs, StateRetrieval {
   struct RequestContext {
     RequestState state;
     uint256 slotsFilled;
+
+    /// @notice Tracks how much funds should be returned when Request expires to the Request creator
+    /// @dev The sum is deducted every time a host fills a Slot by precalculated amount that he should receive if the Request expires
+    uint256 expiryFundsWithdraw;
     uint256 startedAt;
     uint256 endsAt;
   }
@@ -32,7 +36,12 @@ contract Marketplace is Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
+
+    /// @notice Timestamp that signals when slot was filled
+    /// @dev Used for partial payouts when Requests expires and Hosts are paid out only the time they host the content.
+    uint256 filledAt;
     uint256 slotIndex;
+
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
@@ -80,6 +89,7 @@ contract Marketplace is Proofs, StateRetrieval {
     _addToMyRequests(request.client, id);
 
     uint256 amount = request.price();
+    _requestContexts[id].expiryFundsWithdraw = amount;
     _marketplaceTotals.received += amount;
     _transferFrom(msg.sender, amount);
 
@@ -106,8 +116,10 @@ contract Marketplace is Proofs, StateRetrieval {
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
+    slot.filledAt = block.timestamp;
     RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
+    context.expiryFundsWithdraw -= _expiryPayoutAmount(requestId, block.timestamp);
 
     // Collect collateral
     uint256 collateralAmount = request.ask.collateral;
@@ -133,6 +145,8 @@ contract Marketplace is Proofs, StateRetrieval {
 
     if (state == SlotState.Finished) {
       _payoutSlot(slot.requestId, slotId);
+    } else if (state == SlotState.Cancelled) {
+      _payoutCancelledSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
@@ -207,6 +221,19 @@ contract Marketplace is Proofs, StateRetrieval {
     assert(token.transfer(slot.host, amount));
   }
 
+  function _payoutCancelledSlot(
+    RequestId requestId,
+    SlotId slotId
+  ) private requestIsKnown(requestId) {
+    Slot storage slot = _slots[slotId];
+    _removeFromMySlots(slot.host, slotId);
+
+    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) + slot.currentCollateral;
+    _marketplaceTotals.sent += amount;
+    slot.state = SlotState.Paid;
+    assert(token.transfer(slot.host, amount));
+  }
+
   /// @notice Withdraws storage request funds back to the client that deposited them.
   /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.
   /// @param requestId the id of the request
@@ -224,10 +251,7 @@ contract Marketplace is Proofs, StateRetrieval {
 
     emit RequestCancelled(requestId);
 
-    // TODO: To be changed once we start paying out hosts for the time they
-    // fill a slot. The amount that we paid to hosts will then have to be
-    // deducted from the price.
-    uint256 amount = request.price();
+    uint256 amount = context.expiryFundsWithdraw;
     _marketplaceTotals.sent += amount;
     assert(token.transfer(msg.sender, amount));
   }
@@ -268,6 +292,14 @@ contract Marketplace is Proofs, StateRetrieval {
     }
   }
 
+  /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
+  function _expiryPayoutAmount(RequestId requestId, uint256 startingTimestamp) private view returns (uint256) {
+    Request storage request = _requests[requestId];
+    require(startingTimestamp < request.expiry, "Start not before expiry");
+
+    return (request.expiry - startingTimestamp) * request.ask.reward;
+  }
+
   function getHost(SlotId slotId) public view returns (address) {
     return _slots[slotId].host;
   }
@@ -300,7 +332,7 @@ contract Marketplace is Proofs, StateRetrieval {
       return SlotState.Paid;
     }
     if (reqState == RequestState.Cancelled) {
-      return SlotState.Finished;
+      return SlotState.Cancelled;
     }
     if (reqState == RequestState.Finished) {
       return SlotState.Finished;

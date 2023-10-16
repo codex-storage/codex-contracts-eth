@@ -14,6 +14,13 @@ async function revert() {
   await ethers.provider.send("evm_setNextBlockTimestamp", [time + 1])
 }
 
+/**
+ * Mines new block.
+ *
+ * This call increases the block's timestamp by 1!
+ *
+ * @returns {Promise<void>}
+ */
 async function mine() {
   await ethers.provider.send("evm_mine")
 }
@@ -29,16 +36,30 @@ async function currentTime() {
   return block.timestamp
 }
 
-async function advanceTime(seconds) {
+/**
+ * Function that advances time by adding seconds to current timestamp for **next block**.
+ *
+ * If you need the timestamp to be already applied for current block then mine a new block with `mine()` after this call.
+ * This is mainly needed when doing assertions on top of view calls that does not create transactions and mine new block.
+ *
+ * @param timestamp
+ * @returns {Promise<void>}
+ */
+async function advanceTimeForNextBlock(seconds) {
   await ethers.provider.send("evm_increaseTime", [seconds])
-  await mine()
 }
 
-async function advanceTimeTo(timestamp) {
-  if ((await currentTime()) !== timestamp) {
-    await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
-    await mine()
-  }
+/**
+ * Function that sets specific timestamp for **next block**.
+ *
+ * If you need the timestamp to be already applied for current block then mine a new block with `mine()` after this call.
+ * This is mainly needed when doing assertions on top of view calls that does not create transactions and mine new block.
+ *
+ * @param timestamp
+ * @returns {Promise<void>}
+ */
+async function advanceTimeToForNextBlock(timestamp) {
+  await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
 }
 
 module.exports = {
@@ -47,6 +68,6 @@ module.exports = {
   mine,
   ensureMinimumBlockHeight,
   currentTime,
-  advanceTime,
-  advanceTimeTo,
+  advanceTimeForNextBlock,
+  advanceTimeToForNextBlock,
 }

@@ -14,6 +14,7 @@ const SlotState = {
   Finished: 2,
   Failed: 3,
   Paid: 4,
+  Cancelled: 5,
 }
 
 const enableRequestAssertions = function () {
