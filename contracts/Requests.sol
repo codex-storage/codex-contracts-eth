@@ -23,19 +23,8 @@ struct Ask {
 }
 
 struct Content {
-  string cid; // content id (if part of a larger set, the chunk cid)
-  Erasure erasure; // Erasure coding attributes
-  PoR por; // Proof of Retrievability parameters
-}
-
-struct Erasure {
-  uint64 totalChunks; // the total number of chunks in the larger data set
-}
-
-struct PoR {
-  bytes u; // parameters u_1..u_s
-  bytes publicKey; // public key
-  bytes name; // random name
+  string cid; // content id, used to download the dataset
+  bytes merkleRoot; // merkle root of the dataset, used to verify storage proofs
 }
 
 enum RequestState {
