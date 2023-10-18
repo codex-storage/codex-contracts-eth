@@ -32,14 +32,7 @@ const exampleRequest = async () => {
     },
     content: {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
-      erasure: {
-        totalChunks: 12,
-      },
-      por: {
-        u: Array.from(randomBytes(480)),
-        publicKey: Array.from(randomBytes(96)),
-        name: Array.from(randomBytes(512)),
-      },
+      merkleRoot: Array.from(randomBytes(32))
     },
     expiry: now + hours(1),
     nonce: hexlify(randomBytes(32)),

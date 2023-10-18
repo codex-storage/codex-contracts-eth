@@ -3,9 +3,7 @@ const { keccak256, defaultAbiCoder } = ethers.utils
 
 function requestId(request) {
   const Ask = "tuple(int64, uint256, uint256, uint256, uint256, uint256, int64)"
-  const Erasure = "tuple(uint64)"
-  const PoR = "tuple(bytes, bytes, bytes)"
-  const Content = "tuple(string, " + Erasure + ", " + PoR + ")"
+  const Content = "tuple(string, bytes)"
   const Request =
     "tuple(address, " + Ask + ", " + Content + ", uint256, bytes32)"
   return keccak256(defaultAbiCoder.encode([Request], requestToArray(request)))
@@ -23,16 +21,8 @@ function askToArray(ask) {
   ]
 }
 
-function erasureToArray(erasure) {
-  return [erasure.totalChunks]
-}
-
-function porToArray(por) {
-  return [por.u, por.publicKey, por.name]
-}
-
 function contentToArray(content) {
-  return [content.cid, erasureToArray(content.erasure), porToArray(content.por)]
+  return [content.cid, content.merkleRoot]
 }
 
 function requestToArray(request) {
