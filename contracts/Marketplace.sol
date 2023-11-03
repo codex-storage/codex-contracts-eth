@@ -10,6 +10,23 @@ import "./Proofs.sol";
 import "./StateRetrieval.sol";
 
 contract Marketplace is Proofs, StateRetrieval {
+  error Marketplace_RepairRewardPercentageTooHigh();
+  error Marketplace_SlashPercentageTooHigh();
+  error Marketplace_MaximumSlashingTooHigh();
+  error Marketplace_InvalidClientAddress();
+  error Marketplace_RequestAlreadyExists();
+  error Marketplace_InvalidSlot();
+  error Marketplace_SlotNotFree();
+  error Marketplace_InvalidSlotHost();
+  error Marketplace_AlreadyPaid();
+  error Marketplace_TransferFailed();
+  error Marketplace_UnknownRequest();
+  error Marketplace_RequestNotYetTimedOut();
+  error Marketplace_InvalidState();
+  error Marketplace_StartNotBeforeExpiry();
+  error Marketplace_SlotNotAcceptingProofs();
+  error Marketplace_SlotIsFree();
+
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
@@ -25,7 +42,6 @@ contract Marketplace is Proofs, StateRetrieval {
   struct RequestContext {
     RequestState state;
     uint256 slotsFilled;
-
     /// @notice Tracks how much funds should be returned when Request expires to the Request creator
     /// @dev The sum is deducted every time a host fills a Slot by precalculated amount that he should receive if the Request expires
     uint256 expiryFundsWithdraw;
@@ -36,12 +52,10 @@ contract Marketplace is Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
-
     /// @notice Timestamp that signals when slot was filled
     /// @dev Used for partial payouts when Requests expires and Hosts are paid out only the time they host the content.
     uint256 filledAt;
     uint256 slotIndex;
-
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
@@ -60,28 +74,33 @@ contract Marketplace is Proofs, StateRetrieval {
   ) Proofs(configuration.proofs) {
     token = token_;
 
-    require(
-      configuration.collateral.repairRewardPercentage <= 100,
-      "Must be less than 100"
-    );
-    require(
-      configuration.collateral.slashPercentage <= 100,
-      "Must be less than 100"
-    );
-    require(
+    if (configuration.collateral.repairRewardPercentage > 100) {
+      revert Marketplace_RepairRewardPercentageTooHigh();
+    }
+
+    if (configuration.collateral.slashPercentage > 100) {
+      revert Marketplace_SlashPercentageTooHigh();
+    }
+
+    if (
       configuration.collateral.maxNumberOfSlashes *
-        configuration.collateral.slashPercentage <=
-        100,
-      "Maximum slashing exceeds 100%"
-    );
+        configuration.collateral.slashPercentage >
+      100
+    ) {
+      revert Marketplace_MaximumSlashingTooHigh();
+    }
     config = configuration;
   }
 
   function requestStorage(Request calldata request) public {
-    require(request.client == msg.sender, "Invalid client address");
+    if (request.client != msg.sender) {
+      revert Marketplace_InvalidClientAddress();
+    }
 
     RequestId id = request.id();
-    require(_requests[id].client == address(0), "Request already exists");
+    if (_requests[id].client != address(0)) {
+      revert Marketplace_RequestAlreadyExists();
+    }
 
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
@@ -102,14 +121,18 @@ contract Marketplace is Proofs, StateRetrieval {
     bytes calldata proof
   ) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
-    require(slotIndex < request.ask.slots, "Invalid slot");
+    if (slotIndex >= request.ask.slots) {
+      revert Marketplace_InvalidSlot();
+    }
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
     slot.slotIndex = slotIndex;
 
-    require(slotState(slotId) == SlotState.Free, "Slot is not free");
+    if (slotState(slotId) != SlotState.Free) {
+      revert Marketplace_SlotNotFree();
+    }
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
@@ -119,7 +142,10 @@ contract Marketplace is Proofs, StateRetrieval {
     slot.filledAt = block.timestamp;
     RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
-    context.expiryFundsWithdraw -= _expiryPayoutAmount(requestId, block.timestamp);
+    context.expiryFundsWithdraw -= _expiryPayoutAmount(
+      requestId,
+      block.timestamp
+    );
 
     // Collect collateral
     uint256 collateralAmount = request.ask.collateral;
@@ -139,9 +165,14 @@ contract Marketplace is Proofs, StateRetrieval {
 
   function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
     Slot storage slot = _slots[slotId];
-    require(slot.host == msg.sender, "Slot filled by other host");
+    if (slot.host != msg.sender) {
+      revert Marketplace_InvalidSlotHost();
+    }
+
     SlotState state = slotState(slotId);
-    require(state != SlotState.Paid, "Already paid");
+    if (state == SlotState.Paid) {
+      revert Marketplace_AlreadyPaid();
+    }
 
     if (state == SlotState.Finished) {
       _payoutSlot(slot.requestId, slotId);
@@ -155,7 +186,10 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   function markProofAsMissing(SlotId slotId, Period period) public {
-    require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
+    if (slotState(slotId) != SlotState.Filled) {
+      revert Marketplace_SlotNotAcceptingProofs();
+    }
+
     _markProofAsMissing(slotId, period);
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
@@ -228,7 +262,8 @@ contract Marketplace is Proofs, StateRetrieval {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) + slot.currentCollateral;
+    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
+      slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
     assert(token.transfer(slot.host, amount));
@@ -239,10 +274,18 @@ contract Marketplace is Proofs, StateRetrieval {
   /// @param requestId the id of the request
   function withdrawFunds(RequestId requestId) public {
     Request storage request = _requests[requestId];
-    require(block.timestamp > request.expiry, "Request not yet timed out");
-    require(request.client == msg.sender, "Invalid client address");
+    if (block.timestamp <= request.expiry) {
+      revert Marketplace_RequestNotYetTimedOut();
+    }
+
+    if (request.client != msg.sender) {
+      revert Marketplace_InvalidClientAddress();
+    }
+
     RequestContext storage context = _requestContexts[requestId];
-    require(context.state == RequestState.New, "Invalid state");
+    if (context.state != RequestState.New) {
+      revert Marketplace_InvalidState();
+    }
 
     // Update request state to Cancelled. Handle in the withdraw transaction
     // as there needs to be someone to pay for the gas to update the state
@@ -267,7 +310,10 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   modifier requestIsKnown(RequestId requestId) {
-    require(_requests[requestId].client != address(0), "Unknown request");
+    if (_requests[requestId].client == address(0)) {
+      revert Marketplace_UnknownRequest();
+    }
+
     _;
   }
 
@@ -278,7 +324,9 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   modifier slotIsNotFree(SlotId slotId) {
-    require(_slots[slotId].state != SlotState.Free, "Slot is free");
+    if (_slots[slotId].state == SlotState.Free) {
+      revert Marketplace_SlotIsFree();
+    }
     _;
   }
 
@@ -293,9 +341,14 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
-  function _expiryPayoutAmount(RequestId requestId, uint256 startingTimestamp) private view returns (uint256) {
+  function _expiryPayoutAmount(
+    RequestId requestId,
+    uint256 startingTimestamp
+  ) private view returns (uint256) {
     Request storage request = _requests[requestId];
-    require(startingTimestamp < request.expiry, "Start not before expiry");
+    if (startingTimestamp >= request.expiry) {
+      revert Marketplace_StartNotBeforeExpiry();
+    }
 
     return (request.expiry - startingTimestamp) * request.ask.reward;
   }
@@ -345,20 +398,16 @@ contract Marketplace is Proofs, StateRetrieval {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    require(token.transferFrom(sender, receiver, amount), "Transfer failed");
+    if (!token.transferFrom(sender, receiver, amount)) {
+      revert Marketplace_TransferFailed();
+    }
   }
 
   event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
   event RequestFulfilled(RequestId indexed requestId);
   event RequestFailed(RequestId indexed requestId);
-  event SlotFilled(
-    RequestId indexed requestId,
-    uint256 slotIndex
-  );
-  event SlotFreed(
-    RequestId indexed requestId,
-    uint256 slotIndex
-  );
+  event SlotFilled(RequestId indexed requestId, uint256 slotIndex);
+  event SlotFreed(RequestId indexed requestId, uint256 slotIndex);
   event RequestCancelled(RequestId indexed requestId);
 
   struct MarketplaceTotals {

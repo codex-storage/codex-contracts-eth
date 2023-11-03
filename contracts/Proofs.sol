@@ -6,10 +6,22 @@ import "./Requests.sol";
 import "./Periods.sol";
 
 abstract contract Proofs is Periods {
+  error Proofs_InsufficientBlockHeight();
+  error Proofs_InvalidProof();
+  error Proofs_ProofAlreadySubmitted();
+  error Proofs_PeriodNotEnded();
+  error Proofs_ValidationTimedOut();
+  error Proofs_ProofNotMissing();
+  error Proofs_ProofNotRequired();
+  error Proofs_ProofAlreadyMarkedMissing();
+
   ProofConfig private _config;
 
   constructor(ProofConfig memory config) Periods(config.period) {
-    require(block.number > 256, "Insufficient block height");
+    if (block.number <= 256) {
+      revert Proofs_InsufficientBlockHeight();
+    }
+
     _config = config;
   }
 
@@ -100,19 +112,41 @@ abstract contract Proofs is Periods {
   }
 
   function submitProof(SlotId id, bytes calldata proof) public {
-    require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
-    require(!_received[id][_blockPeriod()], "Proof already submitted");
+    // TODO: replace by actual check
+    if (proof.length == 0) {
+      revert Proofs_InvalidProof();
+    }
+
+    if (_received[id][_blockPeriod()]) {
+      revert Proofs_ProofAlreadySubmitted();
+    }
+
     _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id, proof);
   }
 
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 end = _periodEnd(missedPeriod);
-    require(end < block.timestamp, "Period has not ended yet");
-    require(block.timestamp < end + _config.timeout, "Validation timed out");
-    require(!_received[id][missedPeriod], "Proof was submitted, not missing");
-    require(_isProofRequired(id, missedPeriod), "Proof was not required");
-    require(!_missing[id][missedPeriod], "Proof already marked as missing");
+    if (end >= block.timestamp) {
+      revert Proofs_PeriodNotEnded();
+    }
+
+    if (block.timestamp >= end + _config.timeout) {
+      revert Proofs_ValidationTimedOut();
+    }
+
+    if (_received[id][missedPeriod]) {
+      revert Proofs_ProofNotMissing();
+    }
+
+    if (!_isProofRequired(id, missedPeriod)) {
+      revert Proofs_ProofNotRequired();
+    }
+
+    if (_missing[id][missedPeriod]) {
+      revert Proofs_ProofAlreadyMarkedMissing();
+    }
+
     _missing[id][missedPeriod] = true;
     _missed[id] += 1;
   }
