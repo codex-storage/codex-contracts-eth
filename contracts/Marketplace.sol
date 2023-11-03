@@ -2,6 +2,7 @@
 pragma solidity ^0.8.8;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
@@ -10,6 +11,8 @@ import "./Proofs.sol";
 import "./StateRetrieval.sol";
 
 contract Marketplace is Proofs, StateRetrieval {
+  using SafeERC20 for IERC20;
+
   error Marketplace_RepairRewardPercentageTooHigh();
   error Marketplace_SlashPercentageTooHigh();
   error Marketplace_MaximumSlashingTooHigh();
@@ -398,9 +401,7 @@ contract Marketplace is Proofs, StateRetrieval {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    if (!token.transferFrom(sender, receiver, amount)) {
-      revert Marketplace_TransferFailed();
-    }
+    token.safeTransferFrom(sender, receiver, amount);
   }
 
   event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
