@@ -36,7 +36,10 @@ abstract contract Proofs is Periods {
 
   function _getPointer(SlotId id, Period period) internal view returns (uint8) {
     uint256 blockNumber = block.number % 256;
-    uint256 periodNumber = Period.unwrap(period) % 256;
+    // To ensure the pointer is not in downtime in subsequent periods, for each
+    // period increase, move the pointer 64 blocks. In this way, the pointer
+    // will be in downtime every fourth period.
+    uint256 periodNumber = Period.unwrap(period) * 64 % 256;
     uint256 idOffset = uint256(SlotId.unwrap(id)) % 256;
     uint256 pointer = (blockNumber + periodNumber + idOffset) % 256;
     return uint8(pointer);
