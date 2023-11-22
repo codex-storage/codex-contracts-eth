@@ -24,7 +24,7 @@ struct Ask {
 
 struct Content {
   string cid; // content id, used to download the dataset
-  bytes merkleRoot; // merkle root of the dataset, used to verify storage proofs
+  bytes32 merkleRoot; // merkle root of the dataset, used to verify storage proofs
 }
 
 enum RequestState {
