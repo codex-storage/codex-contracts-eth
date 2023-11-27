@@ -84,7 +84,9 @@ contract Marketplace is Proofs, StateRetrieval {
     require(_requests[id].client == address(0), "Request already exists");
 
     _requests[id] = request;
-    _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
+    uint256 requestEnd = block.timestamp + request.ask.duration;
+    require(requestEnd > request.expiry, "Request end before expiry");
+    _requestContexts[id].endsAt = requestEnd;
 
     _addToMyRequests(request.client, id);
 
