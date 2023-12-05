@@ -119,7 +119,12 @@ contract Marketplace is Proofs, StateRetrieval {
     slot.filledAt = block.timestamp;
     RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
-    context.expiryFundsWithdraw -= _expiryPayoutAmount(requestId, block.timestamp);
+    uint256 expiryPayoutAmount = _expiryPayoutAmount(requestId, block.timestamp);
+    if (expiryPayoutAmount > context.expiryFundsWithdraw) {
+      // prevent underflow
+      expiryPayoutAmount = context.expiryFundsWithdraw;
+    }
+    context.expiryFundsWithdraw -= expiryPayoutAmount;
 
     // Collect collateral
     uint256 collateralAmount = request.ask.collateral;
@@ -292,7 +297,7 @@ contract Marketplace is Proofs, StateRetrieval {
     }
   }
 
-  /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
+  /// @notice Calculates the amount that should be paid out to a host if a request expires based on when the host fills the slot
   function _expiryPayoutAmount(RequestId requestId, uint256 startingTimestamp) private view returns (uint256) {
     Request storage request = _requests[requestId];
     require(startingTimestamp < request.expiry, "Start not before expiry");
