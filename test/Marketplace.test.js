@@ -152,6 +152,14 @@ describe("Marketplace", function () {
       )
     })
 
+    it("rejects request when expiry is after request end", async function () {
+      request.expiry = await currentTime() + request.ask.duration + hours(1)
+      await token.approve(marketplace.address, price(request))
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Request end before expiry"
+      )
+    })
+
     it("rejects resubmission of request", async function () {
       await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)
