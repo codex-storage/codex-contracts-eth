@@ -5,12 +5,18 @@ import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
 
+interface IVerifier {
+    function verifyProof(uint[2] calldata _pA, uint[2][2] calldata _pB, uint[2] calldata _pC, uint[3] calldata _pubSignals) external view returns (bool);
+}
+
 abstract contract Proofs is Periods {
   ProofConfig private _config;
+  IVerifier private _verifier;
 
-  constructor(ProofConfig memory config) Periods(config.period) {
+  constructor(ProofConfig memory config, address verifierAddress) Periods(config.period) {
     require(block.number > 256, "Insufficient block height");
     _config = config;
+    _verifier = IVerifier(verifierAddress);
   }
 
   mapping(SlotId => uint256) private _slotStarts;
@@ -102,11 +108,15 @@ abstract contract Proofs is Periods {
     return isRequired && pointer < _config.downtime;
   }
 
-  function submitProof(SlotId id, bytes calldata proof) public {
-    require(proof.length > 0, "Invalid proof"); // TODO: replace by actual check
+  // TODO: The `pubSignals` should be constructed from information that we already know:
+  //  - external entropy (for example some fresh ethereum block header) - this gives us the unbiased randomness we use to sample which cells to prove
+  //  - the dataset root (which dataset we prove)
+  //  - and the slot index (which slot out of that dataset we prove)
+  function submitProof(SlotId id, uint[2] calldata pA, uint[2][2] calldata pB, uint[2] calldata pC, uint[3] calldata pubSignals) public {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
+    require(_verifier.verifyProof(pA, pB, pC, pubSignals), "Invalid proof");
     _received[id][_blockPeriod()] = true;
-    emit ProofSubmitted(id, proof);
+    emit ProofSubmitted(id, bytes("")); // TODO: Rework ProofSubmitted with the new call signature
   }
 
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {

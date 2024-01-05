@@ -2,6 +2,7 @@ const MARKETPLACE_HARDCODED_ADDRESS = "0x59b670e9fA9D0A427751Af201D676719a970857
 
 async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
+  const verifier = await deployments.get("Verifier")
   const configuration = {
     collateral: {
       repairRewardPercentage: 10,
@@ -15,7 +16,7 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
       downtime: 64,
     },
   }
-  const args = [token.address, configuration]
+  const args = [token.address, configuration, verifier.address]
   const { deployer } = await getNamedAccounts()
   await deployments.deploy("Marketplace", { args, from: deployer })
 }
@@ -31,7 +32,7 @@ async function aliasContract({deployments, network}) {
     const marketplaceDeployment = await deployments.get("Marketplace")
 
     if (marketplaceDeployment.address === MARKETPLACE_HARDCODED_ADDRESS) {
-      return 
+      return
     }
 
     console.log(`Aliasing marketplace from address ${marketplaceDeployment.address} to ${MARKETPLACE_HARDCODED_ADDRESS}`)
@@ -46,4 +47,4 @@ module.exports = async (environment) => {
 }
 
 module.exports.tags = ["Marketplace"]
-module.exports.dependencies = ["TestToken"]
+module.exports.dependencies = ["TestToken", "Verifier"]

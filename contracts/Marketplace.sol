@@ -56,8 +56,9 @@ contract Marketplace is Proofs, StateRetrieval {
 
   constructor(
     IERC20 token_,
-    MarketplaceConfig memory configuration
-  ) Proofs(configuration.proofs) {
+    MarketplaceConfig memory configuration,
+    address verifierAddress
+  ) Proofs(configuration.proofs, verifierAddress) {
     token = token_;
 
     require(
@@ -114,7 +115,8 @@ contract Marketplace is Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
-    submitProof(slotId, proof);
+      // TODO: Update call signature
+//    submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
