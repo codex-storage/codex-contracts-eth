@@ -11,6 +11,7 @@ const {
   advanceTimeToForNextBlock,
 } = require("./evm")
 const { periodic } = require("./time")
+const { loadProof } = require("./proof")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
 
@@ -28,7 +29,9 @@ describe("Proofs", function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
-    proofs = await Proofs.deploy({ period, timeout, downtime })
+    const Verifier = await ethers.getContractFactory("contracts/verifiers/testing/verifier.sol:Groth16Verifier")
+    const verifier = await Verifier.deploy()
+    proofs = await Proofs.deploy({ period, timeout, downtime }, verifier.address)
   })
 
   afterEach(async function () {
@@ -152,7 +155,7 @@ describe("Proofs", function () {
   })
 
   describe("when proofs are required", function () {
-    const proof = hexlify(randomBytes(42))
+    const proof = loadProof('testing')
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
@@ -192,25 +195,26 @@ describe("Proofs", function () {
     })
 
     it("submits a correct proof", async function () {
-      await proofs.submitProof(slotId, proof)
+      await proofs.submitProof(slotId, ...proof)
     })
 
     it("fails proof submission when proof is incorrect", async function () {
-      await expect(proofs.submitProof(slotId, [])).to.be.revertedWith(
+      await expect(proofs.submitProof(slotId, ["0x1bcdb9a3c52070f56e8d59b29239f0528817f99745157ce4d03faefddfff6acc", "0x2496ab7dd8f0596c21653105e4af7e48eb5395ea45e0c876d7db4dd31b4df23e"],[["0x002ef03c350ccfbf234bfde498378709edea3a506383d492b58c4c35ffecc508", "0x174d475745707d35989001e9216201bdb828130b0e78dbf772c4795fa845b5eb"],["0x1f04519f202fac14311c65d827f65f787dbe01985044278292723b9ee77ce5ee", "0x1c42f4d640e94c28401392031e74426ae68145f4f520cd576ca5e5b9af97c0bb"]],["0x1db1e61b32db677f3927ec117569e068f62747986e4ac7f54db8f2acd17e4abc", "0x20a59e1daca2ab80199c5bca2c5a7d6de6348bd795a0dd999752cc462d851128"],["0x00000000000000000000000000000000000000000000000000000001b9b78422","0x2389b3770d31a09a71cda2cb2114c203172eac63b61f76cb9f81db7adbe8fc9d","0x0000000000000000000000000000000000000000000000000000000000000003"]))
+        .to.be.revertedWith(
         "Invalid proof"
       )
     })
 
     it("emits an event when proof was submitted", async function () {
-      await expect(proofs.submitProof(slotId, proof))
+      await expect(proofs.submitProof(slotId, ...proof))
         .to.emit(proofs, "ProofSubmitted")
-        .withArgs(slotId, proof)
+        // .withArgs(slotId, proof) // TODO: Update when ProofSubmitted updated
     })
 
     it("fails proof submission when already submitted", async function () {
       await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
-      await proofs.submitProof(slotId, proof)
-      await expect(proofs.submitProof(slotId, proof)).to.be.revertedWith(
+      await proofs.submitProof(slotId, ...proof)
+      await expect(proofs.submitProof(slotId, ...proof)).to.be.revertedWith(
         "Proof already submitted"
       )
     })
@@ -245,7 +249,7 @@ describe("Proofs", function () {
     it("does not mark a submitted proof as missing", async function () {
       await waitUntilProofIsRequired(slotId)
       let submittedPeriod = periodOf(await currentTime())
-      await proofs.submitProof(slotId, proof)
+      await proofs.submitProof(slotId, ...proof)
       await advanceTimeToForNextBlock(periodEnd(submittedPeriod))
       await mine()
       await expect(

@@ -8,7 +8,7 @@ contract TestProofs is Proofs {
   mapping(SlotId => SlotState) private _states;
 
   // solhint-disable-next-line no-empty-blocks
-  constructor(ProofConfig memory config) Proofs(config) {}
+  constructor(ProofConfig memory config, address verifierAddress) Proofs(config, verifierAddress) {}
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
     return _states[slotId];
