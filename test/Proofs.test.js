@@ -197,7 +197,7 @@ describe("Proofs", function () {
 
     it("fails proof submission when proof is incorrect", async function () {
       await expect(proofs.submitProof(slotId, [])).to.be.revertedWith(
-        "Invalid proof"
+        "Proofs_InvalidProof"
       )
     })
 
@@ -211,7 +211,7 @@ describe("Proofs", function () {
       await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await proofs.submitProof(slotId, proof)
       await expect(proofs.submitProof(slotId, proof)).to.be.revertedWith(
-        "Proof already submitted"
+        "Proofs_ProofAlreadySubmitted"
       )
     })
 
@@ -230,7 +230,7 @@ describe("Proofs", function () {
       let currentPeriod = periodOf(await currentTime())
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Period has not ended yet")
+      ).to.be.revertedWith("Proofs_PeriodNotEnded")
     })
 
     it("does not mark a proof as missing after timeout", async function () {
@@ -239,7 +239,7 @@ describe("Proofs", function () {
       await advanceTimeToForNextBlock(periodEnd(currentPeriod) + timeout)
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Validation timed out")
+      ).to.be.revertedWith("Proofs_ValidationTimedOut")
     })
 
     it("does not mark a submitted proof as missing", async function () {
@@ -250,7 +250,7 @@ describe("Proofs", function () {
       await mine()
       await expect(
         proofs.markProofAsMissing(slotId, submittedPeriod)
-      ).to.be.revertedWith("Proof was submitted, not missing")
+      ).to.be.revertedWith("Proofs_ProofNotMissing")
     })
 
     it("does not mark proof as missing when not required", async function () {
@@ -263,7 +263,7 @@ describe("Proofs", function () {
       await mine()
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Proof was not required")
+      ).to.be.revertedWith("Proofs_ProofNotRequired")
     })
 
     it("does not mark proof as missing twice", async function () {
@@ -274,7 +274,7 @@ describe("Proofs", function () {
       await proofs.markProofAsMissing(slotId, missedPeriod)
       await expect(
         proofs.markProofAsMissing(slotId, missedPeriod)
-      ).to.be.revertedWith("Proof already marked as missing")
+      ).to.be.revertedWith("Proofs_ProofAlreadyMarkedMissing")
     })
 
     it("requires no proofs when slot is finished", async function () {
