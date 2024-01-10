@@ -8,6 +8,7 @@ import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
 import "./StateRetrieval.sol";
+import "./Verifier.sol";
 
 contract Marketplace is Proofs, StateRetrieval {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -55,10 +56,10 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   constructor(
-    IERC20 token_,
     MarketplaceConfig memory configuration,
-    address verifierAddress
-  ) Proofs(configuration.proofs, verifierAddress) {
+    IERC20 token_,
+    IVerifier verifier
+  ) Proofs(configuration.proofs, verifier) {
     token = token_;
 
     require(

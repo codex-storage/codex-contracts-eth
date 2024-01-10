@@ -7,8 +7,10 @@ import "./Proofs.sol";
 contract TestProofs is Proofs {
   mapping(SlotId => SlotState) private _states;
 
-  // solhint-disable-next-line no-empty-blocks
-  constructor(ProofConfig memory config, address verifierAddress) Proofs(config, verifierAddress) {}
+  constructor(
+    ProofConfig memory config,
+    IVerifier verifier
+  ) Proofs(config, verifier) {} // solhint-disable-line no-empty-blocks
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
     return _states[slotId];
