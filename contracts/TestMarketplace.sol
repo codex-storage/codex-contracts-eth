@@ -6,11 +6,11 @@ import "./Marketplace.sol";
 // exposes internal functions of Marketplace for testing
 contract TestMarketplace is Marketplace {
   constructor(
-    IERC20 token,
     MarketplaceConfig memory config,
-    address verifierAddress
+    IERC20 token,
+    IVerifier verifier
   )
-  Marketplace(token, config, verifierAddress) // solhint-disable-next-line no-empty-blocks
+    Marketplace(config, token, verifier) // solhint-disable-next-line no-empty-blocks
   {}
 
   function forciblyFreeSlot(SlotId slotId) public {

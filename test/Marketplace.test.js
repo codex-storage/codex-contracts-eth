@@ -32,7 +32,7 @@ const {
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000
 
 describe("Marketplace constructor", function () {
-  let Marketplace, token, config
+  let Marketplace, token, verifier, config
 
   beforeEach(async function () {
     await snapshot()
@@ -40,6 +40,9 @@ describe("Marketplace constructor", function () {
 
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
+
+    const TestVerifier = await ethers.getContractFactory("TestVerifier")
+    verifier = await TestVerifier.deploy()
 
     Marketplace = await ethers.getContractFactory("TestMarketplace")
     config = exampleConfiguration()
@@ -54,7 +57,7 @@ describe("Marketplace constructor", function () {
       config.collateral[property] = 101
 
       await expect(
-        Marketplace.deploy(token.address, config)
+        Marketplace.deploy(config, token.address, verifier.address)
       ).to.be.revertedWith("Must be less than 100")
     })
   }
@@ -66,9 +69,9 @@ describe("Marketplace constructor", function () {
     config.collateral.slashPercentage = 1
     config.collateral.maxNumberOfSlashes = 101
 
-    await expect(Marketplace.deploy(token.address, config)).to.be.revertedWith(
-      "Maximum slashing exceeds 100%"
-    )
+    await expect(
+      Marketplace.deploy(config, token.address, verifier.address)
+    ).to.be.revertedWith("Maximum slashing exceeds 100%")
   })
 })
 
@@ -78,6 +81,7 @@ describe("Marketplace", function () {
 
   let marketplace
   let token
+  let verifier
   let client, host, host1, host2, host3
   let request
   let slot
@@ -96,8 +100,15 @@ describe("Marketplace", function () {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
 
+    const TestVerifier = await ethers.getContractFactory("TestVerifier")
+    verifier = await TestVerifier.deploy()
+
     const Marketplace = await ethers.getContractFactory("TestMarketplace")
-    marketplace = await Marketplace.deploy(token.address, config)
+    marketplace = await Marketplace.deploy(
+      config,
+      token.address,
+      verifier.address
+    )
 
     request = await exampleRequest()
     request.client = client.address

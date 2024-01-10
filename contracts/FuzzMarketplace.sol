@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import "./TestToken.sol";
 import "./Marketplace.sol";
+import "./TestVerifier.sol";
 
 contract FuzzMarketplace is Marketplace {
   constructor()
     Marketplace(
-      new TestToken(),
       MarketplaceConfig(CollateralConfig(10, 5, 3, 10), ProofConfig(10, 5, 64)),
-      address(0)
+      new TestToken(),
+      new TestVerifier()
     )
   // solhint-disable-next-line no-empty-blocks
   {

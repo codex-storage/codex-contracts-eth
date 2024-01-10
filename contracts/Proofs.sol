@@ -4,19 +4,16 @@ pragma solidity ^0.8.8;
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
-
-interface IVerifier {
-    function verifyProof(uint[2] calldata _pA, uint[2][2] calldata _pB, uint[2] calldata _pC, uint[3] calldata _pubSignals) external view returns (bool);
-}
+import "./Verifier.sol";
 
 abstract contract Proofs is Periods {
   ProofConfig private _config;
   IVerifier private _verifier;
 
-  constructor(ProofConfig memory config, address verifierAddress) Periods(config.period) {
+  constructor(ProofConfig memory config, IVerifier verifier) Periods(config.period) {
     require(block.number > 256, "Insufficient block height");
     _config = config;
-    _verifier = IVerifier(verifierAddress);
+    _verifier = verifier;
   }
 
   mapping(SlotId => uint256) private _slotStarts;
