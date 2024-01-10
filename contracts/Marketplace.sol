@@ -26,7 +26,6 @@ contract Marketplace is Proofs, StateRetrieval {
   struct RequestContext {
     RequestState state;
     uint256 slotsFilled;
-
     /// @notice Tracks how much funds should be returned when Request expires to the Request creator
     /// @dev The sum is deducted every time a host fills a Slot by precalculated amount that he should receive if the Request expires
     uint256 expiryFundsWithdraw;
@@ -37,12 +36,10 @@ contract Marketplace is Proofs, StateRetrieval {
   struct Slot {
     SlotState state;
     RequestId requestId;
-
     /// @notice Timestamp that signals when slot was filled
     /// @dev Used for partial payouts when Requests expires and Hosts are paid out only the time they host the content.
     uint256 filledAt;
     uint256 slotIndex;
-
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
@@ -116,15 +113,18 @@ contract Marketplace is Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
-      // TODO: Update call signature
-//    submitProof(slotId, proof);
+    // TODO: Update call signature
+    //    submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
     slot.filledAt = block.timestamp;
     RequestContext storage context = _requestContexts[requestId];
     context.slotsFilled += 1;
-    context.expiryFundsWithdraw -= _expiryPayoutAmount(requestId, block.timestamp);
+    context.expiryFundsWithdraw -= _expiryPayoutAmount(
+      requestId,
+      block.timestamp
+    );
 
     // Collect collateral
     uint256 collateralAmount = request.ask.collateral;
@@ -233,7 +233,8 @@ contract Marketplace is Proofs, StateRetrieval {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) + slot.currentCollateral;
+    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
+      slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
     assert(token.transfer(slot.host, amount));
@@ -298,7 +299,10 @@ contract Marketplace is Proofs, StateRetrieval {
   }
 
   /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
-  function _expiryPayoutAmount(RequestId requestId, uint256 startingTimestamp) private view returns (uint256) {
+  function _expiryPayoutAmount(
+    RequestId requestId,
+    uint256 startingTimestamp
+  ) private view returns (uint256) {
     Request storage request = _requests[requestId];
     require(startingTimestamp < request.expiry, "Start not before expiry");
 
@@ -356,14 +360,8 @@ contract Marketplace is Proofs, StateRetrieval {
   event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
   event RequestFulfilled(RequestId indexed requestId);
   event RequestFailed(RequestId indexed requestId);
-  event SlotFilled(
-    RequestId indexed requestId,
-    uint256 slotIndex
-  );
-  event SlotFreed(
-    RequestId indexed requestId,
-    uint256 slotIndex
-  );
+  event SlotFilled(RequestId indexed requestId, uint256 slotIndex);
+  event SlotFreed(RequestId indexed requestId, uint256 slotIndex);
   event RequestCancelled(RequestId indexed requestId);
 
   struct MarketplaceTotals {

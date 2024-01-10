@@ -14,7 +14,6 @@ struct CollateralConfig {
   /// TODO: to be aligned more closely with actual cost of repair once bandwidth incentives are known,
   /// see https://github.com/codex-storage/codex-contracts-eth/pull/47#issuecomment-1465511949.
   uint8 repairRewardPercentage;
-
   uint8 maxNumberOfSlashes; // frees slot when the number of slashing reaches this value
   uint16 slashCriterion; // amount of proofs missed that lead to slashing
   uint8 slashPercentage; // percentage of the collateral that is slashed

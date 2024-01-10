@@ -32,7 +32,7 @@ const exampleRequest = async () => {
     },
     content: {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
-      merkleRoot: Array.from(randomBytes(32))
+      merkleRoot: Array.from(randomBytes(32)),
     },
     expiry: now + hours(1),
     nonce: hexlify(randomBytes(32)),
