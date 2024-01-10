@@ -164,7 +164,7 @@ describe("Marketplace", function () {
     })
 
     it("rejects request when expiry is after request end", async function () {
-      request.expiry = await currentTime() + request.ask.duration + hours(1)
+      request.expiry = (await currentTime()) + request.ask.duration + hours(1)
       await token.approve(marketplace.address, price(request))
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Request end before expiry"
@@ -427,7 +427,10 @@ describe("Marketplace", function () {
 
     it("pays the host when contract was cancelled", async function () {
       // Lets move the time into middle of the expiry window
-      const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2) - 1
+      const fillTimestamp =
+        (await currentTime()) +
+        Math.floor((request.expiry - (await currentTime())) / 2) -
+        1
       await advanceTimeToForNextBlock(fillTimestamp)
 
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -435,8 +438,11 @@ describe("Marketplace", function () {
       await marketplace.freeSlot(slotId(slot))
 
       const endBalance = await token.balanceOf(host.address)
-      const expectedPartialPayout = (request.expiry - fillTimestamp) * request.ask.reward
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(expectedPartialPayout)
+      const expectedPartialPayout =
+        (request.expiry - fillTimestamp) * request.ask.reward
+      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
+        expectedPartialPayout
+      )
     })
 
     it("does not pay when the contract hasn't ended", async function () {
@@ -572,16 +578,21 @@ describe("Marketplace", function () {
     })
 
     it("withdraws to the client for cancelled requests lowered by hosts payout", async function () {
-      const fillTimestamp = await currentTime() + Math.floor((request.expiry - await currentTime()) / 2)
+      const fillTimestamp =
+        (await currentTime()) +
+        Math.floor((request.expiry - (await currentTime())) / 2)
       await advanceTimeToForNextBlock(fillTimestamp)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
-      const expectedPartialHostPayout = (request.expiry - fillTimestamp) * request.ask.reward
+      const expectedPartialHostPayout =
+        (request.expiry - fillTimestamp) * request.ask.reward
 
       switchAccount(client)
       await marketplace.withdrawFunds(slot.request)
       const endBalance = await token.balanceOf(client.address)
-      expect(ACCOUNT_STARTING_BALANCE - endBalance).to.equal(expectedPartialHostPayout)
+      expect(ACCOUNT_STARTING_BALANCE - endBalance).to.equal(
+        expectedPartialHostPayout
+      )
     })
   })
 
@@ -872,7 +883,7 @@ describe("Marketplace", function () {
         for (let i = 0; i < slashCriterion; i++) {
           await waitUntilProofIsRequired(id)
           let missedPeriod = periodOf(await currentTime())
-          await advanceTimeForNextBlock(period+1)
+          await advanceTimeForNextBlock(period + 1)
           await marketplace.markProofAsMissing(id, missedPeriod)
         }
         const expectedBalance =
@@ -900,7 +911,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTimeForNextBlock(period+1)
+        await advanceTimeForNextBlock(period + 1)
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(SlotState.Free)
@@ -924,7 +935,7 @@ describe("Marketplace", function () {
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
-        await advanceTimeForNextBlock(period+1)
+        await advanceTimeForNextBlock(period + 1)
         expect(await marketplace.missingProofs(slotId(slot))).to.equal(
           missedProofs
         )
