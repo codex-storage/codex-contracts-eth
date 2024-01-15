@@ -76,7 +76,7 @@ describe("Marketplace constructor", function () {
 })
 
 describe("Marketplace", function () {
-  const proof = hexlify(randomBytes(42))
+  const proof = hexlify(randomBytes(256))
   const config = exampleConfiguration()
 
   let marketplace

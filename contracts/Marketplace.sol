@@ -113,8 +113,7 @@ contract Marketplace is Proofs, StateRetrieval {
     require(slotState(slotId) == SlotState.Free, "Slot is not free");
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
-    // TODO: Update call signature
-    //    submitProof(slotId, proof);
+    submitProof(slotId, proof);
 
     slot.host = msg.sender;
     slot.state = SlotState.Filled;
