@@ -215,9 +215,9 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when proof is incorrect", async function () {
-      let invalid = hexlify([])
+      await verifier.setProofsAreValid(false)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, invalid)
+        marketplace.fillSlot(slot.request, slot.index, proof)
       ).to.be.revertedWith("Invalid proof")
     })
 
