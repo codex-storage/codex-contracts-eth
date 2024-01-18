@@ -50,7 +50,7 @@ for (const network of await readdir(networksPath)) {
       .replaceAll('<%vk_ic_pts%>', icParts)
       .replaceAll('<%vk_input_length%>', inputLength)
 
-  const preprocessedPath = join(networksPath, network, 'preprocessed')
+  const preprocessedPath = join(__dirname, '..', 'contracts', 'verifiers', network)
   await mkdir(preprocessedPath, { recursive: true })
   const contractPath = join(preprocessedPath, contractFile)
   await writeFile(contractPath, contract)
