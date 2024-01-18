@@ -128,7 +128,7 @@ abstract contract Proofs is Periods {
     //  - the dataset root (which dataset we prove)
     //  - and the slot index (which slot out of that dataset we prove)
     uint256[3] memory pubSignals;
-    pubSignals[0] = 7410779170;
+    pubSignals[0] = 7538754537;
     pubSignals[
       1
     ] = 16074246370508166450132968585287196391860062495017081813239200574579640171677;
