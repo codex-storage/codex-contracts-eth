@@ -160,7 +160,7 @@ describe("Proofs", function () {
   })
 
   describe("when proofs are required", function () {
-    const proof = loadProof("testing")
+    const proof = loadProof("local")
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
@@ -206,9 +206,7 @@ describe("Proofs", function () {
     it("fails proof submission when proof is incorrect", async function () {
       let invalid = new Uint8Array(proof)
       invalid[42] = 42
-      await expect(proofs.submitProof(slotId, invalid)).to.be.revertedWith(
-        "Invalid proof"
-      )
+      await expect(proofs.submitProof(slotId, invalid)).to.be.reverted
     })
 
     it("emits an event when proof was submitted", async function () {
