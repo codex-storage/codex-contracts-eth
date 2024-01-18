@@ -9,7 +9,8 @@
 //      fixed linter warnings
 //      added requiere error messages
 //
-pragma solidity ^0.5.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.8;
 library Pairing {
     struct G1Point {
         uint X;
@@ -20,11 +21,11 @@ library Pairing {
         uint[2] X;
         uint[2] Y;
     }
-    /// @return the generator of G1
+    /// The generator of G1
     function P1() internal pure returns (G1Point memory) {
         return G1Point(1, 2);
     }
-    /// @return the generator of G2
+    /// The generator of G2
     function P2() internal pure returns (G2Point memory) {
         // Original code point
         return G2Point(
@@ -44,7 +45,7 @@ library Pairing {
         );
 */
     }
-    /// @return the negation of p, i.e. p.addition(p.negate()) should be zero.
+    /// The negation of p, i.e. p.addition(p.negate()) should be zero.
     function negate(G1Point memory p) internal pure returns (G1Point memory) {
         // The prime q in the base field F_q for G1
         uint q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
@@ -52,7 +53,7 @@ library Pairing {
             return G1Point(0, 0);
         return G1Point(p.X, q - (p.Y % q));
     }
-    /// @return the sum of two points of G1
+    /// The sum of two points of G1
     function addition(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
         uint[4] memory input;
         input[0] = p1.X;
@@ -62,13 +63,13 @@ library Pairing {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas, 2000), 6, input, 0xc0, r, 0x60)
+            success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
             // Use "invalid" to make gas estimation work
             switch success case 0 { invalid() }
         }
         require(success,"pairing-add-failed");
     }
-    /// @return the product of a point on G1 and a scalar, i.e.
+    /// The product of a point on G1 and a scalar, i.e.
     /// p == p.scalar_mul(1) and p.addition(p) == p.scalar_mul(2) for all points p.
     function scalar_mul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
         uint[3] memory input;
@@ -78,13 +79,13 @@ library Pairing {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas, 2000), 7, input, 0x80, r, 0x60)
+            success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
             // Use "invalid" to make gas estimation work
             switch success case 0 { invalid() }
         }
         require (success,"pairing-mul-failed");
     }
-    /// @return the result of computing the pairing check
+    /// The result of computing the pairing check
     /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
     /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
     /// return true.
@@ -106,7 +107,7 @@ library Pairing {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas, 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
+            success := staticcall(sub(gas(), 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
             // Use "invalid" to make gas estimation work
             switch success case 0 { invalid() }
         }
