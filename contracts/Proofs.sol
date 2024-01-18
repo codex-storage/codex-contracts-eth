@@ -5,6 +5,7 @@ import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
 import "./Verifier.sol";
+import "./Groth16.sol";
 
 abstract contract Proofs is Periods {
   ProofConfig private _config;
@@ -108,19 +109,8 @@ abstract contract Proofs is Periods {
     return isRequired && pointer < _config.downtime;
   }
 
-  function submitProof(SlotId id, uint256[8] calldata proof) public {
+  function submitProof(SlotId id, Groth16Proof calldata proof) public {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
-    uint256[2] memory a;
-    uint256[2][2] memory b;
-    uint256[2] memory c;
-    a[0] = proof[0];
-    a[1] = proof[1];
-    b[0][0] = proof[2];
-    b[0][1] = proof[3];
-    b[1][0] = proof[4];
-    b[1][1] = proof[5];
-    c[0] = proof[6];
-    c[1] = proof[7];
 
     // TODO: The `pubSignals` should be constructed from information that we already know:
     //  - external entropy (for example some fresh ethereum block header) - this gives us the unbiased randomness we use to sample which cells to prove
@@ -133,7 +123,15 @@ abstract contract Proofs is Periods {
     ] = 16074246370508166450132968585287196391860062495017081813239200574579640171677;
     pubSignals[2] = 3;
 
-    require(_verifier.verifyProof(a, b, c, pubSignals), "Invalid proof");
+    require(
+      _verifier.verifyProof(
+        [proof.a.x, proof.a.y],
+        [proof.b.x, proof.b.y],
+        [proof.c.x, proof.c.y],
+        pubSignals
+      ),
+      "Invalid proof"
+    );
     _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id);
   }

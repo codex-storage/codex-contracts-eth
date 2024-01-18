@@ -39,6 +39,10 @@ const exampleRequest = async () => {
   }
 }
 
-const exampleProof = () => ([1, 2, 3, 4, 5, 6, 7, 8])
+const exampleProof = () => ({
+  a: { x: 1, y: 2 },
+  b: { x: [3, 4], y: [5, 6]},
+  c: { x: 7, y: 8 }
+})
 
 module.exports = { exampleConfiguration, exampleRequest, exampleProof }

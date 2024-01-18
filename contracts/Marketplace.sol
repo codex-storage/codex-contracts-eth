@@ -9,6 +9,7 @@ import "./Requests.sol";
 import "./Proofs.sol";
 import "./StateRetrieval.sol";
 import "./Verifier.sol";
+import "./Groth16.sol";
 
 contract Marketplace is Proofs, StateRetrieval {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -100,7 +101,7 @@ contract Marketplace is Proofs, StateRetrieval {
   function fillSlot(
     RequestId requestId,
     uint256 slotIndex,
-    uint256[8] calldata proof
+    Groth16Proof calldata proof
   ) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
     require(slotIndex < request.ask.slots, "Invalid slot");
