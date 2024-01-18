@@ -14,6 +14,7 @@ const { periodic } = require("./time")
 const { loadProof } = require("./proof")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
+const { exampleProof } = require("./examples")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
@@ -204,8 +205,7 @@ describe("Proofs", function () {
     })
 
     it("fails proof submission when proof is incorrect", async function () {
-      let invalid = new Uint8Array(proof)
-      invalid[42] = 42
+      let invalid = exampleProof()
       await expect(proofs.submitProof(slotId, invalid)).to.be.reverted
     })
 
