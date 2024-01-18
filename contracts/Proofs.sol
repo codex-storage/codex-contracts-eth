@@ -109,7 +109,7 @@ abstract contract Proofs is Periods {
     return isRequired && pointer < _config.downtime;
   }
 
-  function submitProof(SlotId id, Groth16Proof calldata proof) public {
+  function _proofReceived(SlotId id, Groth16Proof calldata proof) internal {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
 
     // TODO: The `pubSignals` should be constructed from information that we already know:

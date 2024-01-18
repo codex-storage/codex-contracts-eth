@@ -159,6 +159,10 @@ contract Marketplace is Proofs, StateRetrieval {
     }
   }
 
+  function submitProof(SlotId id, Groth16Proof calldata proof) public {
+    _proofReceived(id, proof);
+  }
+
   function markProofAsMissing(SlotId slotId, Period period) public {
     require(slotState(slotId) == SlotState.Filled, "Slot not accepting proofs");
     _markProofAsMissing(slotId, period);

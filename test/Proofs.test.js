@@ -200,25 +200,25 @@ describe("Proofs", function () {
       expect(challenge1 === challenge2 && challenge2 === challenge3).to.be.false
     })
 
-    it("submits a correct proof", async function () {
-      await proofs.submitProof(slotId, proof)
+    it("handles a correct proof", async function () {
+      await proofs.proofReceived(slotId, proof)
     })
 
     it("fails proof submission when proof is incorrect", async function () {
       let invalid = exampleProof()
-      await expect(proofs.submitProof(slotId, invalid)).to.be.reverted
+      await expect(proofs.proofReceived(slotId, invalid)).to.be.reverted
     })
 
     it("emits an event when proof was submitted", async function () {
-      await expect(proofs.submitProof(slotId, proof))
+      await expect(proofs.proofReceived(slotId, proof))
         .to.emit(proofs, "ProofSubmitted")
         .withArgs(slotId)
     })
 
     it("fails proof submission when already submitted", async function () {
       await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
-      await proofs.submitProof(slotId, proof)
-      await expect(proofs.submitProof(slotId, proof)).to.be.revertedWith(
+      await proofs.proofReceived(slotId, proof)
+      await expect(proofs.proofReceived(slotId, proof)).to.be.revertedWith(
         "Proof already submitted"
       )
     })
@@ -250,14 +250,14 @@ describe("Proofs", function () {
       ).to.be.revertedWith("Validation timed out")
     })
 
-    it("does not mark a submitted proof as missing", async function () {
+    it("does not mark a received proof as missing", async function () {
       await waitUntilProofIsRequired(slotId)
-      let submittedPeriod = periodOf(await currentTime())
-      await proofs.submitProof(slotId, proof)
-      await advanceTimeToForNextBlock(periodEnd(submittedPeriod))
+      let receivedPeriod = periodOf(await currentTime())
+      await proofs.proofReceived(slotId, proof)
+      await advanceTimeToForNextBlock(periodEnd(receivedPeriod))
       await mine()
       await expect(
-        proofs.markProofAsMissing(slotId, submittedPeriod)
+        proofs.markProofAsMissing(slotId, receivedPeriod)
       ).to.be.revertedWith("Proof was submitted, not missing")
     })
 
