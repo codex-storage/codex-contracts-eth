@@ -100,7 +100,7 @@ contract Marketplace is Proofs, StateRetrieval {
   function fillSlot(
     RequestId requestId,
     uint256 slotIndex,
-    bytes calldata proof
+    uint256[8] calldata proof
   ) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
     require(slotIndex < request.ask.slots, "Invalid slot");

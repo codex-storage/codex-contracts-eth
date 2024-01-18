@@ -1,9 +1,12 @@
 const { ethers } = require("hardhat")
-const { hexlify, randomBytes } = ethers.utils
 const { AddressZero } = ethers.constants
 const { BigNumber } = ethers
 const { expect } = require("chai")
-const { exampleConfiguration, exampleRequest } = require("./examples")
+const {
+  exampleConfiguration,
+  exampleRequest,
+  exampleProof,
+} = require("./examples")
 const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
 const {
@@ -76,7 +79,7 @@ describe("Marketplace constructor", function () {
 })
 
 describe("Marketplace", function () {
-  const proof = hexlify(randomBytes(256))
+  const proof = exampleProof()
   const config = exampleConfiguration()
 
   let marketplace
