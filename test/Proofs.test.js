@@ -30,7 +30,7 @@ describe("Proofs", function () {
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
     const Verifier = await ethers.getContractFactory(
-      "contracts/verifiers/testing/verifier.sol:Groth16Verifier"
+      "contracts/verifiers/local/verifier_groth.sol:Verifier"
     )
     const verifier = await Verifier.deploy()
     proofs = await Proofs.deploy(
