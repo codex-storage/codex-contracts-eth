@@ -39,4 +39,6 @@ const exampleRequest = async () => {
   }
 }
 
-module.exports = { exampleConfiguration, exampleRequest }
+const exampleProof = () => ([1, 2, 3, 4, 5, 6, 7, 8])
+
+module.exports = { exampleConfiguration, exampleRequest, exampleProof }

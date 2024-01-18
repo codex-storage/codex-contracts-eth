@@ -108,20 +108,19 @@ abstract contract Proofs is Periods {
     return isRequired && pointer < _config.downtime;
   }
 
-  function submitProof(SlotId id, bytes calldata proof) public {
+  function submitProof(SlotId id, uint256[8] calldata proof) public {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
-    require(proof.length == 256, "invalid proof length");
     uint256[2] memory a;
     uint256[2][2] memory b;
     uint256[2] memory c;
-    a[0] = uint256(bytes32(proof[0:32]));
-    a[1] = uint256(bytes32(proof[32:64]));
-    b[0][0] = uint256(bytes32(proof[64:96]));
-    b[0][1] = uint256(bytes32(proof[96:128]));
-    b[1][0] = uint256(bytes32(proof[128:160]));
-    b[1][1] = uint256(bytes32(proof[160:192]));
-    c[0] = uint256(bytes32(proof[192:224]));
-    c[1] = uint256(bytes32(proof[224:256]));
+    a[0] = proof[0];
+    a[1] = proof[1];
+    b[0][0] = proof[2];
+    b[0][1] = proof[3];
+    b[1][0] = proof[4];
+    b[1][1] = proof[5];
+    c[0] = proof[6];
+    c[1] = proof[7];
 
     // TODO: The `pubSignals` should be constructed from information that we already know:
     //  - external entropy (for example some fresh ethereum block header) - this gives us the unbiased randomness we use to sample which cells to prove
