@@ -9,14 +9,14 @@ const PUBLIC_INPUT_FILE_NAME = "example-proof/public.json"
 function G1ToStruct(point) {
   return {
     x: point[0],
-    y: point[1]
+    y: point[1],
   }
 }
 
 function G2ToStruct(point) {
   return {
-    x: [ point[0][1], point[0][0] ],
-    y: [ point[1][1], point[1][0] ]
+    x: [point[0][1], point[0][0]],
+    y: [point[1][1], point[1][0]],
   }
 }
 
@@ -25,9 +25,9 @@ function loadProof(name) {
     fs.readFileSync(`${BASE_PATH}/${name}/${PROOF_FILE_NAME}`)
   )
   return {
-    a: G1ToStruct(proof['pi_a']),
-    b: G2ToStruct(proof['pi_b']),
-    c: G1ToStruct(proof['pi_c'])
+    a: G1ToStruct(proof["pi_a"]),
+    b: G2ToStruct(proof["pi_b"]),
+    c: G1ToStruct(proof["pi_c"]),
   }
 }
 
