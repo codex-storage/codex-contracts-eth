@@ -20,4 +20,16 @@ contract TestMarketplace is Marketplace {
   function getSlotCollateral(SlotId slotId) public view returns (uint256) {
     return _slots[slotId].currentCollateral;
   }
+
+  function challengeToFieldElement(
+    bytes32 challenge
+  ) public pure returns (uint256) {
+    return _challengeToFieldElement(challenge);
+  }
+
+  function merkleRootToFieldElement(
+    bytes32 merkleRoot
+  ) public pure returns (uint256) {
+    return _merkleRootToFieldElement(merkleRoot);
+  }
 }

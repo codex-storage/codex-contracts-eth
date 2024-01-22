@@ -8,10 +8,11 @@ import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
 import "./StateRetrieval.sol";
+import "./Endian.sol";
 import "./Verifier.sol";
 import "./Groth16.sol";
 
-contract Marketplace is Proofs, StateRetrieval {
+contract Marketplace is Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
@@ -159,8 +160,35 @@ contract Marketplace is Proofs, StateRetrieval {
     }
   }
 
-  function submitProof(SlotId id, Groth16Proof calldata proof) public {
-    _proofReceived(id, proof);
+  function _challengeToFieldElement(
+    bytes32 challenge
+  ) internal pure returns (uint256) {
+    // use only 31 bytes of the challenge to ensure that it fits into the field
+    bytes32 truncated = bytes32(bytes31(challenge));
+    // convert from little endian to big endian
+    bytes32 bigEndian = _byteSwap(truncated);
+    // convert bytes to integer
+    return uint256(bigEndian);
+  }
+
+  function _merkleRootToFieldElement(
+    bytes32 merkleRoot
+  ) internal pure returns (uint256) {
+    // convert from little endian to big endian
+    bytes32 bigEndian = _byteSwap(merkleRoot);
+    // convert bytes to integer
+    return uint256(bigEndian);
+  }
+
+  function submitProof(
+    SlotId id,
+    Groth16Proof calldata proof
+  ) public requestIsKnown(_slots[id].requestId) {
+    Slot storage slot = _slots[id];
+    Request storage request = _requests[slot.requestId];
+    uint256 challenge = _challengeToFieldElement(getChallenge(id));
+    uint256 merkleRoot = _merkleRootToFieldElement(request.content.merkleRoot);
+    _proofReceived(id, proof, [challenge, merkleRoot, slot.slotIndex]);
   }
 
   function markProofAsMissing(SlotId slotId, Period period) public {

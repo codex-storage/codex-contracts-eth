@@ -4,6 +4,7 @@ const { BigNumber } = ethers
 
 const BASE_PATH = __dirname + "/../verifier/networks"
 const PROOF_FILE_NAME = "example-proof/proof.json"
+const PUBLIC_INPUT_FILE_NAME = "example-proof/public.json"
 
 function G1ToStruct(point) {
   return {
@@ -30,4 +31,11 @@ function loadProof(name) {
   }
 }
 
-module.exports = { loadProof }
+function loadPublicInput(name) {
+  const input = JSON.parse(
+    fs.readFileSync(`${BASE_PATH}/${name}/${PUBLIC_INPUT_FILE_NAME}`)
+  )
+  return input
+}
+
+module.exports = { loadProof, loadPublicInput }

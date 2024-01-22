@@ -31,6 +31,7 @@ const {
   advanceTimeToForNextBlock,
   currentTime,
 } = require("./evm")
+const { arrayify } = require("ethers/lib/utils")
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000
 
@@ -310,6 +311,41 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const endBalance = await token.balanceOf(host.address)
       expect(startBalanace - endBalance).to.eq(request.ask.collateral)
+    })
+  })
+
+  describe("submitting proofs when slot is filled", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, request.ask.collateral)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await advanceTimeForNextBlock(config.proofs.period)
+    })
+
+    it("allows proofs to be submitted", async function () {
+      await marketplace.submitProof(slotId(slot), proof)
+    })
+
+    it("converts first 31 bytes of challenge to field element", async function () {
+      let challenge = arrayify(await marketplace.getChallenge(slotId(slot)))
+      let truncated = challenge.slice(0, 31)
+      let littleEndian = new Uint8Array(truncated).reverse()
+      let expected = BigNumber.from(littleEndian)
+      expect(await marketplace.challengeToFieldElement(challenge)).to.equal(
+        expected
+      )
+    })
+
+    it("converts merkle root to field element", async function () {
+      let merkleRoot = request.content.merkleRoot
+      let littleEndian = new Uint8Array(merkleRoot).reverse()
+      let expected = BigNumber.from(littleEndian)
+      expect(await marketplace.merkleRootToFieldElement(merkleRoot)).to.equal(
+        expected
+      )
     })
   })
 
