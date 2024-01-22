@@ -11,7 +11,7 @@ const {
   advanceTimeToForNextBlock,
 } = require("./evm")
 const { periodic } = require("./time")
-const { loadProof } = require("./proof")
+const { loadProof, loadPublicInput } = require("./proof")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
 const { exampleProof } = require("./examples")
@@ -162,6 +162,7 @@ describe("Proofs", function () {
 
   describe("when proofs are required", function () {
     const proof = loadProof("local")
+    const pubSignals = loadPublicInput("local")
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
@@ -201,26 +202,33 @@ describe("Proofs", function () {
     })
 
     it("handles a correct proof", async function () {
-      await proofs.proofReceived(slotId, proof)
+      await proofs.proofReceived(slotId, proof, pubSignals)
     })
 
     it("fails proof submission when proof is incorrect", async function () {
       let invalid = exampleProof()
-      await expect(proofs.proofReceived(slotId, invalid)).to.be.reverted
+      await expect(proofs.proofReceived(slotId, invalid, pubSignals)).to.be
+        .reverted
+    })
+
+    it("fails proof submission when public input is incorrect", async function () {
+      let invalid = [1, 2, 3]
+      await expect(proofs.proofReceived(slotId, proof, invalid)).to.be
+        .reverted
     })
 
     it("emits an event when proof was submitted", async function () {
-      await expect(proofs.proofReceived(slotId, proof))
+      await expect(proofs.proofReceived(slotId, proof, pubSignals))
         .to.emit(proofs, "ProofSubmitted")
         .withArgs(slotId)
     })
 
     it("fails proof submission when already submitted", async function () {
       await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
-      await proofs.proofReceived(slotId, proof)
-      await expect(proofs.proofReceived(slotId, proof)).to.be.revertedWith(
-        "Proof already submitted"
-      )
+      await proofs.proofReceived(slotId, proof, pubSignals)
+      await expect(
+        proofs.proofReceived(slotId, proof, pubSignals)
+      ).to.be.revertedWith("Proof already submitted")
     })
 
     it("marks a proof as missing", async function () {
@@ -253,7 +261,7 @@ describe("Proofs", function () {
     it("does not mark a received proof as missing", async function () {
       await waitUntilProofIsRequired(slotId)
       let receivedPeriod = periodOf(await currentTime())
-      await proofs.proofReceived(slotId, proof)
+      await proofs.proofReceived(slotId, proof, pubSignals)
       await advanceTimeToForNextBlock(periodEnd(receivedPeriod))
       await mine()
       await expect(

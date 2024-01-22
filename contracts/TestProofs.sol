@@ -24,8 +24,12 @@ contract TestProofs is Proofs {
     _markProofAsMissing(id, period);
   }
 
-  function proofReceived(SlotId id, Groth16Proof calldata proof) public {
-    _proofReceived(id, proof);
+  function proofReceived(
+    SlotId id,
+    Groth16Proof calldata proof,
+    uint[3] memory pubSignals
+  ) public {
+    _proofReceived(id, proof, pubSignals);
   }
 
   function setSlotState(SlotId id, SlotState state) public {

@@ -109,20 +109,12 @@ abstract contract Proofs is Periods {
     return isRequired && pointer < _config.downtime;
   }
 
-  function _proofReceived(SlotId id, Groth16Proof calldata proof) internal {
+  function _proofReceived(
+    SlotId id,
+    Groth16Proof calldata proof,
+    uint[3] memory pubSignals
+  ) internal {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
-
-    // TODO: The `pubSignals` should be constructed from information that we already know:
-    //  - external entropy (for example some fresh ethereum block header) - this gives us the unbiased randomness we use to sample which cells to prove
-    //  - the dataset root (which dataset we prove)
-    //  - and the slot index (which slot out of that dataset we prove)
-    uint256[3] memory pubSignals;
-    pubSignals[0] = 7538754537;
-    pubSignals[
-      1
-    ] = 16074246370508166450132968585287196391860062495017081813239200574579640171677;
-    pubSignals[2] = 3;
-
     require(
       _verifier.verifyProof(
         [proof.a.x, proof.a.y],
