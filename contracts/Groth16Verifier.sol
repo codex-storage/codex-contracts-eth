@@ -19,17 +19,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 import "./Groth16.sol";
+
 library Pairing {
   // The prime q in the base field F_q for G1
-  uint constant private _Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+  uint private constant _Q =
+    21888242871839275222246405745257275088696311157297823662689037894645226208583;
+
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    if (p.x == 0 && p.y == 0)
-      return G1Point(0, 0);
+    if (p.x == 0 && p.y == 0) return G1Point(0, 0);
     return G1Point(p.x, _Q - (p.y % _Q));
   }
+
   /// The sum of two points of G1
-  function addition(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
+  function addition(
+    G1Point memory p1,
+    G1Point memory p2
+  ) internal view returns (G1Point memory r) {
     uint[4] memory input;
     input[0] = p1.x;
     input[1] = p1.y;
@@ -40,13 +46,20 @@ library Pairing {
     assembly {
       success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
       // Use "invalid" to make gas estimation work
-      switch success case 0 { invalid() }
+      switch success
+      case 0 {
+        invalid()
+      }
     }
-    require(success,"pairing-add-failed");
+    require(success, "pairing-add-failed");
   }
+
   /// The product of a point on G1 and a scalar, i.e.
   /// p == p.scalarMul(1) and p.addition(p) == p.scalarMul(2) for all points p.
-  function scalarMul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
+  function scalarMul(
+    G1Point memory p,
+    uint s
+  ) internal view returns (G1Point memory r) {
     uint[3] memory input;
     input[0] = p.x;
     input[1] = p.y;
@@ -56,21 +69,27 @@ library Pairing {
     assembly {
       success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
       // Use "invalid" to make gas estimation work
-      switch success case 0 { invalid() }
+      switch success
+      case 0 {
+        invalid()
+      }
     }
-    require (success,"pairing-mul-failed");
+    require(success, "pairing-mul-failed");
   }
+
   /// The result of computing the pairing check
   /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
   /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
   /// return true.
-  function pairing(G1Point[] memory p1, G2Point[] memory p2) internal view returns (bool) {
-    require(p1.length == p2.length,"pairing-lengths-failed");
+  function pairing(
+    G1Point[] memory p1,
+    G2Point[] memory p2
+  ) internal view returns (bool) {
+    require(p1.length == p2.length, "pairing-lengths-failed");
     uint elements = p1.length;
     uint inputSize = elements * 6;
     uint[] memory input = new uint[](inputSize);
-    for (uint i = 0; i < elements; i++)
-    {
+    for (uint i = 0; i < elements; i++) {
       input[i * 6 + 0] = p1[i].x;
       input[i * 6 + 1] = p1[i].y;
       input[i * 6 + 2] = p2[i].x[0];
@@ -82,19 +101,34 @@ library Pairing {
     bool success;
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
+      success := staticcall(
+        sub(gas(), 2000),
+        8,
+        add(input, 0x20),
+        mul(inputSize, 0x20),
+        out,
+        0x20
+      )
       // Use "invalid" to make gas estimation work
-      switch success case 0 { invalid() }
+      switch success
+      case 0 {
+        invalid()
+      }
     }
-    require(success,"pairing-opcode-failed");
+    require(success, "pairing-opcode-failed");
     return out[0] != 0;
   }
+
   /// Convenience method for a pairing check for four pairs.
   function pairingProd4(
-      G1Point memory a1, G2Point memory a2,
-      G1Point memory b1, G2Point memory b2,
-      G1Point memory c1, G2Point memory c2,
-      G1Point memory d1, G2Point memory d2
+    G1Point memory a1,
+    G2Point memory a2,
+    G1Point memory b1,
+    G2Point memory b2,
+    G1Point memory c1,
+    G2Point memory c2,
+    G1Point memory d1,
+    G2Point memory d2
   ) internal view returns (bool) {
     G1Point[] memory p1 = new G1Point[](4);
     G2Point[] memory p2 = new G2Point[](4);
@@ -109,9 +143,11 @@ library Pairing {
     return pairing(p1, p2);
   }
 }
+
 contract Groth16Verifier {
   using Pairing for *;
-  uint256 constant private _SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+  uint256 private constant _SNARK_SCALAR_FIELD =
+    21888242871839275222246405745257275088548364400416034343698204186575808495617;
   VerifyingKey private _verifyingKey;
   struct VerifyingKey {
     G1Point alpha1;
@@ -120,29 +156,45 @@ contract Groth16Verifier {
     G2Point delta2;
     G1Point[] ic;
   }
+
   constructor(VerifyingKey memory key) {
     _verifyingKey.alpha1 = key.alpha1;
     _verifyingKey.beta2 = key.beta2;
     _verifyingKey.gamma2 = key.gamma2;
     _verifyingKey.delta2 = key.delta2;
-    for (uint i=0; i<key.ic.length; i++) {
+    for (uint i = 0; i < key.ic.length; i++) {
       _verifyingKey.ic.push(key.ic[i]);
     }
   }
-  function verify(Groth16Proof calldata proof, uint[] memory input) public view returns (bool) {
-    require(input.length + 1 == _verifyingKey.ic.length,"verifier-bad-input");
+
+  function verify(
+    Groth16Proof calldata proof,
+    uint[] memory input
+  ) public view returns (bool) {
+    require(input.length + 1 == _verifyingKey.ic.length, "verifier-bad-input");
     // Compute the linear combination vkX
     G1Point memory vkX = G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
-      require(input[i] < _SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
-      vkX = Pairing.addition(vkX, Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i]));
+      require(
+        input[i] < _SNARK_SCALAR_FIELD,
+        "verifier-gte-snark-scalar-field"
+      );
+      vkX = Pairing.addition(
+        vkX,
+        Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i])
+      );
     }
     vkX = Pairing.addition(vkX, _verifyingKey.ic[0]);
-    return Pairing.pairingProd4(
-      Pairing.negate(proof.a), proof.b,
-      _verifyingKey.alpha1, _verifyingKey.beta2,
-      vkX, _verifyingKey.gamma2,
-      proof.c, _verifyingKey.delta2
-    );
+    return
+      Pairing.pairingProd4(
+        Pairing.negate(proof.a),
+        proof.b,
+        _verifyingKey.alpha1,
+        _verifyingKey.beta2,
+        vkX,
+        _verifyingKey.gamma2,
+        proof.c,
+        _verifyingKey.delta2
+      );
   }
 }
