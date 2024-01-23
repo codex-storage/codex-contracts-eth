@@ -11,7 +11,7 @@ const {
   advanceTimeToForNextBlock,
 } = require("./evm")
 const { periodic } = require("./time")
-const { loadProof, loadPublicInput } = require("./proof")
+const { loadProof, loadPublicInput, loadVerificationKey } = require("./proof")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
 const { exampleProof } = require("./examples")
@@ -33,7 +33,7 @@ describe("Proofs", function () {
     const Verifier = await ethers.getContractFactory(
       "contracts/verifiers/local/verifier_groth.sol:Verifier"
     )
-    const verifier = await Verifier.deploy()
+    const verifier = await Verifier.deploy(loadVerificationKey("local"))
     proofs = await Proofs.deploy(
       { period, timeout, downtime },
       verifier.address
@@ -213,8 +213,7 @@ describe("Proofs", function () {
 
     it("fails proof submission when public input is incorrect", async function () {
       let invalid = [1, 2, 3]
-      await expect(proofs.proofReceived(slotId, proof, invalid)).to.be
-        .reverted
+      await expect(proofs.proofReceived(slotId, proof, invalid)).to.be.reverted
     })
 
     it("emits an event when proof was submitted", async function () {

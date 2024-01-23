@@ -159,12 +159,14 @@ contract Verifier {
     Pairing.G2Point B;
     Pairing.G1Point C;
   }
-  constructor() {
-    verifyingKey.alpha1 = Pairing.G1Point(<%vk_alpha1%>);
-    verifyingKey.beta2 = Pairing.G2Point(<%vk_beta2%>);
-    verifyingKey.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
-    verifyingKey.delta2 = Pairing.G2Point(<%vk_delta2%>);
-    <%vk_ic_pts%>
+  constructor(VerifyingKey memory key) {
+    verifyingKey.alpha1 = key.alpha1;
+    verifyingKey.beta2 = key.beta2;
+    verifyingKey.gamma2 = key.gamma2;
+    verifyingKey.delta2 = key.delta2;
+    for (uint i=0; i<key.IC.length; i++) {
+      verifyingKey.IC.push(key.IC[i]);
+    }
   }
   function verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
     require(input.length + 1 == verifyingKey.IC.length,"verifier-bad-input");
