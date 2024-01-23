@@ -22,27 +22,27 @@ library Pairing {
   // The prime q in the base field F_q for G1
   uint constant private q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
   struct G1Point {
-    uint X;
-    uint Y;
+    uint x;
+    uint y;
   }
-  // Encoding of field elements is: X[0] * z + X[1]
+  // Encoding of field elements is: x[0] * z + x[1]
   struct G2Point {
-    uint[2] X;
-    uint[2] Y;
+    uint[2] x;
+    uint[2] y;
   }
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    if (p.X == 0 && p.Y == 0)
+    if (p.x == 0 && p.y == 0)
       return G1Point(0, 0);
-    return G1Point(p.X, q - (p.Y % q));
+    return G1Point(p.x, q - (p.y % q));
   }
   /// The sum of two points of G1
   function addition(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
     uint[4] memory input;
-    input[0] = p1.X;
-    input[1] = p1.Y;
-    input[2] = p2.X;
-    input[3] = p2.Y;
+    input[0] = p1.x;
+    input[1] = p1.y;
+    input[2] = p2.x;
+    input[3] = p2.y;
     bool success;
     // solium-disable-next-line security/no-inline-assembly
     assembly {
@@ -56,8 +56,8 @@ library Pairing {
   /// p == p.scalar_mul(1) and p.addition(p) == p.scalar_mul(2) for all points p.
   function scalar_mul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
     uint[3] memory input;
-    input[0] = p.X;
-    input[1] = p.Y;
+    input[0] = p.x;
+    input[1] = p.y;
     input[2] = s;
     bool success;
     // solium-disable-next-line security/no-inline-assembly
@@ -79,12 +79,12 @@ library Pairing {
     uint[] memory input = new uint[](inputSize);
     for (uint i = 0; i < elements; i++)
     {
-      input[i * 6 + 0] = p1[i].X;
-      input[i * 6 + 1] = p1[i].Y;
-      input[i * 6 + 2] = p2[i].X[0];
-      input[i * 6 + 3] = p2[i].X[1];
-      input[i * 6 + 4] = p2[i].Y[0];
-      input[i * 6 + 5] = p2[i].Y[1];
+      input[i * 6 + 0] = p1[i].x;
+      input[i * 6 + 1] = p1[i].y;
+      input[i * 6 + 2] = p2[i].x[0];
+      input[i * 6 + 3] = p2[i].x[1];
+      input[i * 6 + 4] = p2[i].y[0];
+      input[i * 6 + 5] = p2[i].y[1];
     }
     uint[1] memory out;
     bool success;
