@@ -4,7 +4,7 @@ require("hardhat-deploy-ethers")
 
 module.exports = {
   solidity: {
-    version: "0.8.8",
+    version: "0.8.23",
     settings: {
       optimizer: {
         enabled: true,

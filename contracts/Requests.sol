@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.8;
+pragma solidity 0.8.23;
 
 type RequestId is bytes32;
 type SlotId is bytes32;
