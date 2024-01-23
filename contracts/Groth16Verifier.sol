@@ -97,32 +97,6 @@ library Pairing {
     require(success,"pairing-opcode-failed");
     return out[0] != 0;
   }
-  /// Convenience method for a pairing check for two pairs.
-  function pairingProd2(G1Point memory a1, G2Point memory a2, G1Point memory b1, G2Point memory b2) internal view returns (bool) {
-    G1Point[] memory p1 = new G1Point[](2);
-    G2Point[] memory p2 = new G2Point[](2);
-    p1[0] = a1;
-    p1[1] = b1;
-    p2[0] = a2;
-    p2[1] = b2;
-    return pairing(p1, p2);
-  }
-  /// Convenience method for a pairing check for three pairs.
-  function pairingProd3(
-      G1Point memory a1, G2Point memory a2,
-      G1Point memory b1, G2Point memory b2,
-      G1Point memory c1, G2Point memory c2
-  ) internal view returns (bool) {
-    G1Point[] memory p1 = new G1Point[](3);
-    G2Point[] memory p2 = new G2Point[](3);
-    p1[0] = a1;
-    p1[1] = b1;
-    p1[2] = c1;
-    p2[0] = a2;
-    p2[1] = b2;
-    p2[2] = c2;
-    return pairing(p1, p2);
-  }
   /// Convenience method for a pairing check for four pairs.
   function pairingProd4(
       G1Point memory a1, G2Point memory a2,
