@@ -18,7 +18,7 @@ contract TestVerifier is IVerifier {
     uint[2] calldata,
     uint[2][2] calldata,
     uint[2] calldata,
-    uint[3] calldata
+    uint[] calldata
   ) external view returns (bool) {
     return _proofsAreValid;
   }
