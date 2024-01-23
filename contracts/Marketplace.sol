@@ -186,9 +186,11 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   ) public requestIsKnown(_slots[id].requestId) {
     Slot storage slot = _slots[id];
     Request storage request = _requests[slot.requestId];
-    uint256 challenge = _challengeToFieldElement(getChallenge(id));
-    uint256 merkleRoot = _merkleRootToFieldElement(request.content.merkleRoot);
-    _proofReceived(id, proof, [challenge, merkleRoot, slot.slotIndex]);
+    uint256[] memory pubSignals = new uint256[](3);
+    pubSignals[0] = _challengeToFieldElement(getChallenge(id));
+    pubSignals[1] = _merkleRootToFieldElement(request.content.merkleRoot);
+    pubSignals[2] = slot.slotIndex;
+    _proofReceived(id, proof, pubSignals);
   }
 
   function markProofAsMissing(SlotId slotId, Period period) public {

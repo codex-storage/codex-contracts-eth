@@ -112,7 +112,7 @@ abstract contract Proofs is Periods {
   function _proofReceived(
     SlotId id,
     Groth16Proof calldata proof,
-    uint[3] memory pubSignals
+    uint[] memory pubSignals
   ) internal {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
     require(

@@ -27,7 +27,7 @@ contract TestProofs is Proofs {
   function proofReceived(
     SlotId id,
     Groth16Proof calldata proof,
-    uint[3] memory pubSignals
+    uint[] memory pubSignals
   ) public {
     _proofReceived(id, proof, pubSignals);
   }

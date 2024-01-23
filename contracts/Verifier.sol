@@ -6,6 +6,6 @@ interface IVerifier {
     uint[2] calldata pA,
     uint[2][2] calldata pB,
     uint[2] calldata pC,
-    uint[3] calldata pubSignals
+    uint[] calldata pubSignals
   ) external view returns (bool);
 }
