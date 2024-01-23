@@ -8,7 +8,7 @@ contract TestMarketplace is Marketplace {
   constructor(
     MarketplaceConfig memory config,
     IERC20 token,
-    IVerifier verifier
+    IGroth16Verifier verifier
   )
     Marketplace(config, token, verifier) // solhint-disable-next-line no-empty-blocks
   {}

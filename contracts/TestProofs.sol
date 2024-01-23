@@ -9,7 +9,7 @@ contract TestProofs is Proofs {
 
   constructor(
     ProofConfig memory config,
-    IVerifier verifier
+    IGroth16Verifier verifier
   ) Proofs(config, verifier) {} // solhint-disable-line no-empty-blocks
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
