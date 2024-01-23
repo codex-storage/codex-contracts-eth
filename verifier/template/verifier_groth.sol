@@ -146,6 +146,7 @@ library Pairing {
 contract Verifier {
   using Pairing for *;
   uint256 constant private snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+  VerifyingKey private verifyingKey;
   struct VerifyingKey {
     Pairing.G1Point alpha1;
     Pairing.G2Point beta2;
@@ -158,29 +159,27 @@ contract Verifier {
     Pairing.G2Point B;
     Pairing.G1Point C;
   }
-  function verifyingKey() internal pure returns (VerifyingKey memory vk) {
-    vk.alpha1 = Pairing.G1Point(<%vk_alpha1%>);
-    vk.beta2 = Pairing.G2Point(<%vk_beta2%>);
-    vk.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
-    vk.delta2 = Pairing.G2Point(<%vk_delta2%>);
-    vk.IC = new Pairing.G1Point[](<%vk_ic_length%>);
+  constructor() {
+    verifyingKey.alpha1 = Pairing.G1Point(<%vk_alpha1%>);
+    verifyingKey.beta2 = Pairing.G2Point(<%vk_beta2%>);
+    verifyingKey.gamma2 = Pairing.G2Point(<%vk_gamma2%>);
+    verifyingKey.delta2 = Pairing.G2Point(<%vk_delta2%>);
     <%vk_ic_pts%>
   }
   function verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-    VerifyingKey memory vk = verifyingKey();
-    require(input.length + 1 == vk.IC.length,"verifier-bad-input");
+    require(input.length + 1 == verifyingKey.IC.length,"verifier-bad-input");
     // Compute the linear combination vk_x
     Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
       require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-      vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
+      vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(verifyingKey.IC[i + 1], input[i]));
     }
-    vk_x = Pairing.addition(vk_x, vk.IC[0]);
+    vk_x = Pairing.addition(vk_x, verifyingKey.IC[0]);
     if (!Pairing.pairingProd4(
       Pairing.negate(proof.A), proof.B,
-      vk.alpha1, vk.beta2,
-      vk_x, vk.gamma2,
-      proof.C, vk.delta2
+      verifyingKey.alpha1, verifyingKey.beta2,
+      vk_x, verifyingKey.gamma2,
+      proof.C, verifyingKey.delta2
     )) return 1;
     return 0;
   }

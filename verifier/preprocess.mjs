@@ -34,10 +34,10 @@ for (const network of await readdir(networksPath)) {
   let icParts = ''
   for (let index = 0; index < icLength; index++) {
     if (index > 0) {
-      icParts = icParts + '\n        '
+      icParts = icParts + '\n    '
     }
     let ic = verificationKey['IC'][index]
-    icParts = icParts + 'vk.IC[' + index + '] = Pairing.G1Point(' + G1ToSolidity(ic) + ');'
+    icParts = icParts + 'verifyingKey.IC.push(Pairing.G1Point(' + G1ToSolidity(ic) + '));'
   }
   const inputLength = verificationKey['nPublic']
 
