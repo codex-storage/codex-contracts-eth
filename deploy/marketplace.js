@@ -2,7 +2,7 @@ const MARKETPLACE_HARDCODED_ADDRESS = "0x59b670e9fA9D0A427751Af201D676719a970857
 
 async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
-  const verifier = await deployments.get("Verifier")
+  const verifier = await deployments.get("Groth16Verifier")
   const configuration = {
     collateral: {
       repairRewardPercentage: 10,
@@ -16,7 +16,7 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
       downtime: 64,
     },
   }
-  const args = [token.address, configuration, verifier.address]
+  const args = [configuration, token.address, verifier.address]
   const { deployer } = await getNamedAccounts()
   await deployments.deploy("Marketplace", { args, from: deployer })
 }
@@ -47,4 +47,4 @@ module.exports = async (environment) => {
 }
 
 module.exports.tags = ["Marketplace"]
-module.exports.dependencies = ["TestToken", "Verifier"]
+module.exports.dependencies = ["TestToken", "Groth16Verifier"]
