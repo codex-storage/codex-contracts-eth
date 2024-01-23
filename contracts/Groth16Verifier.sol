@@ -18,18 +18,10 @@
 // SOFTWARE.
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
+import "./Groth16.sol";
 library Pairing {
   // The prime q in the base field F_q for G1
   uint constant private _Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
-  struct G1Point {
-    uint x;
-    uint y;
-  }
-  // Encoding of field elements is: x[0] * z + x[1]
-  struct G2Point {
-    uint[2] x;
-    uint[2] y;
-  }
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
     if (p.x == 0 && p.y == 0)
@@ -122,16 +114,11 @@ contract Groth16Verifier {
   uint256 constant private _SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   VerifyingKey private _verifyingKey;
   struct VerifyingKey {
-    Pairing.G1Point alpha1;
-    Pairing.G2Point beta2;
-    Pairing.G2Point gamma2;
-    Pairing.G2Point delta2;
-    Pairing.G1Point[] ic;
-  }
-  struct Proof {
-    Pairing.G1Point a;
-    Pairing.G2Point b;
-    Pairing.G1Point c;
+    G1Point alpha1;
+    G2Point beta2;
+    G2Point gamma2;
+    G2Point delta2;
+    G1Point[] ic;
   }
   constructor(VerifyingKey memory key) {
     _verifyingKey.alpha1 = key.alpha1;
@@ -142,10 +129,10 @@ contract Groth16Verifier {
       _verifyingKey.ic.push(key.ic[i]);
     }
   }
-  function _verify(uint[] memory input, Proof memory proof) internal view returns (bool) {
+  function _verify(uint[] memory input, Groth16Proof memory proof) internal view returns (bool) {
     require(input.length + 1 == _verifyingKey.ic.length,"verifier-bad-input");
     // Compute the linear combination vkX
-    Pairing.G1Point memory vkX = Pairing.G1Point(0, 0);
+    G1Point memory vkX = G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
       require(input[i] < _SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
       vkX = Pairing.addition(vkX, Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i]));
@@ -164,10 +151,10 @@ contract Groth16Verifier {
       uint[2] memory c,
       uint[] memory input
     ) public view returns (bool r) {
-    Proof memory proof;
-    proof.a = Pairing.G1Point(a[0], a[1]);
-    proof.b = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-    proof.c = Pairing.G1Point(c[0], c[1]);
+    Groth16Proof memory proof;
+    proof.a = G1Point(a[0], a[1]);
+    proof.b = G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
+    proof.c = G1Point(c[0], c[1]);
     return _verify(input, proof);
   }
 }
