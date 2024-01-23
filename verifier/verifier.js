@@ -1,8 +1,6 @@
 const fs = require("fs")
-const ethers = require("ethers")
-const { BigNumber } = ethers
 
-const BASE_PATH = __dirname + "/../verifier/networks"
+const BASE_PATH = __dirname + "/networks"
 const PROOF_FILE_NAME = "example-proof/proof.json"
 const PUBLIC_INPUT_FILE_NAME = "example-proof/public.json"
 const VERIFICATION_KEY_FILE_NAME =
@@ -23,9 +21,8 @@ function G2ToStruct(point) {
 }
 
 function loadProof(name) {
-  const proof = JSON.parse(
-    fs.readFileSync(`${BASE_PATH}/${name}/${PROOF_FILE_NAME}`)
-  )
+  const path = `${BASE_PATH}/${name}/${PROOF_FILE_NAME}`
+  const proof = JSON.parse(fs.readFileSync(path))
   return {
     a: G1ToStruct(proof["pi_a"]),
     b: G2ToStruct(proof["pi_b"]),
@@ -34,16 +31,14 @@ function loadProof(name) {
 }
 
 function loadPublicInput(name) {
-  const input = JSON.parse(
-    fs.readFileSync(`${BASE_PATH}/${name}/${PUBLIC_INPUT_FILE_NAME}`)
-  )
+  const path = `${BASE_PATH}/${name}/${PUBLIC_INPUT_FILE_NAME}`
+  const input = JSON.parse(fs.readFileSync(path))
   return input
 }
 
 function loadVerificationKey(name) {
-  const key = JSON.parse(
-    fs.readFileSync(`${BASE_PATH}/${name}/${VERIFICATION_KEY_FILE_NAME}`)
-  )
+  const path = `${BASE_PATH}/${name}/${VERIFICATION_KEY_FILE_NAME}`
+  const key = JSON.parse(fs.readFileSync(path))
   return {
     alpha1: G1ToStruct(key["vk_alpha_1"]),
     beta2: G2ToStruct(key["vk_beta_2"]),
