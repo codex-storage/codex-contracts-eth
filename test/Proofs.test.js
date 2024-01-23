@@ -1,5 +1,5 @@
 const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const { ethers, deployments } = require("hardhat")
 const { hexlify, randomBytes } = ethers.utils
 const {
   snapshot,
@@ -11,7 +11,7 @@ const {
   advanceTimeToForNextBlock,
 } = require("./evm")
 const { periodic } = require("./time")
-const { loadProof, loadPublicInput, loadVerificationKey } = require("./proof")
+const { loadProof, loadPublicInput } = require("../verifier/verifier")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
 const { exampleProof } = require("./examples")
@@ -30,8 +30,8 @@ describe("Proofs", function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
-    const Verifier = await ethers.getContractFactory("Groth16Verifier")
-    const verifier = await Verifier.deploy(loadVerificationKey("local"))
+    await deployments.fixture(["Groth16Verifier"])
+    const verifier = await deployments.get("Groth16Verifier")
     proofs = await Proofs.deploy(
       { period, timeout, downtime },
       verifier.address
@@ -159,8 +159,8 @@ describe("Proofs", function () {
   })
 
   describe("when proofs are required", function () {
-    const proof = loadProof("local")
-    const pubSignals = loadPublicInput("local")
+    const proof = loadProof("hardhat")
+    const pubSignals = loadPublicInput("hardhat")
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
