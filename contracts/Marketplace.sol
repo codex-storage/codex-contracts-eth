@@ -9,7 +9,6 @@ import "./Requests.sol";
 import "./Proofs.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
-import "./Verifier.sol";
 import "./Groth16.sol";
 
 contract Marketplace is Proofs, StateRetrieval, Endian {
@@ -57,7 +56,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   constructor(
     MarketplaceConfig memory configuration,
     IERC20 token_,
-    IVerifier verifier
+    IGroth16Verifier verifier
   ) Proofs(configuration.proofs, verifier) {
     token = token_;
 

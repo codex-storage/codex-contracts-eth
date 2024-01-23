@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import "./Verifier.sol";
+import "./Groth16.sol";
 
-contract TestVerifier is IVerifier {
+contract TestVerifier is IGroth16Verifier {
   bool private _proofsAreValid;
 
   constructor() {
@@ -14,10 +14,8 @@ contract TestVerifier is IVerifier {
     _proofsAreValid = proofsAreValid;
   }
 
-  function verifyProof(
-    uint[2] calldata,
-    uint[2][2] calldata,
-    uint[2] calldata,
+  function verify(
+    Groth16Proof calldata,
     uint[] calldata
   ) external view returns (bool) {
     return _proofsAreValid;

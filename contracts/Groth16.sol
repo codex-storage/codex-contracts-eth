@@ -16,3 +16,10 @@ struct Groth16Proof {
   G2Point b;
   G1Point c;
 }
+
+interface IGroth16Verifier {
+  function verify(
+    Groth16Proof calldata proof,
+    uint[] calldata pubSignals
+  ) external view returns (bool);
+}

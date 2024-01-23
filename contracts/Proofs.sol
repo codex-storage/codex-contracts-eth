@@ -4,16 +4,15 @@ pragma solidity 0.8.23;
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
-import "./Verifier.sol";
 import "./Groth16.sol";
 
 abstract contract Proofs is Periods {
   ProofConfig private _config;
-  IVerifier private _verifier;
+  IGroth16Verifier private _verifier;
 
   constructor(
     ProofConfig memory config,
-    IVerifier verifier
+    IGroth16Verifier verifier
   ) Periods(config.period) {
     require(block.number > 256, "Insufficient block height");
     _config = config;
@@ -115,15 +114,7 @@ abstract contract Proofs is Periods {
     uint[] memory pubSignals
   ) internal {
     require(!_received[id][_blockPeriod()], "Proof already submitted");
-    require(
-      _verifier.verifyProof(
-        [proof.a.x, proof.a.y],
-        [proof.b.x, proof.b.y],
-        [proof.c.x, proof.c.y],
-        pubSignals
-      ),
-      "Invalid proof"
-    );
+    require(_verifier.verify(proof, pubSignals), "Invalid proof");
     _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id);
   }
