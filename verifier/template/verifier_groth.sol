@@ -19,6 +19,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 library Pairing {
+  // The prime q in the base field F_q for G1
+  uint constant private q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
   struct G1Point {
     uint X;
     uint Y;
@@ -30,8 +32,6 @@ library Pairing {
   }
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    // The prime q in the base field F_q for G1
-    uint q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
     if (p.X == 0 && p.Y == 0)
       return G1Point(0, 0);
     return G1Point(p.X, q - (p.Y % q));
@@ -145,6 +145,7 @@ library Pairing {
 }
 contract Verifier {
   using Pairing for *;
+  uint256 constant private snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   struct VerifyingKey {
     Pairing.G1Point alfa1;
     Pairing.G2Point beta2;
@@ -166,7 +167,6 @@ contract Verifier {
     <%vk_ic_pts%>
   }
   function verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-    uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     VerifyingKey memory vk = verifyingKey();
     require(input.length + 1 == vk.IC.length,"verifier-bad-input");
     // Compute the linear combination vk_x
