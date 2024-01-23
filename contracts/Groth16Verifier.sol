@@ -143,7 +143,7 @@ library Pairing {
     return pairing(p1, p2);
   }
 }
-contract Verifier {
+contract Groth16Verifier {
   using Pairing for *;
   uint256 constant private snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   VerifyingKey private verifyingKey;
