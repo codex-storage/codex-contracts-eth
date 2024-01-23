@@ -168,7 +168,7 @@ contract Groth16Verifier {
       _verifyingKey.ic.push(key.ic[i]);
     }
   }
-  function _verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
+  function _verify(uint[] memory input, Proof memory proof) internal view returns (bool) {
     require(input.length + 1 == _verifyingKey.ic.length,"verifier-bad-input");
     // Compute the linear combination vkX
     Pairing.G1Point memory vkX = Pairing.G1Point(0, 0);
@@ -177,13 +177,12 @@ contract Groth16Verifier {
       vkX = Pairing.addition(vkX, Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i]));
     }
     vkX = Pairing.addition(vkX, _verifyingKey.ic[0]);
-    if (!Pairing.pairingProd4(
+    return Pairing.pairingProd4(
       Pairing.negate(proof.a), proof.b,
       _verifyingKey.alpha1, _verifyingKey.beta2,
       vkX, _verifyingKey.gamma2,
       proof.c, _verifyingKey.delta2
-    )) return 1;
-    return 0;
+    );
   }
   function verifyProof(
       uint[2] memory a,
@@ -195,10 +194,6 @@ contract Groth16Verifier {
     proof.a = Pairing.G1Point(a[0], a[1]);
     proof.b = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
     proof.c = Pairing.G1Point(c[0], c[1]);
-    if (_verify(input, proof) == 0) {
-      return true;
-    } else {
-      return false;
-    }
+    return _verify(input, proof);
   }
 }
