@@ -20,7 +20,7 @@
 pragma solidity 0.8.23;
 library Pairing {
   // The prime q in the base field F_q for G1
-  uint constant private q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+  uint constant private _Q = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
   struct G1Point {
     uint x;
     uint y;
@@ -34,7 +34,7 @@ library Pairing {
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
     if (p.x == 0 && p.y == 0)
       return G1Point(0, 0);
-    return G1Point(p.x, q - (p.y % q));
+    return G1Point(p.x, _Q - (p.y % _Q));
   }
   /// The sum of two points of G1
   function addition(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
@@ -44,7 +44,7 @@ library Pairing {
     input[2] = p2.x;
     input[3] = p2.y;
     bool success;
-    // solium-disable-next-line security/no-inline-assembly
+    // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
       // Use "invalid" to make gas estimation work
@@ -53,14 +53,14 @@ library Pairing {
     require(success,"pairing-add-failed");
   }
   /// The product of a point on G1 and a scalar, i.e.
-  /// p == p.scalar_mul(1) and p.addition(p) == p.scalar_mul(2) for all points p.
-  function scalar_mul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
+  /// p == p.scalarMul(1) and p.addition(p) == p.scalarMul(2) for all points p.
+  function scalarMul(G1Point memory p, uint s) internal view returns (G1Point memory r) {
     uint[3] memory input;
     input[0] = p.x;
     input[1] = p.y;
     input[2] = s;
     bool success;
-    // solium-disable-next-line security/no-inline-assembly
+    // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
       // Use "invalid" to make gas estimation work
@@ -88,7 +88,7 @@ library Pairing {
     }
     uint[1] memory out;
     bool success;
-    // solium-disable-next-line security/no-inline-assembly
+    // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 8, add(input, 0x20), mul(inputSize, 0x20), out, 0x20)
       // Use "invalid" to make gas estimation work
@@ -145,43 +145,43 @@ library Pairing {
 }
 contract Groth16Verifier {
   using Pairing for *;
-  uint256 constant private snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-  VerifyingKey private verifyingKey;
+  uint256 constant private _SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+  VerifyingKey private _verifyingKey;
   struct VerifyingKey {
     Pairing.G1Point alpha1;
     Pairing.G2Point beta2;
     Pairing.G2Point gamma2;
     Pairing.G2Point delta2;
-    Pairing.G1Point[] IC;
+    Pairing.G1Point[] ic;
   }
   struct Proof {
-    Pairing.G1Point A;
-    Pairing.G2Point B;
-    Pairing.G1Point C;
+    Pairing.G1Point a;
+    Pairing.G2Point b;
+    Pairing.G1Point c;
   }
   constructor(VerifyingKey memory key) {
-    verifyingKey.alpha1 = key.alpha1;
-    verifyingKey.beta2 = key.beta2;
-    verifyingKey.gamma2 = key.gamma2;
-    verifyingKey.delta2 = key.delta2;
-    for (uint i=0; i<key.IC.length; i++) {
-      verifyingKey.IC.push(key.IC[i]);
+    _verifyingKey.alpha1 = key.alpha1;
+    _verifyingKey.beta2 = key.beta2;
+    _verifyingKey.gamma2 = key.gamma2;
+    _verifyingKey.delta2 = key.delta2;
+    for (uint i=0; i<key.ic.length; i++) {
+      _verifyingKey.ic.push(key.ic[i]);
     }
   }
-  function verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
-    require(input.length + 1 == verifyingKey.IC.length,"verifier-bad-input");
-    // Compute the linear combination vk_x
-    Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
+  function _verify(uint[] memory input, Proof memory proof) internal view returns (uint) {
+    require(input.length + 1 == _verifyingKey.ic.length,"verifier-bad-input");
+    // Compute the linear combination vkX
+    Pairing.G1Point memory vkX = Pairing.G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
-      require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
-      vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(verifyingKey.IC[i + 1], input[i]));
+      require(input[i] < _SNARK_SCALAR_FIELD,"verifier-gte-snark-scalar-field");
+      vkX = Pairing.addition(vkX, Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i]));
     }
-    vk_x = Pairing.addition(vk_x, verifyingKey.IC[0]);
+    vkX = Pairing.addition(vkX, _verifyingKey.ic[0]);
     if (!Pairing.pairingProd4(
-      Pairing.negate(proof.A), proof.B,
-      verifyingKey.alpha1, verifyingKey.beta2,
-      vk_x, verifyingKey.gamma2,
-      proof.C, verifyingKey.delta2
+      Pairing.negate(proof.a), proof.b,
+      _verifyingKey.alpha1, _verifyingKey.beta2,
+      vkX, _verifyingKey.gamma2,
+      proof.c, _verifyingKey.delta2
     )) return 1;
     return 0;
   }
@@ -192,10 +192,10 @@ contract Groth16Verifier {
       uint[] memory input
     ) public view returns (bool r) {
     Proof memory proof;
-    proof.A = Pairing.G1Point(a[0], a[1]);
-    proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
-    proof.C = Pairing.G1Point(c[0], c[1]);
-    if (verify(input, proof) == 0) {
+    proof.a = Pairing.G1Point(a[0], a[1]);
+    proof.b = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
+    proof.c = Pairing.G1Point(c[0], c[1]);
+    if (_verify(input, proof) == 0) {
       return true;
     } else {
       return false;
