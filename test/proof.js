@@ -49,7 +49,7 @@ function loadVerificationKey(name) {
     beta2: G2ToStruct(key["vk_beta_2"]),
     gamma2: G2ToStruct(key["vk_gamma_2"]),
     delta2: G2ToStruct(key["vk_delta_2"]),
-    IC: key["IC"].map(G1ToStruct),
+    ic: key["IC"].map(G1ToStruct),
   }
 }
 
