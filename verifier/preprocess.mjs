@@ -42,7 +42,7 @@ for (const network of await readdir(networksPath)) {
   const inputLength = verificationKey['nPublic']
 
   const contract = template
-      .replaceAll('<%vk_alfa1%>', alpha1)
+      .replaceAll('<%vk_alpha1%>', alpha1)
       .replaceAll('<%vk_beta2%>', beta2)
       .replaceAll('<%vk_gamma2%>', gamma2)
       .replaceAll('<%vk_delta2%>', delta2)
