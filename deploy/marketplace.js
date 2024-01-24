@@ -1,6 +1,8 @@
+const { loadZkeyHash } = require ("../verifier/verifier.js")
+
 const MARKETPLACE_HARDCODED_ADDRESS = "0x59b670e9fA9D0A427751Af201D676719a970857b"
 
-async function deployMarketplace({ deployments, getNamedAccounts }) {
+async function deployMarketplace({ deployments, getNamedAccounts, network }) {
   const token = await deployments.get("TestToken")
   const verifier = await deployments.get("Groth16Verifier")
   const configuration = {
@@ -14,6 +16,7 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
       period: 10,
       timeout: 5,
       downtime: 64,
+      zkeyHash: loadZkeyHash(network.name),
     },
   }
   const args = [configuration, token.address, verifier.address]

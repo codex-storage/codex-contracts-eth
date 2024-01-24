@@ -23,4 +23,5 @@ struct ProofConfig {
   uint256 period; // proofs requirements are calculated per period (in seconds)
   uint256 timeout; // mark proofs as missing before the timeout (in seconds)
   uint8 downtime; // ignore this much recent blocks for proof requirements
+  string zkeyHash; // hash of the zkey file which is linked to the verifier
 }

@@ -14,6 +14,7 @@ const exampleConfiguration = () => ({
     period: 10,
     timeout: 5,
     downtime: 64,
+    zkeyHash: "",
   },
 })
 

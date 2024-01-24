@@ -8,7 +8,10 @@ import "./TestVerifier.sol";
 contract FuzzMarketplace is Marketplace {
   constructor()
     Marketplace(
-      MarketplaceConfig(CollateralConfig(10, 5, 3, 10), ProofConfig(10, 5, 64)),
+      MarketplaceConfig(
+        CollateralConfig(10, 5, 3, 10),
+        ProofConfig(10, 5, 64, "")
+      ),
       new TestToken(),
       new TestVerifier()
     )
