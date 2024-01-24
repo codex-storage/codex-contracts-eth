@@ -7,6 +7,7 @@
     "start": "hardhat node --export deployment-localhost.json",
     "compile": "hardhat compile",
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
+    "format:check": "prettier --check contracts/**/*.sol test/**/*.js",
     "lint": "solhint contracts/**.sol",
     "deploy": "hardhat deploy"
   },
