@@ -41,8 +41,8 @@ const exampleRequest = async () => {
 
 const exampleProof = () => ({
   a: { x: 1, y: 2 },
-  b: { x: [3, 4], y: [5, 6]},
-  c: { x: 7, y: 8 }
+  b: { x: [3, 4], y: [5, 6] },
+  c: { x: 7, y: 8 },
 })
 
 module.exports = { exampleConfiguration, exampleRequest, exampleProof }
