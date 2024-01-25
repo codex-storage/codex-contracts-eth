@@ -46,4 +46,15 @@ const exampleProof = () => ({
   c: { x: 7, y: 8 },
 })
 
-module.exports = { exampleConfiguration, exampleRequest, exampleProof }
+const invalidProof = () => ({
+  a: { x: 0, y: 0 },
+  b: { x: [0, 0], y: [0, 0] },
+  c: { x: 0, y: 0 },
+})
+
+module.exports = {
+  exampleConfiguration,
+  exampleRequest,
+  exampleProof,
+  invalidProof,
+}
