@@ -13,6 +13,7 @@ module.exports = async ({ deployments, getNamedAccounts, getUnnamedAccounts, net
       const transaction = await token.mint(account, MINTED_TOKENS, { from: deployer })
       await transaction.wait()
     }
+    console.log()
   }
 }
 
