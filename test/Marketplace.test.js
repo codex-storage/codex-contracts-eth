@@ -6,6 +6,7 @@ const {
   exampleConfiguration,
   exampleRequest,
   exampleProof,
+  invalidProof,
 } = require("./examples")
 const { periodic, hours } = require("./time")
 const { requestId, slotId, askToArray } = require("./ids")
@@ -219,9 +220,8 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when proof is incorrect", async function () {
-      await verifier.setProofsAreValid(false)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
+        marketplace.fillSlot(slot.request, slot.index, invalidProof())
       ).to.be.revertedWith("Invalid proof")
     })
 
