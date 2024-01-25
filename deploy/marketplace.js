@@ -1,27 +1,22 @@
-const { loadZkeyHash } = require ("../verifier/verifier.js")
+const { loadZkeyHash } = require("../verifier/verifier.js")
 
-const MARKETPLACE_HARDCODED_ADDRESS = "0x59b670e9fA9D0A427751Af201D676719a970857b"
+// hardcoded addresses when deploying on local network
+const MARKETPLACE_REAL = "0x59b670e9fA9D0A427751Af201D676719a970857b"
+const MARKETPLACE_TEST = "0xfacadee9fA9D0A427751Af201D676719a9facade"
 
-async function deployMarketplace({ deployments, getNamedAccounts, network }) {
-  const token = await deployments.get("TestToken")
-  const verifier = await deployments.get("Groth16Verifier")
-  const configuration = {
-    collateral: {
-      repairRewardPercentage: 10,
-      maxNumberOfSlashes: 5,
-      slashCriterion: 3,
-      slashPercentage: 10,
-    },
-    proofs: {
-      period: 10,
-      timeout: 5,
-      downtime: 64,
-      zkeyHash: loadZkeyHash(network.name),
-    },
-  }
-  const args = [configuration, token.address, verifier.address]
-  const { deployer } = await getNamedAccounts()
-  await deployments.deploy("Marketplace", { args, from: deployer })
+// marketplace configuration
+const CONFIGURATION = {
+  collateral: {
+    repairRewardPercentage: 10,
+    maxNumberOfSlashes: 5,
+    slashCriterion: 3,
+    slashPercentage: 10,
+  },
+  proofs: {
+    period: 10,
+    timeout: 5,
+    downtime: 64,
+  },
 }
 
 async function mine256blocks({ network, ethers }) {
@@ -30,24 +25,49 @@ async function mine256blocks({ network, ethers }) {
   }
 }
 
-async function aliasContract({deployments, network}) {
+async function aliasContract(address, alias) {
+  if (address !== alias) {
+    await ethers.provider.send("hardhat_setCode", [alias, address])
+  }
+}
+
+// deploys a marketplace with a real Groth16 verifier
+async function deployMarketplace({ network, deployments, getNamedAccounts }) {
+  const token = await deployments.get("TestToken")
+  const verifier = await deployments.get("Groth16Verifier")
+  const zkeyHash = loadZkeyHash(network.name)
+  const configuration = { ...CONFIGURATION, zkeyHash }
+  const args = [configuration, token.address, verifier.address]
+  const { deployer: from } = await getNamedAccounts()
+  const marketplace = await deployments.deploy("Marketplace", { args, from })
   if (network.tags.local) {
-    const marketplaceDeployment = await deployments.get("Marketplace")
+    await aliasContract(marketplace.address, MARKETPLACE_REAL)
+  }
+}
 
-    if (marketplaceDeployment.address === MARKETPLACE_HARDCODED_ADDRESS) {
-      return
-    }
-
-    console.log(`Aliasing marketplace from address ${marketplaceDeployment.address} to ${MARKETPLACE_HARDCODED_ADDRESS}`)
-    await ethers.provider.send("hardhat_setCode", [MARKETPLACE_HARDCODED_ADDRESS, marketplaceDeployment.address])
+// deploys a marketplace with a testing verifier
+async function deployTestMarketplace({
+  network,
+  deployments,
+  getNamedAccounts,
+}) {
+  if (network.tags.local) {
+    const token = await deployments.get("TestToken")
+    const verifier = await deployments.get("TestVerifier")
+    const zkeyHash = loadZkeyHash(network.name)
+    const configuration = { ...CONFIGURATION, zkeyHash }
+    const args = [configuration, token.address, verifier.address]
+    const { deployer: from } = await getNamedAccounts()
+    const marketplace = await deployments.deploy("Marketplace", { args, from })
+    await aliasContract(marketplace.address, MARKETPLACE_TEST)
   }
 }
 
 module.exports = async (environment) => {
   await mine256blocks(environment)
   await deployMarketplace(environment)
-  await aliasContract(environment)
+  await deployTestMarketplace(environment)
 }
 
 module.exports.tags = ["Marketplace"]
-module.exports.dependencies = ["TestToken", "Groth16Verifier"]
+module.exports.dependencies = ["TestToken", "Verifier"]

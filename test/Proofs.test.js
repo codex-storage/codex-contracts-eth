@@ -30,7 +30,7 @@ describe("Proofs", function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
     const Proofs = await ethers.getContractFactory("TestProofs")
-    await deployments.fixture(["Groth16Verifier"])
+    await deployments.fixture(["Verifier"])
     const verifier = await deployments.get("Groth16Verifier")
     proofs = await Proofs.deploy(
       { period, timeout, downtime, zkeyHash: "" },
