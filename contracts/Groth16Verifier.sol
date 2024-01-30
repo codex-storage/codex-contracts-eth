@@ -46,14 +46,14 @@ contract Groth16Verifier {
     }
   }
 
-  function negate(G1Point memory point) internal pure returns (G1Point memory) {
+  function _negate(G1Point memory point) private pure returns (G1Point memory) {
     return G1Point(point.x, (_P - point.y) % _P);
   }
 
-  function add(
+  function _add(
     G1Point memory point1,
     G1Point memory point2
-  ) internal view returns (bool success, G1Point memory sum) {
+  ) private view returns (bool success, G1Point memory sum) {
     uint[4] memory input;
     input[0] = point1.x;
     input[1] = point1.y;
@@ -65,10 +65,10 @@ contract Groth16Verifier {
     }
   }
 
-  function multiply(
+  function _multiply(
     G1Point memory point,
     uint scalar
-  ) internal view returns (bool success, G1Point memory product) {
+  ) private view returns (bool success, G1Point memory product) {
     uint[3] memory input;
     input[0] = point.x;
     input[1] = point.y;
@@ -79,7 +79,7 @@ contract Groth16Verifier {
     }
   }
 
-  function checkPairing(
+  function _checkPairing(
     G1Point memory a1,
     G2Point memory a2,
     G1Point memory b1,
@@ -88,7 +88,7 @@ contract Groth16Verifier {
     G2Point memory c2,
     G1Point memory d1,
     G2Point memory d2
-  ) internal view returns (bool success, uint outcome) {
+  ) private view returns (bool success, uint outcome) {
     uint[24] memory input; // 4 pairs of G1 and G2 points
     uint[1] memory output;
 
@@ -147,22 +147,22 @@ contract Groth16Verifier {
         "verifier-gte-snark-scalar-field"
       );
       G1Point memory product;
-      (success, product) = multiply(_verifyingKey.ic[i + 1], input[i]);
+      (success, product) = _multiply(_verifyingKey.ic[i + 1], input[i]);
       if (!success) {
         return false;
       }
-      (success, vkX) = add(vkX, product);
+      (success, vkX) = _add(vkX, product);
       if (!success) {
         return false;
       }
     }
-    (success, vkX) = add(vkX, _verifyingKey.ic[0]);
+    (success, vkX) = _add(vkX, _verifyingKey.ic[0]);
     if (!success) {
       return false;
     }
     uint outcome;
-    (success, outcome) = checkPairing(
-      negate(proof.a),
+    (success, outcome) = _checkPairing(
+      _negate(proof.a),
       proof.b,
       _verifyingKey.alpha1,
       _verifyingKey.beta2,
