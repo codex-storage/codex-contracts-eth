@@ -32,10 +32,10 @@ library Pairing {
   }
 
   /// The sum of two points of G1
-  function addition(
+  function add(
     G1Point memory p1,
     G1Point memory p2
-  ) internal view returns (G1Point memory r) {
+  ) internal view returns (G1Point memory sum) {
     uint[4] memory input;
     input[0] = p1.x;
     input[1] = p1.y;
@@ -51,10 +51,10 @@ library Pairing {
 
   /// The product of a point on G1 and a scalar, i.e.
   /// p == p.scalarMul(1) and p.addition(p) == p.scalarMul(2) for all points p.
-  function scalarMul(
+  function multiply(
     G1Point memory p,
     uint s
-  ) internal view returns (G1Point memory r) {
+  ) internal view returns (G1Point memory product) {
     uint[3] memory input;
     input[0] = p.x;
     input[1] = p.y;
@@ -164,12 +164,12 @@ contract Groth16Verifier {
         input[i] < _SNARK_SCALAR_FIELD,
         "verifier-gte-snark-scalar-field"
       );
-      vkX = Pairing.addition(
+      vkX = Pairing.add(
         vkX,
-        Pairing.scalarMul(_verifyingKey.ic[i + 1], input[i])
+        Pairing.multiply(_verifyingKey.ic[i + 1], input[i])
       );
     }
-    vkX = Pairing.addition(vkX, _verifyingKey.ic[0]);
+    vkX = Pairing.add(vkX, _verifyingKey.ic[0]);
     return
       Pairing.pairingProd4(
         Pairing.negate(proof.a),
