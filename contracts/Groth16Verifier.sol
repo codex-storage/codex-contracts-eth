@@ -44,7 +44,7 @@ library Pairing {
     bool success;
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
+      success := staticcall(sub(gas(), 2000), 6, input, 128, sum, 64)
     }
     require(success, "pairing-add-failed");
   }
@@ -62,7 +62,7 @@ library Pairing {
     bool success;
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
+      success := staticcall(sub(gas(), 2000), 7, input, 96, product, 64)
     }
     require(success, "pairing-mul-failed");
   }
@@ -94,10 +94,10 @@ library Pairing {
       success := staticcall(
         sub(gas(), 2000),
         8,
-        add(input, 0x20),
-        mul(inputSize, 0x20),
+        add(input, 32),
+        mul(inputSize, 32),
         out,
-        0x20
+        32
       )
     }
     require(success, "pairing-opcode-failed");
