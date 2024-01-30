@@ -21,10 +21,9 @@ pragma solidity 0.8.23;
 import "./Groth16.sol";
 
 contract Groth16Verifier {
-  // The prime q in the base field F_q for G1
-  uint private constant _Q =
+  uint private constant _P =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
-  uint256 private constant _SNARK_SCALAR_FIELD =
+  uint256 private constant _Q =
     21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
   VerifyingKey private _verifyingKey;
@@ -49,7 +48,7 @@ contract Groth16Verifier {
 
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    return G1Point(p.x, (_Q - p.y) % _Q);
+    return G1Point(p.x, (_P - p.y) % _P);
   }
 
   /// The sum of two points of G1
@@ -148,7 +147,7 @@ contract Groth16Verifier {
     G1Point memory vkX = G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
       require(
-        input[i] < _SNARK_SCALAR_FIELD,
+        input[i] < _Q,
         "verifier-gte-snark-scalar-field"
       );
       G1Point memory product;
