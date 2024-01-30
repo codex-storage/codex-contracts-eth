@@ -20,7 +20,7 @@
 pragma solidity 0.8.23;
 import "./Groth16.sol";
 
-contract Groth16Verifier {
+contract Groth16Verifier is IGroth16Verifier {
   uint private constant _P =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
   uint256 private constant _Q =
