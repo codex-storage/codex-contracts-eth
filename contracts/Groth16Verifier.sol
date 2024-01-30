@@ -20,7 +20,7 @@
 pragma solidity 0.8.23;
 import "./Groth16.sol";
 
-library Pairing {
+contract Groth16Verifier {
   // The prime q in the base field F_q for G1
   uint private constant _Q =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
@@ -72,7 +72,6 @@ library Pairing {
     G1Point memory d1,
     G2Point memory d2
   ) internal view returns (bool success, uint outcome) {
-
     uint[24] memory input; // 4 pairs of G1 and G2 points
     uint[1] memory output;
 
@@ -117,10 +116,7 @@ library Pairing {
     }
     return (success, output[0]);
   }
-}
 
-contract Groth16Verifier {
-  using Pairing for *;
   uint256 private constant _SNARK_SCALAR_FIELD =
     21888242871839275222246405745257275088548364400416034343698204186575808495617;
   VerifyingKey private _verifyingKey;
@@ -155,23 +151,23 @@ contract Groth16Verifier {
         "verifier-gte-snark-scalar-field"
       );
       G1Point memory product;
-      (success, product) = Pairing.multiply(_verifyingKey.ic[i + 1], input[i]);
+      (success, product) = multiply(_verifyingKey.ic[i + 1], input[i]);
       if (!success) {
         return false;
       }
-      (success, vkX) = Pairing.add(vkX, product);
+      (success, vkX) = add(vkX, product);
       if (!success) {
         return false;
       }
     }
-    (success, vkX) = Pairing.add(vkX, _verifyingKey.ic[0]);
+    (success, vkX) = add(vkX, _verifyingKey.ic[0]);
     if (!success) {
       return false;
     }
     uint outcome;
     (success, outcome) =
-      Pairing.checkPairing(
-        Pairing.negate(proof.a),
+      checkPairing(
+        negate(proof.a),
         proof.b,
         _verifyingKey.alpha1,
         _verifyingKey.beta2,
