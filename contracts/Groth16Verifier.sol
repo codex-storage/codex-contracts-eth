@@ -138,15 +138,15 @@ contract Groth16Verifier {
         return false;
       }
     }
-    // Compute the linear combination vkX
-    G1Point memory vkX = _verifyingKey.ic[0];
+    // Compute the linear combination
+    G1Point memory combination = _verifyingKey.ic[0];
     for (uint i = 0; i < input.length; i++) {
       G1Point memory product;
       (success, product) = _multiply(_verifyingKey.ic[i + 1], input[i]);
       if (!success) {
         return false;
       }
-      (success, vkX) = _add(vkX, product);
+      (success, combination) = _add(combination, product);
       if (!success) {
         return false;
       }
@@ -157,7 +157,7 @@ contract Groth16Verifier {
       proof.b,
       _verifyingKey.alpha1,
       _verifyingKey.beta2,
-      vkX,
+      combination,
       _verifyingKey.gamma2,
       proof.c,
       _verifyingKey.delta2
