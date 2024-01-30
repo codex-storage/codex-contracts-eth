@@ -63,43 +63,7 @@ library Pairing {
     }
   }
 
-  /// The result of computing the pairing check
-  /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
-  /// For example pairing([P1(), P1().negate()], [P2(), P2()]) should
-  /// return true.
-  function pairing(
-    G1Point[] memory p1,
-    G2Point[] memory p2
-  ) internal view returns (bool success, uint outcome) {
-    require(p1.length == p2.length, "pairing-lengths-failed");
-    uint elements = p1.length;
-    uint inputSize = elements * 6;
-    uint[] memory input = new uint[](inputSize);
-    for (uint i = 0; i < elements; i++) {
-      input[i * 6 + 0] = p1[i].x;
-      input[i * 6 + 1] = p1[i].y;
-      input[i * 6 + 2] = p2[i].x.imag;
-      input[i * 6 + 3] = p2[i].x.real;
-      input[i * 6 + 4] = p2[i].y.imag;
-      input[i * 6 + 5] = p2[i].y.real;
-    }
-    uint[1] memory output;
-    // solhint-disable-next-line no-inline-assembly
-    assembly {
-      success := staticcall(
-        sub(gas(), 2000),
-        8,
-        add(input, 32),
-        mul(inputSize, 32),
-        output,
-        32
-      )
-    }
-    return (success, output[0]);
-  }
-
-  /// Convenience method for a pairing check for four pairs.
-  function pairingProd4(
+  function checkPairing(
     G1Point memory a1,
     G2Point memory a2,
     G1Point memory b1,
@@ -109,17 +73,50 @@ library Pairing {
     G1Point memory d1,
     G2Point memory d2
   ) internal view returns (bool success, uint outcome) {
-    G1Point[] memory p1 = new G1Point[](4);
-    G2Point[] memory p2 = new G2Point[](4);
-    p1[0] = a1;
-    p1[1] = b1;
-    p1[2] = c1;
-    p1[3] = d1;
-    p2[0] = a2;
-    p2[1] = b2;
-    p2[2] = c2;
-    p2[3] = d2;
-    return pairing(p1, p2);
+
+    uint[24] memory input; // 4 pairs of G1 and G2 points
+    uint[1] memory output;
+
+    input[0] = a1.x;
+    input[1] = a1.y;
+    input[2] = a2.x.imag;
+    input[3] = a2.x.real;
+    input[4] = a2.y.imag;
+    input[5] = a2.y.real;
+
+    input[6] = b1.x;
+    input[7] = b1.y;
+    input[8] = b2.x.imag;
+    input[9] = b2.x.real;
+    input[10] = b2.y.imag;
+    input[11] = b2.y.real;
+
+    input[12] = c1.x;
+    input[13] = c1.y;
+    input[14] = c2.x.imag;
+    input[15] = c2.x.real;
+    input[16] = c2.y.imag;
+    input[17] = c2.y.real;
+
+    input[18] = d1.x;
+    input[19] = d1.y;
+    input[20] = d2.x.imag;
+    input[21] = d2.x.real;
+    input[22] = d2.y.imag;
+    input[23] = d2.y.real;
+
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      success := staticcall(
+        sub(gas(), 2000),
+        8,
+        input,
+        768, // 24 uints, 32 bytes each
+        output,
+        32
+      )
+    }
+    return (success, output[0]);
   }
 }
 
@@ -174,7 +171,7 @@ contract Groth16Verifier {
     }
     uint outcome;
     (success, outcome) =
-      Pairing.pairingProd4(
+      Pairing.checkPairing(
         Pairing.negate(proof.a),
         proof.b,
         _verifyingKey.alpha1,
