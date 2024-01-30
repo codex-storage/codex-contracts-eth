@@ -35,18 +35,16 @@ library Pairing {
   function add(
     G1Point memory p1,
     G1Point memory p2
-  ) internal view returns (G1Point memory sum) {
+  ) internal view returns (bool success, G1Point memory sum) {
     uint[4] memory input;
     input[0] = p1.x;
     input[1] = p1.y;
     input[2] = p2.x;
     input[3] = p2.y;
-    bool success;
     // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 6, input, 128, sum, 64)
     }
-    require(success, "pairing-add-failed");
   }
 
   /// The product of a point on G1 and a scalar, i.e.
@@ -54,17 +52,15 @@ library Pairing {
   function multiply(
     G1Point memory p,
     uint s
-  ) internal view returns (G1Point memory product) {
+  ) internal view returns (bool success, G1Point memory product) {
     uint[3] memory input;
     input[0] = p.x;
     input[1] = p.y;
     input[2] = s;
-    bool success;
     // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 7, input, 96, product, 64)
     }
-    require(success, "pairing-mul-failed");
   }
 
   /// The result of computing the pairing check
@@ -155,7 +151,7 @@ contract Groth16Verifier {
   function verify(
     Groth16Proof calldata proof,
     uint[] memory input
-  ) public view returns (bool) {
+  ) public view returns (bool success) {
     require(input.length + 1 == _verifyingKey.ic.length, "verifier-bad-input");
     // Compute the linear combination vkX
     G1Point memory vkX = G1Point(0, 0);
@@ -164,12 +160,14 @@ contract Groth16Verifier {
         input[i] < _SNARK_SCALAR_FIELD,
         "verifier-gte-snark-scalar-field"
       );
-      vkX = Pairing.add(
-        vkX,
-        Pairing.multiply(_verifyingKey.ic[i + 1], input[i])
-      );
+      G1Point memory product;
+      (success, product) = Pairing.multiply(_verifyingKey.ic[i + 1], input[i]);
+      require(success, "pairing-mul-failed");
+      (success, vkX) = Pairing.add(vkX, product);
+      require(success, "pairing-add-failed");
     }
-    vkX = Pairing.add(vkX, _verifyingKey.ic[0]);
+    (success, vkX) = Pairing.add(vkX, _verifyingKey.ic[0]);
+    require(success, "pairing-add-failed");
     return
       Pairing.pairingProd4(
         Pairing.negate(proof.a),
