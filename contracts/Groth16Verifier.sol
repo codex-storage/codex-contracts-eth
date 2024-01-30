@@ -160,12 +160,18 @@ contract Groth16Verifier {
       );
       G1Point memory product;
       (success, product) = Pairing.multiply(_verifyingKey.ic[i + 1], input[i]);
-      require(success, "pairing-mul-failed");
+      if (!success) {
+        return false;
+      }
       (success, vkX) = Pairing.add(vkX, product);
-      require(success, "pairing-add-failed");
+      if (!success) {
+        return false;
+      }
     }
     (success, vkX) = Pairing.add(vkX, _verifyingKey.ic[0]);
-    require(success, "pairing-add-failed");
+    if (!success) {
+      return false;
+    }
     uint outcome;
     (success, outcome) =
       Pairing.pairingProd4(
@@ -178,7 +184,9 @@ contract Groth16Verifier {
         proof.c,
         _verifyingKey.delta2
       );
-    require(success, "pairing-opcode-failed");
+    if (!success) {
+      return false;
+    }
     return outcome == 1;
   }
 }
