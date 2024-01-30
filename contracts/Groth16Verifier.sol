@@ -131,8 +131,11 @@ contract Groth16Verifier is IGroth16Verifier {
     Groth16Proof calldata proof,
     uint[] memory input
   ) public view returns (bool success) {
-    require(input.length + 1 == _verifyingKey.ic.length, "verifier-bad-input");
-    // Check that inputs are field elements
+    // Check amount of public inputs
+    if (input.length + 1 != _verifyingKey.ic.length) {
+      return false;
+    }
+    // Check that public inputs are field elements
     for (uint i = 0; i < input.length; i++) {
       if (input[i] >= _Q) {
         return false;
@@ -151,6 +154,7 @@ contract Groth16Verifier is IGroth16Verifier {
         return false;
       }
     }
+    // Check the pairing
     uint outcome;
     (success, outcome) = _checkPairing(
       _negate(proof.a),
