@@ -205,13 +205,16 @@ describe("Proofs", function () {
 
     it("fails proof submission when proof is incorrect", async function () {
       let invalid = exampleProof()
-      await expect(proofs.proofReceived(slotId, invalid, pubSignals)).to.be
-        .reverted
+      await expect(
+        proofs.proofReceived(slotId, invalid, pubSignals)
+      ).to.be.revertedWith("Invalid proof")
     })
 
     it("fails proof submission when public input is incorrect", async function () {
       let invalid = [1, 2, 3]
-      await expect(proofs.proofReceived(slotId, proof, invalid)).to.be.reverted
+      await expect(
+        proofs.proofReceived(slotId, proof, invalid)
+      ).to.be.revertedWith("Invalid proof")
     })
 
     it("emits an event when proof was submitted", async function () {
