@@ -70,7 +70,7 @@ library Pairing {
   function pairing(
     G1Point[] memory p1,
     G2Point[] memory p2
-  ) internal view returns (bool) {
+  ) internal view returns (bool success, uint outcome) {
     require(p1.length == p2.length, "pairing-lengths-failed");
     uint elements = p1.length;
     uint inputSize = elements * 6;
@@ -83,8 +83,7 @@ library Pairing {
       input[i * 6 + 4] = p2[i].y.imag;
       input[i * 6 + 5] = p2[i].y.real;
     }
-    uint[1] memory out;
-    bool success;
+    uint[1] memory output;
     // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(
@@ -92,12 +91,11 @@ library Pairing {
         8,
         add(input, 32),
         mul(inputSize, 32),
-        out,
+        output,
         32
       )
     }
-    require(success, "pairing-opcode-failed");
-    return out[0] != 0;
+    return (success, output[0]);
   }
 
   /// Convenience method for a pairing check for four pairs.
@@ -110,7 +108,7 @@ library Pairing {
     G2Point memory c2,
     G1Point memory d1,
     G2Point memory d2
-  ) internal view returns (bool) {
+  ) internal view returns (bool success, uint outcome) {
     G1Point[] memory p1 = new G1Point[](4);
     G2Point[] memory p2 = new G2Point[](4);
     p1[0] = a1;
@@ -168,7 +166,8 @@ contract Groth16Verifier {
     }
     (success, vkX) = Pairing.add(vkX, _verifyingKey.ic[0]);
     require(success, "pairing-add-failed");
-    return
+    uint outcome;
+    (success, outcome) =
       Pairing.pairingProd4(
         Pairing.negate(proof.a),
         proof.b,
@@ -179,5 +178,7 @@ contract Groth16Verifier {
         proof.c,
         _verifyingKey.delta2
       );
+    require(success, "pairing-opcode-failed");
+    return outcome == 1;
   }
 }
