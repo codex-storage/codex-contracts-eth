@@ -139,13 +139,15 @@ contract Groth16Verifier {
     uint[] memory input
   ) public view returns (bool success) {
     require(input.length + 1 == _verifyingKey.ic.length, "verifier-bad-input");
+    // Check that inputs are field elements
+    for (uint i = 0; i < input.length; i++) {
+      if (input[i] >= _Q) {
+        return false;
+      }
+    }
     // Compute the linear combination vkX
     G1Point memory vkX = G1Point(0, 0);
     for (uint i = 0; i < input.length; i++) {
-      require(
-        input[i] < _Q,
-        "verifier-gte-snark-scalar-field"
-      );
       G1Point memory product;
       (success, product) = _multiply(_verifyingKey.ic[i + 1], input[i]);
       if (!success) {
