@@ -33,7 +33,7 @@ describe("Proofs", function () {
     await deployments.fixture(["Groth16Verifier"])
     const verifier = await deployments.get("Groth16Verifier")
     proofs = await Proofs.deploy(
-      { period, timeout, downtime },
+      { period, timeout, downtime, zkeyHash: "" },
       verifier.address
     )
   })

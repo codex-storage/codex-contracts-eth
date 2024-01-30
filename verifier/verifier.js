@@ -3,8 +3,9 @@ const fs = require("fs")
 const BASE_PATH = __dirname + "/networks"
 const PROOF_FILE_NAME = "example-proof/proof.json"
 const PUBLIC_INPUT_FILE_NAME = "example-proof/public.json"
+const ZKEY_HASH_FILE_NAME = "zkey_hash.json"
 const VERIFICATION_KEY_FILE_NAME =
-  "verification-key/proof_main_verification_key.json"
+  "proof_main_verification_key.json"
 
 function G1ToStruct(point) {
   return {
@@ -36,6 +37,12 @@ function loadPublicInput(name) {
   return input
 }
 
+function loadZkeyHash(name) {
+  const path = `${BASE_PATH}/${name}/${ZKEY_HASH_FILE_NAME}`
+  const input = JSON.parse(fs.readFileSync(path))
+  return input
+}
+
 function loadVerificationKey(name) {
   const path = `${BASE_PATH}/${name}/${VERIFICATION_KEY_FILE_NAME}`
   const key = JSON.parse(fs.readFileSync(path))
@@ -48,4 +55,4 @@ function loadVerificationKey(name) {
   }
 }
 
-module.exports = { loadProof, loadPublicInput, loadVerificationKey }
+module.exports = { loadProof, loadPublicInput, loadVerificationKey, loadZkeyHash }
