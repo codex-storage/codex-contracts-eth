@@ -46,37 +46,33 @@ contract Groth16Verifier {
     }
   }
 
-  /// The negation of p, i.e. p.addition(p.negate()) should be zero.
-  function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    return G1Point(p.x, (_P - p.y) % _P);
+  function negate(G1Point memory point) internal pure returns (G1Point memory) {
+    return G1Point(point.x, (_P - point.y) % _P);
   }
 
-  /// The sum of two points of G1
   function add(
-    G1Point memory p1,
-    G1Point memory p2
+    G1Point memory point1,
+    G1Point memory point2
   ) internal view returns (bool success, G1Point memory sum) {
     uint[4] memory input;
-    input[0] = p1.x;
-    input[1] = p1.y;
-    input[2] = p2.x;
-    input[3] = p2.y;
+    input[0] = point1.x;
+    input[1] = point1.y;
+    input[2] = point2.x;
+    input[3] = point2.y;
     // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 6, input, 128, sum, 64)
     }
   }
 
-  /// The product of a point on G1 and a scalar, i.e.
-  /// p == p.scalarMul(1) and p.addition(p) == p.scalarMul(2) for all points p.
   function multiply(
-    G1Point memory p,
-    uint s
+    G1Point memory point,
+    uint scalar
   ) internal view returns (bool success, G1Point memory product) {
     uint[3] memory input;
-    input[0] = p.x;
-    input[1] = p.y;
-    input[2] = s;
+    input[0] = point.x;
+    input[1] = point.y;
+    input[2] = scalar;
     // solhint-disable-next-line no-inline-assembly
     assembly {
       success := staticcall(sub(gas(), 2000), 7, input, 96, product, 64)
