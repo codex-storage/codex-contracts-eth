@@ -122,14 +122,7 @@ contract Groth16Verifier {
 
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(
-        sub(gas(), 2000),
-        8,
-        input,
-        768, // 24 uints, 32 bytes each
-        output,
-        32
-      )
+      success := staticcall(sub(gas(), 2000), 8, input, 768, output, 32)
     }
     return (success, output[0]);
   }
