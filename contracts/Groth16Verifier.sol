@@ -27,8 +27,7 @@ library Pairing {
 
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
-    if (p.x == 0 && p.y == 0) return G1Point(0, 0);
-    return G1Point(p.x, _Q - (p.y % _Q));
+    return G1Point(p.x, (_Q - p.y) % _Q);
   }
 
   /// The sum of two points of G1
