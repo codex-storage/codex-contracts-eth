@@ -24,6 +24,28 @@ contract Groth16Verifier {
   // The prime q in the base field F_q for G1
   uint private constant _Q =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
+  uint256 private constant _SNARK_SCALAR_FIELD =
+    21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
+  VerifyingKey private _verifyingKey;
+
+  struct VerifyingKey {
+    G1Point alpha1;
+    G2Point beta2;
+    G2Point gamma2;
+    G2Point delta2;
+    G1Point[] ic;
+  }
+
+  constructor(VerifyingKey memory key) {
+    _verifyingKey.alpha1 = key.alpha1;
+    _verifyingKey.beta2 = key.beta2;
+    _verifyingKey.gamma2 = key.gamma2;
+    _verifyingKey.delta2 = key.delta2;
+    for (uint i = 0; i < key.ic.length; i++) {
+      _verifyingKey.ic.push(key.ic[i]);
+    }
+  }
 
   /// The negation of p, i.e. p.addition(p.negate()) should be zero.
   function negate(G1Point memory p) internal pure returns (G1Point memory) {
@@ -117,27 +139,6 @@ contract Groth16Verifier {
     return (success, output[0]);
   }
 
-  uint256 private constant _SNARK_SCALAR_FIELD =
-    21888242871839275222246405745257275088548364400416034343698204186575808495617;
-  VerifyingKey private _verifyingKey;
-  struct VerifyingKey {
-    G1Point alpha1;
-    G2Point beta2;
-    G2Point gamma2;
-    G2Point delta2;
-    G1Point[] ic;
-  }
-
-  constructor(VerifyingKey memory key) {
-    _verifyingKey.alpha1 = key.alpha1;
-    _verifyingKey.beta2 = key.beta2;
-    _verifyingKey.gamma2 = key.gamma2;
-    _verifyingKey.delta2 = key.delta2;
-    for (uint i = 0; i < key.ic.length; i++) {
-      _verifyingKey.ic.push(key.ic[i]);
-    }
-  }
-
   function verify(
     Groth16Proof calldata proof,
     uint[] memory input
@@ -165,17 +166,16 @@ contract Groth16Verifier {
       return false;
     }
     uint outcome;
-    (success, outcome) =
-      checkPairing(
-        negate(proof.a),
-        proof.b,
-        _verifyingKey.alpha1,
-        _verifyingKey.beta2,
-        vkX,
-        _verifyingKey.gamma2,
-        proof.c,
-        _verifyingKey.delta2
-      );
+    (success, outcome) = checkPairing(
+      negate(proof.a),
+      proof.b,
+      _verifyingKey.alpha1,
+      _verifyingKey.beta2,
+      vkX,
+      _verifyingKey.gamma2,
+      proof.c,
+      _verifyingKey.delta2
+    );
     if (!success) {
       return false;
     }
