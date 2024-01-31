@@ -21,7 +21,7 @@ pragma solidity 0.8.23;
 import "./Groth16.sol";
 
 contract Groth16Verifier is IGroth16Verifier {
-  uint private constant _P =
+  uint256 private constant _P =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
   uint256 private constant _R =
     21888242871839275222246405745257275088548364400416034343698204186575808495617;
@@ -54,7 +54,7 @@ contract Groth16Verifier is IGroth16Verifier {
     G1Point memory point1,
     G1Point memory point2
   ) private view returns (bool success, G1Point memory sum) {
-    uint[4] memory input;
+    uint256[4] memory input;
     input[0] = point1.x;
     input[1] = point1.y;
     input[2] = point2.x;
@@ -67,9 +67,9 @@ contract Groth16Verifier is IGroth16Verifier {
 
   function _multiply(
     G1Point memory point,
-    uint scalar
+    uint256 scalar
   ) private view returns (bool success, G1Point memory product) {
-    uint[3] memory input;
+    uint256[3] memory input;
     input[0] = point.x;
     input[1] = point.y;
     input[2] = scalar;
@@ -88,9 +88,9 @@ contract Groth16Verifier is IGroth16Verifier {
     G2Point memory c2,
     G1Point memory d1,
     G2Point memory d2
-  ) private view returns (bool success, uint outcome) {
-    uint[24] memory input; // 4 pairs of G1 and G2 points
-    uint[1] memory output;
+  ) private view returns (bool success, uint256 outcome) {
+    uint256[24] memory input; // 4 pairs of G1 and G2 points
+    uint256[1] memory output;
 
     input[0] = a1.x;
     input[1] = a1.y;
@@ -129,7 +129,7 @@ contract Groth16Verifier is IGroth16Verifier {
 
   function verify(
     Groth16Proof calldata proof,
-    uint[] memory input
+    uint256[] memory input
   ) public view returns (bool success) {
     // Check amount of public inputs
     if (input.length + 1 != _verifyingKey.ic.length) {
@@ -155,7 +155,7 @@ contract Groth16Verifier is IGroth16Verifier {
       }
     }
     // Check the pairing
-    uint outcome;
+    uint256 outcome;
     (success, outcome) = _checkPairing(
       _negate(proof.a),
       proof.b,

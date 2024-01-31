@@ -2,16 +2,16 @@
 pragma solidity 0.8.23;
 
 struct G1Point {
-  uint x;
-  uint y;
+  uint256 x;
+  uint256 y;
 }
 
 // A field element F_{p^2} encoded as `real + i * imag`.
 // We chose to not represent this as an array of 2 numbers, because both Circom
 // and Ethereum EIP-197 encode to an array, but with conflicting encodings.
 struct Fp2Element {
-  uint real;
-  uint imag;
+  uint256 real;
+  uint256 imag;
 }
 
 struct G2Point {
@@ -28,6 +28,6 @@ struct Groth16Proof {
 interface IGroth16Verifier {
   function verify(
     Groth16Proof calldata proof,
-    uint[] calldata pubSignals
+    uint256[] calldata pubSignals
   ) external view returns (bool);
 }
