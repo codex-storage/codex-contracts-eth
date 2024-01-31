@@ -23,7 +23,7 @@ import "./Groth16.sol";
 contract Groth16Verifier is IGroth16Verifier {
   uint private constant _P =
     21888242871839275222246405745257275088696311157297823662689037894645226208583;
-  uint256 private constant _Q =
+  uint256 private constant _R =
     21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
   VerifyingKey private _verifyingKey;
@@ -137,7 +137,7 @@ contract Groth16Verifier is IGroth16Verifier {
     }
     // Check that public inputs are field elements
     for (uint i = 0; i < input.length; i++) {
-      if (input[i] >= _Q) {
+      if (input[i] >= _R) {
         return false;
       }
     }
