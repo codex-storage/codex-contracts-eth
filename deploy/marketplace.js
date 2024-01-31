@@ -26,7 +26,8 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
   const verifier = await deployments.get("Groth16Verifier")
   const zkeyHash = loadZkeyHash(network.name)
-  const configuration = { ...CONFIGURATION, zkeyHash }
+  let configuration = CONFIGURATION
+  configuration.proofs.zkeyHash = zkeyHash
   const args = [configuration, token.address, verifier.address]
   const { deployer: from } = await getNamedAccounts()
   const marketplace = await deployments.deploy("Marketplace", { args, from })
@@ -45,7 +46,8 @@ async function deployTestMarketplace({
     const token = await deployments.get("TestToken")
     const verifier = await deployments.get("TestVerifier")
     const zkeyHash = loadZkeyHash(network.name)
-    const configuration = { ...CONFIGURATION, zkeyHash }
+    let configuration = CONFIGURATION
+    configuration.proofs.zkeyHash = zkeyHash
     const args = [configuration, token.address, verifier.address]
     const { deployer: from } = await getNamedAccounts()
     const marketplace = await deployments.deploy("Marketplace", { args, from })
