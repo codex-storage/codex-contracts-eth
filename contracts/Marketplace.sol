@@ -15,8 +15,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
-  IERC20 public immutable token;
-  MarketplaceConfig public config;
+  IERC20 private immutable _token;
+  MarketplaceConfig private _config;
 
   mapping(RequestId => Request) private _requests;
   mapping(RequestId => RequestContext) private _requestContexts;
@@ -58,7 +58,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     IERC20 token_,
     IGroth16Verifier verifier
   ) Proofs(configuration.proofs, verifier) {
-    token = token_;
+    _token = token_;
 
     require(
       configuration.collateral.repairRewardPercentage <= 100,
@@ -74,7 +74,15 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
         100,
       "Maximum slashing exceeds 100%"
     );
-    config = configuration;
+    _config = configuration;
+  }
+
+  function config() public view returns (MarketplaceConfig memory) {
+    return _config;
+  }
+
+  function token() public view returns (IERC20) {
+    return _token;
   }
 
   function requestStorage(Request calldata request) public {
@@ -198,13 +206,13 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
-    if (missingProofs(slotId) % config.collateral.slashCriterion == 0) {
+    if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
       uint256 slashedAmount = (request.ask.collateral *
-        config.collateral.slashPercentage) / 100;
+        _config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
       if (
-        missingProofs(slotId) / config.collateral.slashCriterion >=
-        config.collateral.maxNumberOfSlashes
+        missingProofs(slotId) / _config.collateral.slashCriterion >=
+        _config.collateral.maxNumberOfSlashes
       ) {
         // When the number of slashings is at or above the allowed amount,
         // free the slot.
@@ -256,7 +264,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
       slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
-    assert(token.transfer(slot.host, amount));
+    assert(_token.transfer(slot.host, amount));
   }
 
   function _payoutCancelledSlot(
@@ -270,7 +278,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
       slot.currentCollateral;
     _marketplaceTotals.sent += amount;
     slot.state = SlotState.Paid;
-    assert(token.transfer(slot.host, amount));
+    assert(_token.transfer(slot.host, amount));
   }
 
   /// @notice Withdraws storage request funds back to the client that deposited them.
@@ -292,7 +300,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     uint256 amount = context.expiryFundsWithdraw;
     _marketplaceTotals.sent += amount;
-    assert(token.transfer(msg.sender, amount));
+    assert(_token.transfer(msg.sender, amount));
   }
 
   function getActiveSlot(
@@ -387,7 +395,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    require(token.transferFrom(sender, receiver, amount), "Transfer failed");
+    require(_token.transferFrom(sender, receiver, amount), "Transfer failed");
   }
 
   event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);

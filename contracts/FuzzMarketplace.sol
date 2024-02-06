@@ -32,6 +32,6 @@ contract FuzzMarketplace is Marketplace {
 
   function neverLoseFunds() public view {
     uint256 total = _marketplaceTotals.received - _marketplaceTotals.sent;
-    assert(token.balanceOf(address(this)) >= total);
+    assert(token().balanceOf(address(this)) >= total);
   }
 }
