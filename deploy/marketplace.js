@@ -9,8 +9,10 @@ const CONFIGURATION = {
     slashPercentage: 10,
   },
   proofs: {
-    period: 10,
-    timeout: 5,
+    period: 60,
+    timeout: 30,
+    // `downtime` needs to be larger than `period` when running hardhat
+    // in automine mode, because it can produce a block every second
     downtime: 64,
   },
 }
