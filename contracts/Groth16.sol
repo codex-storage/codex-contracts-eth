@@ -6,9 +6,17 @@ struct G1Point {
   uint y;
 }
 
+// A field element F_{p^2} encoded as `real + i * imag`.
+// We chose to not represent this as an array of 2 numbers, because both Circom
+// and Ethereum EIP-197 encode to an array, but with conflicting encodings.
+struct Fp2Element {
+  uint real;
+  uint imag;
+}
+
 struct G2Point {
-  uint[2] x;
-  uint[2] y;
+  Fp2Element x;
+  Fp2Element y;
 }
 
 struct Groth16Proof {
