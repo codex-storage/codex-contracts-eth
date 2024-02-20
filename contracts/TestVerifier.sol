@@ -12,10 +12,10 @@ contract TestVerifier is IGroth16Verifier {
     return
       !(proof.a.x == 0 &&
         proof.a.y == 0 &&
-        proof.b.x[0] == 0 &&
-        proof.b.x[1] == 0 &&
-        proof.b.y[0] == 0 &&
-        proof.b.y[1] == 0 &&
+        proof.b.x.real == 0 &&
+        proof.b.x.imag == 0 &&
+        proof.b.y.real == 0 &&
+        proof.b.y.imag == 0 &&
         proof.c.x == 0 &&
         proof.c.y == 0);
   }

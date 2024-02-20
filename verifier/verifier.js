@@ -16,8 +16,8 @@ function G1ToStruct(point) {
 
 function G2ToStruct(point) {
   return {
-    x: [point[0][1], point[0][0]],
-    y: [point[1][1], point[1][0]],
+    x: { real: point[0][0], imag: point[0][1] },
+    y: { real: point[1][0], imag: point[1][1] },
   }
 }
 
