@@ -4,9 +4,9 @@ const { loadZkeyHash } = require("../verifier/verifier.js")
 const CONFIGURATION = {
   collateral: {
     repairRewardPercentage: 10,
-    maxNumberOfSlashes: 5,
-    slashCriterion: 3,
-    slashPercentage: 10,
+    maxNumberOfSlashes: 2,
+    slashCriterion: 2,
+    slashPercentage: 20,
   },
   proofs: {
     period: 60,
