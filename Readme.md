@@ -78,7 +78,7 @@ price of the contract. The payment is only released to the host upon successful
 completion of the contract.
 
 Collateral
-------
+----------
 
 To motivate a host to remain honest, it must put up some collateral before it is
 allowed to participate in storage contracts. The collateral may not be withdrawn
@@ -118,11 +118,6 @@ References
 
 To Do
 -----
-
-  * Actual proofs
-
-    Because the actual proof of retrievability algorithm hasn't been determined yet
-    we're using a dummy algorithm for now.
 
   * Contract repair
 
