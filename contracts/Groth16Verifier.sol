@@ -65,7 +65,7 @@ contract Groth16Verifier is IGroth16Verifier {
     input[3] = point2.y;
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 6, input, 128, sum, 64)
+      success := staticcall(gas(), 6, input, 128, sum, 64)
     }
   }
 
@@ -83,7 +83,7 @@ contract Groth16Verifier is IGroth16Verifier {
     input[2] = scalar;
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 7, input, 96, product, 64)
+      success := staticcall(gas(), 7, input, 96, product, 64)
     }
   }
 
@@ -134,7 +134,7 @@ contract Groth16Verifier is IGroth16Verifier {
 
     // solhint-disable-next-line no-inline-assembly
     assembly {
-      success := staticcall(sub(gas(), 2000), 8, input, 768, output, 32)
+      success := staticcall(gas(), 8, input, 768, output, 32)
     }
     return (success, output[0]);
   }
