@@ -54,6 +54,10 @@ contract Groth16Verifier is IGroth16Verifier {
     G1Point memory point1,
     G1Point memory point2
   ) private view returns (bool success, G1Point memory sum) {
+    // Call the precompiled contract for addition on the alt_bn128 curve.
+    // The call will fail if the points are not valid group elements:
+    // https://eips.ethereum.org/EIPS/eip-196#exact-semantics
+
     uint256[4] memory input;
     input[0] = point1.x;
     input[1] = point1.y;
@@ -69,6 +73,10 @@ contract Groth16Verifier is IGroth16Verifier {
     G1Point memory point,
     uint256 scalar
   ) private view returns (bool success, G1Point memory product) {
+    // Call the precompiled contract for scalar multiplication on the alt_bn128
+    // curve. The call will fail if the points are not valid group elements:
+    // https://eips.ethereum.org/EIPS/eip-196#exact-semantics
+
     uint256[3] memory input;
     input[0] = point.x;
     input[1] = point.y;
@@ -89,6 +97,10 @@ contract Groth16Verifier is IGroth16Verifier {
     G1Point memory d1,
     G2Point memory d2
   ) private view returns (bool success, uint256 outcome) {
+    // Call the precompiled contract for pairing check on the alt_bn128 curve.
+    // The call will fail if the points are not valid group elements:
+    // https://eips.ethereum.org/EIPS/eip-197#specification
+
     uint256[24] memory input; // 4 pairs of G1 and G2 points
     uint256[1] memory output;
 
