@@ -1,4 +1,5 @@
 const { Assertion } = require("chai")
+const { currentTime } = require("./evm")
 
 const RequestState = {
   New: 0,
@@ -15,6 +16,10 @@ const SlotState = {
   Failed: 3,
   Paid: 4,
   Cancelled: 5,
+}
+
+async function requestExpectedExpiry(request) {
+  return (await currentTime()) + request.expiry + 1
 }
 
 const enableRequestAssertions = function () {
@@ -46,4 +51,9 @@ const enableRequestAssertions = function () {
   })
 }
 
-module.exports = { RequestState, SlotState, enableRequestAssertions }
+module.exports = {
+  RequestState,
+  SlotState,
+  enableRequestAssertions,
+  requestExpectedExpiry,
+}

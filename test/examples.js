@@ -1,6 +1,5 @@
 const { ethers } = require("hardhat")
 const { hours } = require("./time")
-const { currentTime } = require("./evm")
 const { hexlify, randomBytes } = ethers.utils
 
 const exampleConfiguration = () => ({
@@ -19,7 +18,6 @@ const exampleConfiguration = () => ({
 })
 
 const exampleRequest = async () => {
-  const now = await currentTime()
   return {
     client: hexlify(randomBytes(20)),
     ask: {
@@ -35,7 +33,7 @@ const exampleRequest = async () => {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
       merkleRoot: Array.from(randomBytes(32)),
     },
-    expiry: now + hours(1),
+    expiry: hours(1),
     nonce: hexlify(randomBytes(32)),
   }
 }

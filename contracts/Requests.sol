@@ -8,7 +8,7 @@ struct Request {
   address client;
   Ask ask;
   Content content;
-  uint256 expiry; // timestamp as seconds since unix epoch at which this request expires
+  uint256 expiry; // amount of seconds since start of the request at which this request expires
   bytes32 nonce; // random nonce to differentiate between similar requests
 }
 
