@@ -176,12 +176,12 @@ describe("Marketplace", function () {
 
       request.expiry = request.ask.duration + 1
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Expiry not between 0 and duration"
+        "Expiry not in range"
       )
 
       request.expiry = 0
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Expiry not between 0 and duration"
+        "Expiry not in range"
       )
     })
 

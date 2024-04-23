@@ -10,7 +10,6 @@ import "./Proofs.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
-import "hardhat/console.sol";
 
 contract Marketplace is Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -94,11 +93,9 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     require(_requests[id].client == address(0), "Request already exists");
     require(
       request.expiry > 0 && request.expiry < request.ask.duration,
-      "Expiry not between 0 and duration"
+      "Expiry not in range"
     );
 
-    console.log(block.timestamp);
-    console.log(request.expiry);
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
     _requestContexts[id].expiresAt = block.timestamp + request.expiry;
