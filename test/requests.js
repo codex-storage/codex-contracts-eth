@@ -18,10 +18,6 @@ const SlotState = {
   Cancelled: 5,
 }
 
-async function requestExpectedExpiry(request) {
-  return (await currentTime()) + request.expiry + 1
-}
-
 const enableRequestAssertions = function () {
   // language chain method
   Assertion.addMethod("request", function (request) {
@@ -55,5 +51,4 @@ module.exports = {
   RequestState,
   SlotState,
   enableRequestAssertions,
-  requestExpectedExpiry,
 }

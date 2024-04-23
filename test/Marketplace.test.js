@@ -14,7 +14,6 @@ const {
   RequestState,
   SlotState,
   enableRequestAssertions,
-  requestExpectedExpiry,
 } = require("./requests")
 const {
   waitUntilCancelled,
@@ -142,13 +141,11 @@ describe("Marketplace", function () {
     it("emits event when storage is requested", async function () {
       await token.approve(marketplace.address, price(request))
 
+      // We +1 second to the expiry because the time will advance with the mined transaction for requestStorage because of Hardhat
+      const expectedExpiry = (await currentTime()) + request.expiry + 1
       await expect(marketplace.requestStorage(request))
         .to.emit(marketplace, "StorageRequested")
-        .withArgs(
-          requestId(request),
-          askToArray(request.ask),
-          await requestExpectedExpiry(request)
-        )
+        .withArgs(requestId(request), askToArray(request.ask), expectedExpiry)
     })
 
     it("allows retrieval of request details", async function () {
@@ -478,18 +475,19 @@ describe("Marketplace", function () {
     })
 
     it("pays the host when contract was cancelled", async function () {
-      // Lets move the time into middle of the expiry window
-      const fillSeconds = Math.floor(request.expiry / 3)
-      const fillTimestamp = (await currentTime()) + fillSeconds
-      await advanceTimeToForNextBlock(fillTimestamp)
+      // Lets advance the time more into the expiry window
+      const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
+      const expiresAt = (
+        await marketplace.requestExpiry(requestId(request))
+      ).toNumber()
 
+      await advanceTimeToForNextBlock(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       await marketplace.freeSlot(slotId(slot))
 
+      const expectedPartialPayout = (expiresAt - filledAt) * request.ask.reward
       const endBalance = await token.balanceOf(host.address)
-      const expectedPartialPayout =
-        (request.expiry - fillSeconds - 1) * request.ask.reward // TODO: I don't understand why there needs to be -1 offset
       expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
         expectedPartialPayout
       )
@@ -628,15 +626,17 @@ describe("Marketplace", function () {
     })
 
     it("withdraws to the client for cancelled requests lowered by hosts payout", async function () {
-      // Lets move the time into middle of the expiry window
-      const fillSeconds = Math.floor(request.expiry / 3)
-      const fillTimestamp = (await currentTime()) + fillSeconds
-      await advanceTimeToForNextBlock(fillTimestamp)
+      // Lets advance the time more into the expiry window
+      const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
+      const expiresAt = (
+        await marketplace.requestExpiry(requestId(request))
+      ).toNumber()
 
+      await advanceTimeToForNextBlock(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       const expectedPartialHostPayout =
-        (request.expiry - fillSeconds - 1) * request.ask.reward // TODO: I don't understand why there needs to be -1 offset
+        (expiresAt - filledAt) * request.ask.reward
 
       switchAccount(client)
       await marketplace.withdrawFunds(slot.request)
