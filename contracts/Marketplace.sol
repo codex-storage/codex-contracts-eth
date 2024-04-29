@@ -210,6 +210,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
+    // TODO: Reward for validator that calls this function
+
     if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
       uint256 slashedAmount = (request.ask.collateral *
         _config.collateral.slashPercentage) / 100;
