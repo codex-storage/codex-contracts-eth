@@ -1,4 +1,5 @@
 const { Assertion } = require("chai")
+const { currentTime } = require("./evm")
 
 const RequestState = {
   New: 0,
@@ -46,4 +47,8 @@ const enableRequestAssertions = function () {
   })
 }
 
-module.exports = { RequestState, SlotState, enableRequestAssertions }
+module.exports = {
+  RequestState,
+  SlotState,
+  enableRequestAssertions,
+}

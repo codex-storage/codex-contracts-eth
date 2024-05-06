@@ -32,6 +32,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     uint256 expiryFundsWithdraw;
     uint256 startedAt;
     uint256 endsAt;
+    uint256 expiresAt;
   }
 
   struct Slot {
@@ -90,11 +91,14 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     RequestId id = request.id();
     require(_requests[id].client == address(0), "Request already exists");
+    require(
+      request.expiry > 0 && request.expiry < request.ask.duration,
+      "Expiry not in range"
+    );
 
     _requests[id] = request;
-    uint256 endsAt = block.timestamp + request.ask.duration;
-    require(endsAt > request.expiry, "Request end before expiry");
-    _requestContexts[id].endsAt = endsAt;
+    _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
+    _requestContexts[id].expiresAt = block.timestamp + request.expiry;
 
     _addToMyRequests(request.client, id);
 
@@ -103,7 +107,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     _marketplaceTotals.received += amount;
     _transferFrom(msg.sender, amount);
 
-    emit StorageRequested(id, request.ask, request.expiry);
+    emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
 
   function fillSlot(
@@ -206,6 +210,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
+    // TODO: Reward for validator that calls this function
+
     if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
       uint256 slashedAmount = (request.ask.collateral *
         _config.collateral.slashPercentage) / 100;
@@ -286,7 +292,10 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   /// @param requestId the id of the request
   function withdrawFunds(RequestId requestId) public {
     Request storage request = _requests[requestId];
-    require(block.timestamp > request.expiry, "Request not yet timed out");
+    require(
+      block.timestamp > requestExpiry(requestId),
+      "Request not yet timed out"
+    );
     require(request.client == msg.sender, "Invalid client address");
     RequestContext storage context = _requestContexts[requestId];
     require(context.state == RequestState.New, "Invalid state");
@@ -339,15 +348,22 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     }
   }
 
+  function requestExpiry(RequestId requestId) public view returns (uint256) {
+    return _requestContexts[requestId].expiresAt;
+  }
+
   /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
   function _expiryPayoutAmount(
     RequestId requestId,
     uint256 startingTimestamp
   ) private view returns (uint256) {
     Request storage request = _requests[requestId];
-    require(startingTimestamp < request.expiry, "Start not before expiry");
+    require(
+      startingTimestamp < requestExpiry(requestId),
+      "Start not before expiry"
+    );
 
-    return (request.expiry - startingTimestamp) * request.ask.reward;
+    return (requestExpiry(requestId) - startingTimestamp) * request.ask.reward;
   }
 
   function getHost(SlotId slotId) public view returns (address) {
@@ -360,7 +376,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     RequestContext storage context = _requestContexts[requestId];
     if (
       context.state == RequestState.New &&
-      block.timestamp > _requests[requestId].expiry
+      block.timestamp > requestExpiry(requestId)
     ) {
       return RequestState.Cancelled;
     } else if (
