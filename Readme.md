@@ -22,6 +22,10 @@ To start a local Ethereum node with the contracts deployed, execute:
 
     npm start
 
+You can run Certora's specs with:
+
+    npm run verify
+
 This will create a `deployment-localhost.json` file containing the addresses of
 the deployed contracts.
 

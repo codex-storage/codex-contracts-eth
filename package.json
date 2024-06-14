@@ -9,7 +9,8 @@
     "format": "prettier --write contracts/**/*.sol test/**/*.js",
     "format:check": "prettier --check contracts/**/*.sol test/**/*.js",
     "lint": "solhint contracts/**.sol",
-    "deploy": "hardhat deploy"
+    "deploy": "hardhat deploy",
+    "verify": "./certora/scripts/verify-marketplace.sh"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",
