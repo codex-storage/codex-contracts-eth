@@ -140,7 +140,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @see isProofRequired
+   * See isProofRequired
    */
   function _isProofRequired(
     SlotId id,
