@@ -22,12 +22,26 @@ To start a local Ethereum node with the contracts deployed, execute:
 
     npm start
 
-You can run Certora's specs with:
+This will create a `deployment-localhost.json` file containing the addresses of
+the deployed contracts.
+
+
+Running the prover
+------------------
+
+To run the formal verification rules using certora, first make sure to install
+the certora cli
+
+```
+$ pip install certora-cli
+```
+
+Once that is done the `certoraRun` command can be used to send CVL specs to the prover.
+
+You can run Certora's specs with the provided `npm` script:
 
     npm run verify
 
-This will create a `deployment-localhost.json` file containing the addresses of
-the deployed contracts.
 
 Overview
 --------
