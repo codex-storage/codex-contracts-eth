@@ -26,3 +26,46 @@ jobs:
           path: fuzzing/corpus
           key: fuzzing
       - run: npm run fuzz
+
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with: { python-version: 3.9 }
+
+      - name: Install Java
+        uses: actions/setup-java@v1
+        with: { java-version: "11", java-package: jre }
+
+      - name: Install Certora CLI
+        run: pip3 install certora-cli==7.6.3
+
+      - name: Install Solidity
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.23/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc
+
+      - name: "Install Node.js"
+        uses: "actions/setup-node@v3"
+        with:
+          cache: "npm"
+          node-version: "lts/*"
+
+      - name: "Install the Node.js dependencies"
+        run: "npm install"
+
+      - name: Verify rules
+        run: "npm run verify"
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+
+    strategy:
+      fail-fast: false
+      max-parallel: 16
