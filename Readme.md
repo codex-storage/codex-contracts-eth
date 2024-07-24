@@ -29,8 +29,7 @@ the deployed contracts.
 Running the prover
 ------------------
 
-To run the formal verification rules using certora, first make sure to install
-the certora cli
+To run the formal verification rules using Certora, first, make sure you have Java (JDK >= 11.0) installed on your machine, and then  install the Certora CLI
 
 ```
 $ pip install certora-cli
