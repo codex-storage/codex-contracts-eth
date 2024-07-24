@@ -64,7 +64,7 @@ abstract contract Proofs is Periods {
   /**
    * @param id Slot's ID for which the pointer should be calculated
    * @param period Period for which the pointer should be calculated
-   * @return Uint8 pointer that is stable over current Period and points to one block over the last 256 block's window.
+   * @return Uint8 pointer that is stable over current Period, ie an integer offset [0-255] of the last 256 blocks, pointing to a block that remains constant for the entire Period's duration.
    * @dev For more information see https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md
    */
   function _getPointer(SlotId id, Period period) internal view returns (uint8) {
@@ -80,7 +80,7 @@ abstract contract Proofs is Periods {
 
   /**
    * @param id Slot's ID for which the pointer should be calculated
-   * @return Uint8 pointer that is stable over current Period and points to one block over the last 256 block's window.
+   * @return Uint8 pointer that is stable over current Period, ie an integer offset [0-255] of the last 256 blocks, pointing to a block that remains constant for the entire Period's duration.
    * @dev For more information see https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md
    */
   function getPointer(SlotId id) public view returns (uint8) {
@@ -88,7 +88,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param pointer Pointer that points to one block in the last 256 blocks window
+   * @param pointer Integer [0-255] that indicates an offset of the last 256 blocks, pointing to a block that remains constant for the entire Period's duration.
    * @return Challenge that should be used for generation of proofs
    */
   function _getChallenge(uint8 pointer) internal view returns (bytes32) {
