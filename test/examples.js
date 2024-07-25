@@ -16,8 +16,8 @@ const exampleConfiguration = () => ({
     zkeyHash: "",
   },
   validation: {
-    validators: 3
-  }
+    validators: 3,
+  },
 })
 
 const exampleRequest = async () => {

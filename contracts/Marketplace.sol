@@ -59,8 +59,10 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     MarketplaceConfig memory configuration,
     IERC20 token_,
     IGroth16Verifier verifier
-  ) Proofs(configuration.proofs, verifier)
-    Validation(configuration.validation) {
+  )
+    Proofs(configuration.proofs, verifier)
+    Validation(configuration.validation)
+  {
     _token = token_;
 
     require(

@@ -19,9 +19,7 @@ abstract contract Validation {
    * @param config network-level validator configuration used to determine
      number of SlotIds per validator.
    */
-  constructor(
-    ValidationConfig memory config
-  ) {
+  constructor(ValidationConfig memory config) {
     require(config.validators > 0, "validators must be > 0");
 
     uint256 high = type(uint256).max;
@@ -47,7 +45,7 @@ abstract contract Validation {
      on the number of total validators in the config.
    * @param slotId SlotID for which to determine the validator group index.
    */
-  function _getValidatorIndex(SlotId slotId) internal view returns(uint16) {
+  function _getValidatorIndex(SlotId slotId) internal view returns (uint16) {
     uint256 slotIdInt = uint256(SlotId.unwrap(slotId));
     return uint16(slotIdInt / _idsPerValidator);
   }

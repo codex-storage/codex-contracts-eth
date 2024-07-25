@@ -20,7 +20,9 @@ contract StateRetrieval {
     return _slotsPerHost[msg.sender].values().toSlotIds();
   }
 
-  function validationSlots(uint16 groupIdx) public view returns (SlotId[] memory) {
+  function validationSlots(
+    uint16 groupIdx
+  ) public view returns (SlotId[] memory) {
     return _slotsPerValidator[groupIdx].values().toSlotIds();
   }
 

@@ -1129,15 +1129,10 @@ describe("Marketplace", function () {
       let slot1 = { ...slot, index: slot.index + 1 }
       await token.approve(marketplace.address, request.ask.collateral)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
-      expect(allSlots).to.have.members([
-        slotId(slot),
-        slotId(slot1),
-      ])
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
+      expect(allSlots).to.have.members([slotId(slot), slotId(slot1)])
     })
 
     it("removes slot from list when slot is freed", async function () {
@@ -1147,11 +1142,9 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await token.approve(marketplace.address, request.ask.collateral)
       await marketplace.freeSlot(slotId(slot))
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
       expect(allSlots).to.not.have.members([slotId(slot)])
       expect(allSlots).to.have.members([slotId(slot1)])
     })
@@ -1164,26 +1157,19 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await waitUntilCancelled(request)
       await mine()
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
-      expect(allSlots).to.have.members([
-        slotId(slot),
-        slotId(slot1),
-      ])
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
+      expect(allSlots).to.have.members([slotId(slot), slotId(slot1)])
     })
 
     it("removes slot when finished slot is freed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
       expect(allSlots).to.not.contain(slotId(slot))
     })
 
@@ -1191,11 +1177,9 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       await marketplace.freeSlot(slotId(slot))
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
       expect(allSlots).to.not.contain(slotId(slot))
     })
 
@@ -1203,11 +1187,9 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilSlotFailed(marketplace, request, slot)
       await marketplace.freeSlot(slotId(slot))
-      const allSlots = (
-        await marketplace.validationSlots(0)).concat(
-        await marketplace.validationSlots(1)).concat(
-        await marketplace.validationSlots(2)
-      )
+      const allSlots = (await marketplace.validationSlots(0))
+        .concat(await marketplace.validationSlots(1))
+        .concat(await marketplace.validationSlots(2))
       expect(allSlots).to.not.contain(slotId(slot))
     })
   })
