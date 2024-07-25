@@ -20,7 +20,7 @@ contract StateRetrieval {
     return _slotsPerHost[msg.sender].values().toSlotIds();
   }
 
-  function validationSlots(
+  function myValidationSlots(
     uint16 groupIdx
   ) public view returns (SlotId[] memory) {
     return _slotsPerValidator[groupIdx].values().toSlotIds();
@@ -38,7 +38,7 @@ contract StateRetrieval {
     _slotsPerHost[host].add(SlotId.unwrap(slotId));
   }
 
-  function _addToValidationSlots(uint16 groupIdx, SlotId slotId) internal {
+  function _addToMyValidationSlots(uint16 groupIdx, SlotId slotId) internal {
     _slotsPerValidator[groupIdx].add(SlotId.unwrap(slotId));
   }
 
@@ -50,7 +50,7 @@ contract StateRetrieval {
     _slotsPerHost[host].remove(SlotId.unwrap(slotId));
   }
 
-  function _removeFromValidationSlots(uint16 groupIdx, SlotId slotId) internal {
+  function _removeFromMyValidationSlots(uint16 groupIdx, SlotId slotId) internal {
     _slotsPerValidator[groupIdx].remove(SlotId.unwrap(slotId));
   }
 }

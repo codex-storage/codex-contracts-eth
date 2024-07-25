@@ -150,7 +150,7 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
 
     _addToMySlots(slot.host, slotId);
     uint16 groupIdx = _getValidatorIndex(slotId);
-    _addToValidationSlots(groupIdx, slotId);
+    _addToMyValidationSlots(groupIdx, slotId);
 
     emit SlotFilled(requestId, slotIndex);
     if (context.slotsFilled == request.ask.slots) {
@@ -173,7 +173,7 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
       uint16 groupIdx = _getValidatorIndex(slotId);
-      _removeFromValidationSlots(groupIdx, slotId);
+      _removeFromMyValidationSlots(groupIdx, slotId);
     } else if (state == SlotState.Filled) {
       _forciblyFreeSlot(slotId);
     }
@@ -242,7 +242,7 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
 
     _removeFromMySlots(slot.host, slotId);
     uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromValidationSlots(groupIdx, slotId);
+    _removeFromMyValidationSlots(groupIdx, slotId);
 
     uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
@@ -276,7 +276,7 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
 
     _removeFromMySlots(slot.host, slotId);
     uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromValidationSlots(groupIdx, slotId);
+    _removeFromMyValidationSlots(groupIdx, slotId);
 
     uint256 amount = _requests[requestId].pricePerSlot() +
       slot.currentCollateral;
@@ -292,7 +292,7 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
     uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromValidationSlots(groupIdx, slotId);
+    _removeFromMyValidationSlots(groupIdx, slotId);
 
     uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
       slot.currentCollateral;
