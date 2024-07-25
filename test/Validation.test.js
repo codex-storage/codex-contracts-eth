@@ -3,15 +3,7 @@ const { ethers } = require("hardhat")
 const { BigNumber, utils } = require("ethers")
 
 describe("Validation", function () {
-  const zero =
-    "0x0000000000000000000000000000000000000000000000000000000000000000"
-  const low =
-    "0x0000000000000000000000000000000000000000000000000000000000000001"
-  const mid =
-    "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-
   describe("constructor", function () {
-    // let validation
     let Validation
 
     beforeEach(async function () {
@@ -35,7 +27,7 @@ describe("Validation", function () {
     })
   })
 
-  describe("groups of SlotIds per validator", function () {
+  describe("SlotId bucket boundaries", function () {
     let Validation
 
     const high = ethers.constants.MaxUint256
@@ -52,7 +44,7 @@ describe("Validation", function () {
       Validation = await ethers.getContractFactory("TestValidation")
     })
 
-    it("tests that the min and max boundary SlotIds into the correct group", async function () {
+    it("tests SlotId bucket boundaries are assigned to the correct validator index", async function () {
       let validators = 2 ** 16 - 1 // max value of uint16
       let idsPerGroup = high.div(validators).add(1) // as in the contract
       let validation = await Validation.deploy({ validators })
