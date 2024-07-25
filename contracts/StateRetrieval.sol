@@ -50,7 +50,10 @@ contract StateRetrieval {
     _slotsPerHost[host].remove(SlotId.unwrap(slotId));
   }
 
-  function _removeFromMyValidationSlots(uint16 groupIdx, SlotId slotId) internal {
+  function _removeFromMyValidationSlots(
+    uint16 groupIdx,
+    SlotId slotId
+  ) internal {
     _slotsPerValidator[groupIdx].remove(SlotId.unwrap(slotId));
   }
 }
