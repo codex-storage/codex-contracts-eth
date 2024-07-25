@@ -7,11 +7,12 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
+import "./Validation.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
 
-contract Marketplace is Proofs, StateRetrieval, Endian {
+contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
@@ -58,7 +59,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     MarketplaceConfig memory configuration,
     IERC20 token_,
     IGroth16Verifier verifier
-  ) Proofs(configuration.proofs, verifier) {
+  ) Proofs(configuration.proofs, verifier)
+    Validation(configuration.validation) {
     _token = token_;
 
     require(
@@ -145,6 +147,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     slot.currentCollateral = collateralAmount;
 
     _addToMySlots(slot.host, slotId);
+    uint16 groupIdx = _getValidatorIndex(slotId);
+    _addToValidationSlots(groupIdx, slotId);
 
     emit SlotFilled(requestId, slotIndex);
     if (context.slotsFilled == request.ask.slots) {
@@ -166,6 +170,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
       _payoutCancelledSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
+      uint16 groupIdx = _getValidatorIndex(slotId);
+      _removeFromValidationSlots(groupIdx, slotId);
     } else if (state == SlotState.Filled) {
       _forciblyFreeSlot(slotId);
     }
@@ -233,6 +239,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     RequestContext storage context = _requestContexts[requestId];
 
     _removeFromMySlots(slot.host, slotId);
+    uint16 groupIdx = _getValidatorIndex(slotId);
+    _removeFromValidationSlots(groupIdx, slotId);
 
     uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
@@ -265,6 +273,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
 
     _removeFromMySlots(slot.host, slotId);
+    uint16 groupIdx = _getValidatorIndex(slotId);
+    _removeFromValidationSlots(groupIdx, slotId);
 
     uint256 amount = _requests[requestId].pricePerSlot() +
       slot.currentCollateral;
@@ -279,6 +289,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
+    uint16 groupIdx = _getValidatorIndex(slotId);
+    _removeFromValidationSlots(groupIdx, slotId);
 
     uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
       slot.currentCollateral;

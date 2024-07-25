@@ -15,6 +15,9 @@ const CONFIGURATION = {
     // in automine mode, because it can produce a block every second
     downtime: 64,
   },
+  validation: {
+    validators: 3
+  }
 }
 
 async function mine256blocks({ network, ethers }) {

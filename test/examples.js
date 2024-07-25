@@ -15,6 +15,9 @@ const exampleConfiguration = () => ({
     downtime: 64,
     zkeyHash: "",
   },
+  validation: {
+    validators: 3
+  }
 })
 
 const exampleRequest = async () => {

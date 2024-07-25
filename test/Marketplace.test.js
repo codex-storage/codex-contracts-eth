@@ -1114,4 +1114,101 @@ describe("Marketplace", function () {
       expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
     })
   })
+
+  describe("list of validation slots", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, price(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, request.ask.collateral)
+    })
+
+    it("adds slot to list when filling slot", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+      await token.approve(marketplace.address, request.ask.collateral)
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.have.members([
+        slotId(slot),
+        slotId(slot1),
+      ])
+    })
+
+    it("removes slot from list when slot is freed", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+      await token.approve(marketplace.address, request.ask.collateral)
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      await token.approve(marketplace.address, request.ask.collateral)
+      await marketplace.freeSlot(slotId(slot))
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.not.have.members([slotId(slot)])
+      expect(allSlots).to.have.members([slotId(slot1)])
+    })
+
+    it("keeps slots when cancelled", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      let slot1 = { ...slot, index: slot.index + 1 }
+
+      await token.approve(marketplace.address, request.ask.collateral)
+      await marketplace.fillSlot(slot.request, slot1.index, proof)
+      await waitUntilCancelled(request)
+      await mine()
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.have.members([
+        slotId(slot),
+        slotId(slot1),
+      ])
+    })
+
+    it("removes slot when finished slot is freed", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.freeSlot(slotId(slot))
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.not.contain(slotId(slot))
+    })
+
+    it("removes slot when cancelled slot is freed", async function () {
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(request)
+      await marketplace.freeSlot(slotId(slot))
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.not.contain(slotId(slot))
+    })
+
+    it("removes slot when failed slot is freed", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilSlotFailed(marketplace, request, slot)
+      await marketplace.freeSlot(slotId(slot))
+      const allSlots = (
+        await marketplace.validationSlots(0)).concat(
+        await marketplace.validationSlots(1)).concat(
+        await marketplace.validationSlots(2)
+      )
+      expect(allSlots).to.not.contain(slotId(slot))
+    })
+  })
 })

@@ -10,6 +10,7 @@ contract StateRetrieval {
 
   mapping(address => EnumerableSet.Bytes32Set) private _requestsPerClient;
   mapping(address => EnumerableSet.Bytes32Set) private _slotsPerHost;
+  mapping(uint16 => EnumerableSet.Bytes32Set) private _slotsPerValidator;
 
   function myRequests() public view returns (RequestId[] memory) {
     return _requestsPerClient[msg.sender].values().toRequestIds();
@@ -17,6 +18,10 @@ contract StateRetrieval {
 
   function mySlots() public view returns (SlotId[] memory) {
     return _slotsPerHost[msg.sender].values().toSlotIds();
+  }
+
+  function validationSlots(uint16 groupIdx) public view returns (SlotId[] memory) {
+    return _slotsPerValidator[groupIdx].values().toSlotIds();
   }
 
   function _hasSlots(address host) internal view returns (bool) {
@@ -31,11 +36,19 @@ contract StateRetrieval {
     _slotsPerHost[host].add(SlotId.unwrap(slotId));
   }
 
+  function _addToValidationSlots(uint16 groupIdx, SlotId slotId) internal {
+    _slotsPerValidator[groupIdx].add(SlotId.unwrap(slotId));
+  }
+
   function _removeFromMyRequests(address client, RequestId requestId) internal {
     _requestsPerClient[client].remove(RequestId.unwrap(requestId));
   }
 
   function _removeFromMySlots(address host, SlotId slotId) internal {
     _slotsPerHost[host].remove(SlotId.unwrap(slotId));
+  }
+
+  function _removeFromValidationSlots(uint16 groupIdx, SlotId slotId) internal {
+    _slotsPerValidator[groupIdx].remove(SlotId.unwrap(slotId));
   }
 }
