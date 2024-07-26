@@ -46,19 +46,19 @@ describe("Validation", function () {
 
     it("tests SlotId bucket boundaries are assigned to the correct validator index", async function () {
       let validators = 2 ** 16 - 1 // max value of uint16
-      let idsPerGroup = high.div(validators).add(1) // as in the contract
+      let idsPerBucket = high.div(validators).add(1) // as in the contract
       let validation = await Validation.deploy({ validators })
 
       // Returns the minimum SlotId of all allowed SlotIds of the validator
       // (given its index)
       function minIdFor(validatorIdx) {
-        return BigNumber.from(validatorIdx).mul(idsPerGroup)
+        return BigNumber.from(validatorIdx).mul(idsPerBucket)
       }
       // Returns the maximum SlotId of all allowed SlotIds of the validator
       // (given its index)
       function maxIdFor(validatorIdx) {
         const max = BigNumber.from(validatorIdx + 1)
-          .mul(idsPerGroup)
+          .mul(idsPerBucket)
           .sub(1)
         // Never return more than max value of uint256 because it would
         // overflow. BigNumber.js lets us do MaxUint256+1 without overflows.

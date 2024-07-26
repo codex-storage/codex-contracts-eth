@@ -21,9 +21,9 @@ contract StateRetrieval {
   }
 
   function myValidationSlots(
-    uint16 groupIdx
+    uint16 bucketIdx
   ) public view returns (SlotId[] memory) {
-    return _slotsPerValidator[groupIdx].values().toSlotIds();
+    return _slotsPerValidator[bucketIdx].values().toSlotIds();
   }
 
   function _hasSlots(address host) internal view returns (bool) {
@@ -38,8 +38,8 @@ contract StateRetrieval {
     _slotsPerHost[host].add(SlotId.unwrap(slotId));
   }
 
-  function _addToMyValidationSlots(uint16 groupIdx, SlotId slotId) internal {
-    _slotsPerValidator[groupIdx].add(SlotId.unwrap(slotId));
+  function _addToMyValidationSlots(uint16 bucketIdx, SlotId slotId) internal {
+    _slotsPerValidator[bucketIdx].add(SlotId.unwrap(slotId));
   }
 
   function _removeFromMyRequests(address client, RequestId requestId) internal {
@@ -51,9 +51,9 @@ contract StateRetrieval {
   }
 
   function _removeFromMyValidationSlots(
-    uint16 groupIdx,
+    uint16 bucketIdx,
     SlotId slotId
   ) internal {
-    _slotsPerValidator[groupIdx].remove(SlotId.unwrap(slotId));
+    _slotsPerValidator[bucketIdx].remove(SlotId.unwrap(slotId));
   }
 }

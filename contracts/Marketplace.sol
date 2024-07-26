@@ -149,8 +149,8 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     slot.currentCollateral = collateralAmount;
 
     _addToMySlots(slot.host, slotId);
-    uint16 groupIdx = _getValidatorIndex(slotId);
-    _addToMyValidationSlots(groupIdx, slotId);
+    uint16 bucketIdx = _getValidatorIndex(slotId);
+    _addToMyValidationSlots(bucketIdx, slotId);
 
     emit SlotFilled(requestId, slotIndex);
     if (context.slotsFilled == request.ask.slots) {
@@ -172,8 +172,8 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
       _payoutCancelledSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
-      uint16 groupIdx = _getValidatorIndex(slotId);
-      _removeFromMyValidationSlots(groupIdx, slotId);
+      uint16 bucketIdx = _getValidatorIndex(slotId);
+      _removeFromMyValidationSlots(bucketIdx, slotId);
     } else if (state == SlotState.Filled) {
       _forciblyFreeSlot(slotId);
     }
@@ -241,8 +241,8 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     RequestContext storage context = _requestContexts[requestId];
 
     _removeFromMySlots(slot.host, slotId);
-    uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromMyValidationSlots(groupIdx, slotId);
+    uint16 bucketIdx = _getValidatorIndex(slotId);
+    _removeFromMyValidationSlots(bucketIdx, slotId);
 
     uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
@@ -275,8 +275,8 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
 
     _removeFromMySlots(slot.host, slotId);
-    uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromMyValidationSlots(groupIdx, slotId);
+    uint16 bucketIdx = _getValidatorIndex(slotId);
+    _removeFromMyValidationSlots(bucketIdx, slotId);
 
     uint256 amount = _requests[requestId].pricePerSlot() +
       slot.currentCollateral;
@@ -291,8 +291,8 @@ contract Marketplace is Proofs, Validation, StateRetrieval, Endian {
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
-    uint16 groupIdx = _getValidatorIndex(slotId);
-    _removeFromMyValidationSlots(groupIdx, slotId);
+    uint16 bucketIdx = _getValidatorIndex(slotId);
+    _removeFromMyValidationSlots(bucketIdx, slotId);
 
     uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
       slot.currentCollateral;

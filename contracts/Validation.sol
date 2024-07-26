@@ -12,7 +12,7 @@ import "hardhat/console.sol";
  */
 abstract contract Validation {
   ValidationConfig private _config;
-  uint256 private _idsPerValidator; // number of uint256's in each group of the 2^256 bit space
+  uint256 private _idsPerValidator; // number of uint256's in each bucket of the 2^256 bit space
 
   /**
    * Creates a new Validation contract.
@@ -27,7 +27,7 @@ abstract contract Validation {
     // To find the number of SlotIds per validator, we could do
     // 2^256/validators, except that would overflow. Instead, we use
     // floor(2^256-1 / validators) + 1. For example, if we used a 4-bit space
-    // (2^4=16) with 2 validators, we'd expect 8 per group: floor(2^4-1 / 2) + 1
+    // (2^4=16) with 2 validators, we'd expect 8 per bucket: floor(2^4-1 / 2) + 1
     // = 8
     if (config.validators == 1) {
       // max(uint256) + 1 would overflow, so assign 0 and handle as special case
@@ -41,9 +41,9 @@ abstract contract Validation {
   }
 
   /**
-   * Determines which validator group (0-based index) a SlotId belongs to, based
+   * Determines which validator bucket (0-based index) a SlotId belongs to, based
      on the number of total validators in the config.
-   * @param slotId SlotID for which to determine the validator group index.
+   * @param slotId SlotID for which to determine the validator bucket index.
    */
   function _getValidatorIndex(SlotId slotId) internal view returns (uint16) {
     uint256 slotIdInt = uint256(SlotId.unwrap(slotId));
