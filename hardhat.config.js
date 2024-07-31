@@ -28,6 +28,12 @@ module.exports = {
     codexdisttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
+    codex_devnet: {
+      url: `${process.env.CODEX_DEVNET_URL}`,
+    },
+    codex_testnet: {
+      url: `${process.env.CODEX_TESTNET_URL}`,
+    },
     taiko_test: {
       url: "https://rpc.test.taiko.xyz",
       accounts: [
