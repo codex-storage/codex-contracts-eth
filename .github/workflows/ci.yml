@@ -2,6 +2,11 @@ name: CI
 
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+
 jobs:
   formatting:
     runs-on: ubuntu-latest
@@ -36,12 +41,15 @@ jobs:
           submodules: recursive
 
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with: { python-version: 3.9 }
 
       - name: Install Java
-        uses: actions/setup-java@v1
-        with: { java-version: "11", java-package: jre }
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+          java-package: 'jre'
 
       - name: Install Certora CLI
         run: pip3 install certora-cli==7.6.3
@@ -52,17 +60,17 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc
 
-      - name: "Install Node.js"
-        uses: "actions/setup-node@v3"
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          cache: "npm"
+          cache: npm
           node-version: "lts/*"
 
-      - name: "Install the Node.js dependencies"
-        run: "npm install"
+      - name: Install the Node.js dependencies
+        run: npm install
 
       - name: Verify rules
-        run: "npm run verify"
+        run: npm run verify
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
 
