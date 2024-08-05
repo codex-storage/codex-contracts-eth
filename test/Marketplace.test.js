@@ -185,6 +185,13 @@ describe("Marketplace", function () {
       )
     })
 
+    it("is rejected when maxSlotLoss exceeds slots", async function () {
+      request.ask.maxSlotLoss = request.ask.slots + 1
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "maxSlotLoss exceeds slots"
+      )
+    })
+
     it("rejects resubmission of request", async function () {
       await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)
