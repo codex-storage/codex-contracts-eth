@@ -24,4 +24,8 @@ struct ProofConfig {
   uint256 timeout; // mark proofs as missing before the timeout (in seconds)
   uint8 downtime; // ignore this much recent blocks for proof requirements
   string zkeyHash; // hash of the zkey file which is linked to the verifier
+  // Ensures the pointer does not remain in downtime for many consecutive
+  // periods. For each period increase, move the pointer `pointerProduct`
+  // blocks. Should be a prime number to ensure there are no cycles.
+  uint8 downtimeProduct;
 }
