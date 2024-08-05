@@ -95,6 +95,10 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
       request.expiry > 0 && request.expiry < request.ask.duration,
       "Expiry not in range"
     );
+    require(
+      request.ask.maxSlotLoss <= request.ask.slots,
+      "maxSlotLoss exceeds slots"
+    );
 
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
