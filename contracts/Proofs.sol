@@ -27,9 +27,9 @@ abstract contract Proofs is Periods {
     _verifier = verifier;
   }
 
-  mapping(SlotId => uint256) private _slotStarts; // TODO: Should be smaller then uint256
+  mapping(SlotId => uint256) private _slotStarts; // TODO: Should be smaller than uint256
   mapping(SlotId => uint256) private _probabilities;
-  mapping(SlotId => uint256) private _missed; // TODO: Should be smaller then uint256
+  mapping(SlotId => uint256) private _missed; // TODO: Should be smaller than uint256
   mapping(SlotId => mapping(Period => bool)) private _received;
   mapping(SlotId => mapping(Period => bool)) private _missing;
 
@@ -43,7 +43,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param slotId Slot's ID for which the proofs should be resetted
+   * @param slotId Slot's ID for which the proofs should be reset
    * @notice Resets the missing proofs counter to zero
    */
   function _resetMissingProofs(SlotId slotId) internal {
@@ -65,7 +65,7 @@ abstract contract Proofs is Periods {
    * @param id Slot's ID for which the pointer should be calculated
    * @param period Period for which the pointer should be calculated
    * @return Uint8 pointer that is stable over current Period, ie an integer offset [0-255] of the last 256 blocks, pointing to a block that remains constant for the entire Period's duration.
-   * @dev For more information see https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md
+   * @dev For more information see [timing of storage proofs](https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md)
    */
   function _getPointer(SlotId id, Period period) internal view returns (uint8) {
     uint256 blockNumber = block.number % 256;
@@ -81,7 +81,7 @@ abstract contract Proofs is Periods {
   /**
    * @param id Slot's ID for which the pointer should be calculated
    * @return Uint8 pointer that is stable over current Period, ie an integer offset [0-255] of the last 256 blocks, pointing to a block that remains constant for the entire Period's duration.
-   * @dev For more information see https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md
+   * @dev For more information see [timing of storage proofs](https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md)
    */
   function getPointer(SlotId id) public view returns (uint8) {
     return _getPointer(id, _blockPeriod());
@@ -118,7 +118,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param id Slot's ID for which the requirements are gathered. Its state needs to be Filled.
+   * @param id Slot's ID for which the requirements are gathered. If the Slot's state is other than Filled, `false` is always returned. 
    * @param period Period for which the requirements are gathered.
    */
   function _getProofRequirement(
@@ -134,7 +134,7 @@ abstract contract Proofs is Periods {
     bytes32 challenge = _getChallenge(pointer);
 
     /// Scaling of the probability according the downtime configuration
-    /// See: https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md#pointer-downtime
+    /// See: https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md#pointer-downtime
     uint256 probability = (_probabilities[id] * (256 - _config.downtime)) / 256;
     isRequired = probability == 0 || uint256(challenge) % probability == 0;
   }
@@ -153,7 +153,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param id Slot's ID for which the proof requirements should be checked. Its state needs to be Filled.
+   * @param id Slot's ID for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned. 
    * @return bool indicating if proof is required for current period
    */
   function isProofRequired(SlotId id) public view returns (bool) {
@@ -166,8 +166,8 @@ abstract contract Proofs is Periods {
    * in downtime (hence no proof required now) and at the same time the proof
    * will be required later on in the Period.
    *
-   * @dev see for more info about downtime: https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md#pointer-downtime
-   * @param id SlotId for which the proof requirements should be checked. Its state needs to be Filled.
+   * @dev for more info about downtime see [timing of storage proofs](https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md#pointer-downtime)
+   * @param id SlotId for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned. 
    * @return bool
    */
   function willProofBeRequired(SlotId id) public view returns (bool) {
