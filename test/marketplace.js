@@ -22,7 +22,13 @@ async function waitUntilStarted(contract, request, proof, token) {
   }
 }
 
-async function waitUntilStarted(contract, request, proof, token, payoutAddress) {
+async function waitUntilStarted(
+  contract,
+  request,
+  proof,
+  token,
+  payoutAddress
+) {
   await token.approve(contract.address, price(request) * request.ask.slots)
 
   for (let i = 0; i < request.ask.slots; i++) {
@@ -66,12 +72,18 @@ async function waitUntilSlotFailed(contract, request, slot) {
  */
 function patchFillSlotOverloads(contract) {
   contract.fillSlot = async (requestId, slotIndex, proof, payoutAddress) => {
-    if(!payoutAddress) {
+    if (!payoutAddress) {
       // calls `fillSlot` overload without payoutAddress
-      const fn = contract["fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"]
+      const fn =
+        contract[
+          "fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"
+        ]
       return await fn(requestId, slotIndex, proof)
     }
-    const fn = contract["fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address)"]
+    const fn =
+      contract[
+        "fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address)"
+      ]
     return await fn(requestId, slotIndex, proof, payoutAddress)
   }
 }
