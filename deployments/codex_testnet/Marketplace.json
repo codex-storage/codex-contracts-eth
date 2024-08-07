@@ -1,0 +1,1777 @@
+{
+  "address": "0xB119d28d3A1bFD281b23A0890B4c1B626EE8F6F0",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint8",
+                  "name": "repairRewardPercentage",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "maxNumberOfSlashes",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint16",
+                  "name": "slashCriterion",
+                  "type": "uint16"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "slashPercentage",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct CollateralConfig",
+              "name": "collateral",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "period",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timeout",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "downtime",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "string",
+                  "name": "zkeyHash",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct ProofConfig",
+              "name": "proofs",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct MarketplaceConfig",
+          "name": "configuration",
+          "type": "tuple"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "token_",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IGroth16Verifier",
+          "name": "verifier",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "ProofSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RequestCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RequestFailed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "RequestFulfilled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "slotIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "SlotFilled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "slotIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "SlotFreed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "slots",
+              "type": "uint64"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slotSize",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "duration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "proofProbability",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reward",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "collateral",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint64",
+              "name": "maxSlotLoss",
+              "type": "uint64"
+            }
+          ],
+          "indexed": false,
+          "internalType": "struct Ask",
+          "name": "ask",
+          "type": "tuple"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "StorageRequested",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "config",
+      "outputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint8",
+                  "name": "repairRewardPercentage",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "maxNumberOfSlashes",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint16",
+                  "name": "slashCriterion",
+                  "type": "uint16"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "slashPercentage",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct CollateralConfig",
+              "name": "collateral",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "period",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timeout",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "downtime",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "string",
+                  "name": "zkeyHash",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct ProofConfig",
+              "name": "proofs",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct MarketplaceConfig",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "slotIndex",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "a",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "b",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "c",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct Groth16Proof",
+          "name": "proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "fillSlot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "freeSlot",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getActiveSlot",
+      "outputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "client",
+                  "type": "address"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint64",
+                      "name": "slots",
+                      "type": "uint64"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "slotSize",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "duration",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "proofProbability",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "reward",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "collateral",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint64",
+                      "name": "maxSlotLoss",
+                      "type": "uint64"
+                    }
+                  ],
+                  "internalType": "struct Ask",
+                  "name": "ask",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "string",
+                      "name": "cid",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "bytes32",
+                      "name": "merkleRoot",
+                      "type": "bytes32"
+                    }
+                  ],
+                  "internalType": "struct Content",
+                  "name": "content",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "expiry",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "nonce",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Request",
+              "name": "request",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "slotIndex",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Marketplace.ActiveSlot",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getChallenge",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getHost",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getPointer",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRequest",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "client",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "slots",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "slotSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "duration",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "proofProbability",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "reward",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateral",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "maxSlotLoss",
+                  "type": "uint64"
+                }
+              ],
+              "internalType": "struct Ask",
+              "name": "ask",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "cid",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Content",
+              "name": "content",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiry",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "nonce",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Request",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "isProofRequired",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "Periods.Period",
+          "name": "period",
+          "type": "uint256"
+        }
+      ],
+      "name": "markProofAsMissing",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "missingProofs",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "myRequests",
+      "outputs": [
+        {
+          "internalType": "RequestId[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "mySlots",
+      "outputs": [
+        {
+          "internalType": "SlotId[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "requestEnd",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "requestExpiry",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "requestState",
+      "outputs": [
+        {
+          "internalType": "enum RequestState",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "client",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint64",
+                  "name": "slots",
+                  "type": "uint64"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "slotSize",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "duration",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "proofProbability",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "reward",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "collateral",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint64",
+                  "name": "maxSlotLoss",
+                  "type": "uint64"
+                }
+              ],
+              "internalType": "struct Ask",
+              "name": "ask",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "cid",
+                  "type": "string"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "merkleRoot",
+                  "type": "bytes32"
+                }
+              ],
+              "internalType": "struct Content",
+              "name": "content",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiry",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "nonce",
+              "type": "bytes32"
+            }
+          ],
+          "internalType": "struct Request",
+          "name": "request",
+          "type": "tuple"
+        }
+      ],
+      "name": "requestStorage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "slotId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "slotState",
+      "outputs": [
+        {
+          "internalType": "enum SlotState",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "a",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "b",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "c",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct Groth16Proof",
+          "name": "proof",
+          "type": "tuple"
+        }
+      ],
+      "name": "submitProof",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "token",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "SlotId",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "willProofBeRequired",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "RequestId",
+          "name": "requestId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "withdrawFunds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x20876cd2058a4a27a3af01f3540b58c4499d8dab4ec01be122de44f70d8dc91d",
+  "receipt": {
+    "to": null,
+    "from": "0x3A39904B71595608524274BFD8c20FCfd9e77236",
+    "contractAddress": "0xB119d28d3A1bFD281b23A0890B4c1B626EE8F6F0",
+    "transactionIndex": 0,
+    "gasUsed": "3365554",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x805ad335e660524be6792c098dec616db578156cd41793d5a4dce26f9abff406",
+    "transactionHash": "0x20876cd2058a4a27a3af01f3540b58c4499d8dab4ec01be122de44f70d8dc91d",
+    "logs": [],
+    "blockNumber": 1269341,
+    "cumulativeGasUsed": "3365554",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    {
+      "collateral": {
+        "repairRewardPercentage": 10,
+        "maxNumberOfSlashes": 2,
+        "slashCriterion": 2,
+        "slashPercentage": 20
+      },
+      "proofs": {
+        "period": 60,
+        "timeout": 30,
+        "downtime": 64,
+        "zkeyHash": "fc739a6f5962e7ac8b064b9396a400de4dd024de25c403331fa7143a9bc8f75d"
+      }
+    },
+    "0x34a22f3911De437307c6f4485931779670f78764",
+    "0x006BDB9609B919146555f42d9d617FD709dfe5D2"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "c09963445d55f04ec1cd7dd500a29a55",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.23+commit.f704f362\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"repairRewardPercentage\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"maxNumberOfSlashes\",\"type\":\"uint8\"},{\"internalType\":\"uint16\",\"name\":\"slashCriterion\",\"type\":\"uint16\"},{\"internalType\":\"uint8\",\"name\":\"slashPercentage\",\"type\":\"uint8\"}],\"internalType\":\"struct CollateralConfig\",\"name\":\"collateral\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"period\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timeout\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"downtime\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"zkeyHash\",\"type\":\"string\"}],\"internalType\":\"struct ProofConfig\",\"name\":\"proofs\",\"type\":\"tuple\"}],\"internalType\":\"struct MarketplaceConfig\",\"name\":\"configuration\",\"type\":\"tuple\"},{\"internalType\":\"contract IERC20\",\"name\":\"token_\",\"type\":\"address\"},{\"internalType\":\"contract IGroth16Verifier\",\"name\":\"verifier\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"ProofSubmitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"RequestCancelled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"RequestFailed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"RequestFulfilled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"slotIndex\",\"type\":\"uint256\"}],\"name\":\"SlotFilled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"slotIndex\",\"type\":\"uint256\"}],\"name\":\"SlotFreed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slots\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"slotSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"proofProbability\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateral\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"maxSlotLoss\",\"type\":\"uint64\"}],\"indexed\":false,\"internalType\":\"struct Ask\",\"name\":\"ask\",\"type\":\"tuple\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"expiry\",\"type\":\"uint256\"}],\"name\":\"StorageRequested\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"config\",\"outputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"repairRewardPercentage\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"maxNumberOfSlashes\",\"type\":\"uint8\"},{\"internalType\":\"uint16\",\"name\":\"slashCriterion\",\"type\":\"uint16\"},{\"internalType\":\"uint8\",\"name\":\"slashPercentage\",\"type\":\"uint8\"}],\"internalType\":\"struct CollateralConfig\",\"name\":\"collateral\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"period\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timeout\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"downtime\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"zkeyHash\",\"type\":\"string\"}],\"internalType\":\"struct ProofConfig\",\"name\":\"proofs\",\"type\":\"tuple\"}],\"internalType\":\"struct MarketplaceConfig\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"slotIndex\",\"type\":\"uint256\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"a\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"b\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"c\",\"type\":\"tuple\"}],\"internalType\":\"struct Groth16Proof\",\"name\":\"proof\",\"type\":\"tuple\"}],\"name\":\"fillSlot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"}],\"name\":\"freeSlot\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"}],\"name\":\"getActiveSlot\",\"outputs\":[{\"components\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"client\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slots\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"slotSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"proofProbability\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateral\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"maxSlotLoss\",\"type\":\"uint64\"}],\"internalType\":\"struct Ask\",\"name\":\"ask\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"cid\",\"type\":\"string\"},{\"internalType\":\"bytes32\",\"name\":\"merkleRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Content\",\"name\":\"content\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"expiry\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"nonce\",\"type\":\"bytes32\"}],\"internalType\":\"struct Request\",\"name\":\"request\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"slotIndex\",\"type\":\"uint256\"}],\"internalType\":\"struct Marketplace.ActiveSlot\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"getChallenge\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"}],\"name\":\"getHost\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"getPointer\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"getRequest\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"client\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slots\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"slotSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"proofProbability\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateral\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"maxSlotLoss\",\"type\":\"uint64\"}],\"internalType\":\"struct Ask\",\"name\":\"ask\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"cid\",\"type\":\"string\"},{\"internalType\":\"bytes32\",\"name\":\"merkleRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Content\",\"name\":\"content\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"expiry\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"nonce\",\"type\":\"bytes32\"}],\"internalType\":\"struct Request\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"isProofRequired\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"},{\"internalType\":\"Periods.Period\",\"name\":\"period\",\"type\":\"uint256\"}],\"name\":\"markProofAsMissing\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"}],\"name\":\"missingProofs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"myRequests\",\"outputs\":[{\"internalType\":\"RequestId[]\",\"name\":\"\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"mySlots\",\"outputs\":[{\"internalType\":\"SlotId[]\",\"name\":\"\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"requestEnd\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"requestExpiry\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"requestState\",\"outputs\":[{\"internalType\":\"enum RequestState\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"client\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"slots\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"slotSize\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"proofProbability\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"collateral\",\"type\":\"uint256\"},{\"internalType\":\"uint64\",\"name\":\"maxSlotLoss\",\"type\":\"uint64\"}],\"internalType\":\"struct Ask\",\"name\":\"ask\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"cid\",\"type\":\"string\"},{\"internalType\":\"bytes32\",\"name\":\"merkleRoot\",\"type\":\"bytes32\"}],\"internalType\":\"struct Content\",\"name\":\"content\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"expiry\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"nonce\",\"type\":\"bytes32\"}],\"internalType\":\"struct Request\",\"name\":\"request\",\"type\":\"tuple\"}],\"name\":\"requestStorage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"slotId\",\"type\":\"bytes32\"}],\"name\":\"slotState\",\"outputs\":[{\"internalType\":\"enum SlotState\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"a\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"b\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"c\",\"type\":\"tuple\"}],\"internalType\":\"struct Groth16Proof\",\"name\":\"proof\",\"type\":\"tuple\"}],\"name\":\"submitProof\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"token\",\"outputs\":[{\"internalType\":\"contract IERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"SlotId\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"willProofBeRequired\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"RequestId\",\"name\":\"requestId\",\"type\":\"bytes32\"}],\"name\":\"withdrawFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"withdrawFunds(bytes32)\":{\"details\":\"Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.\",\"params\":{\"requestId\":\"the id of the request\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"withdrawFunds(bytes32)\":{\"notice\":\"Withdraws storage request funds back to the client that deposited them.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/Marketplace.sol\":\"Marketplace\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":1000},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `to`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address to, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `from` to `to` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) external returns (bool);\\n}\\n\",\"keccak256\":\"0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/math/Math.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.8.0) (utils/math/Math.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Standard math utilities missing in the Solidity language.\\n */\\nlibrary Math {\\n    enum Rounding {\\n        Down, // Toward negative infinity\\n        Up, // Toward infinity\\n        Zero // Toward zero\\n    }\\n\\n    /**\\n     * @dev Returns the largest of two numbers.\\n     */\\n    function max(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a > b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the smallest of two numbers.\\n     */\\n    function min(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a < b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the average of two numbers. The result is rounded towards\\n     * zero.\\n     */\\n    function average(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // (a + b) / 2 can overflow.\\n        return (a & b) + (a ^ b) / 2;\\n    }\\n\\n    /**\\n     * @dev Returns the ceiling of the division of two numbers.\\n     *\\n     * This differs from standard division with `/` in that it rounds up instead\\n     * of rounding down.\\n     */\\n    function ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // (a + b - 1) / b can overflow on addition, so we distribute.\\n        return a == 0 ? 0 : (a - 1) / b + 1;\\n    }\\n\\n    /**\\n     * @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or denominator == 0\\n     * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv)\\n     * with further edits by Uniswap Labs also under MIT license.\\n     */\\n    function mulDiv(\\n        uint256 x,\\n        uint256 y,\\n        uint256 denominator\\n    ) internal pure returns (uint256 result) {\\n        unchecked {\\n            // 512-bit multiply [prod1 prod0] = x * y. Compute the product mod 2^256 and mod 2^256 - 1, then use\\n            // use the Chinese Remainder Theorem to reconstruct the 512 bit result. The result is stored in two 256\\n            // variables such that product = prod1 * 2^256 + prod0.\\n            uint256 prod0; // Least significant 256 bits of the product\\n            uint256 prod1; // Most significant 256 bits of the product\\n            assembly {\\n                let mm := mulmod(x, y, not(0))\\n                prod0 := mul(x, y)\\n                prod1 := sub(sub(mm, prod0), lt(mm, prod0))\\n            }\\n\\n            // Handle non-overflow cases, 256 by 256 division.\\n            if (prod1 == 0) {\\n                return prod0 / denominator;\\n            }\\n\\n            // Make sure the result is less than 2^256. Also prevents denominator == 0.\\n            require(denominator > prod1);\\n\\n            ///////////////////////////////////////////////\\n            // 512 by 256 division.\\n            ///////////////////////////////////////////////\\n\\n            // Make division exact by subtracting the remainder from [prod1 prod0].\\n            uint256 remainder;\\n            assembly {\\n                // Compute remainder using mulmod.\\n                remainder := mulmod(x, y, denominator)\\n\\n                // Subtract 256 bit number from 512 bit number.\\n                prod1 := sub(prod1, gt(remainder, prod0))\\n                prod0 := sub(prod0, remainder)\\n            }\\n\\n            // Factor powers of two out of denominator and compute largest power of two divisor of denominator. Always >= 1.\\n            // See https://cs.stackexchange.com/q/138556/92363.\\n\\n            // Does not overflow because the denominator cannot be zero at this stage in the function.\\n            uint256 twos = denominator & (~denominator + 1);\\n            assembly {\\n                // Divide denominator by twos.\\n                denominator := div(denominator, twos)\\n\\n                // Divide [prod1 prod0] by twos.\\n                prod0 := div(prod0, twos)\\n\\n                // Flip twos such that it is 2^256 / twos. If twos is zero, then it becomes one.\\n                twos := add(div(sub(0, twos), twos), 1)\\n            }\\n\\n            // Shift in bits from prod1 into prod0.\\n            prod0 |= prod1 * twos;\\n\\n            // Invert denominator mod 2^256. Now that denominator is an odd number, it has an inverse modulo 2^256 such\\n            // that denominator * inv = 1 mod 2^256. Compute the inverse by starting with a seed that is correct for\\n            // four bits. That is, denominator * inv = 1 mod 2^4.\\n            uint256 inverse = (3 * denominator) ^ 2;\\n\\n            // Use the Newton-Raphson iteration to improve the precision. Thanks to Hensel's lifting lemma, this also works\\n            // in modular arithmetic, doubling the correct bits in each step.\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^8\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^16\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^32\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^64\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^128\\n            inverse *= 2 - denominator * inverse; // inverse mod 2^256\\n\\n            // Because the division is now exact we can divide by multiplying with the modular inverse of denominator.\\n            // This will give us the correct result modulo 2^256. Since the preconditions guarantee that the outcome is\\n            // less than 2^256, this is the final result. We don't need to compute the high bits of the result and prod1\\n            // is no longer required.\\n            result = prod0 * inverse;\\n            return result;\\n        }\\n    }\\n\\n    /**\\n     * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.\\n     */\\n    function mulDiv(\\n        uint256 x,\\n        uint256 y,\\n        uint256 denominator,\\n        Rounding rounding\\n    ) internal pure returns (uint256) {\\n        uint256 result = mulDiv(x, y, denominator);\\n        if (rounding == Rounding.Up && mulmod(x, y, denominator) > 0) {\\n            result += 1;\\n        }\\n        return result;\\n    }\\n\\n    /**\\n     * @dev Returns the square root of a number. If the number is not a perfect square, the value is rounded down.\\n     *\\n     * Inspired by Henry S. Warren, Jr.'s \\\"Hacker's Delight\\\" (Chapter 11).\\n     */\\n    function sqrt(uint256 a) internal pure returns (uint256) {\\n        if (a == 0) {\\n            return 0;\\n        }\\n\\n        // For our first guess, we get the biggest power of 2 which is smaller than the square root of the target.\\n        //\\n        // We know that the \\\"msb\\\" (most significant bit) of our target number `a` is a power of 2 such that we have\\n        // `msb(a) <= a < 2*msb(a)`. This value can be written `msb(a)=2**k` with `k=log2(a)`.\\n        //\\n        // This can be rewritten `2**log2(a) <= a < 2**(log2(a) + 1)`\\n        // \\u2192 `sqrt(2**k) <= sqrt(a) < sqrt(2**(k+1))`\\n        // \\u2192 `2**(k/2) <= sqrt(a) < 2**((k+1)/2) <= 2**(k/2 + 1)`\\n        //\\n        // Consequently, `2**(log2(a) / 2)` is a good first approximation of `sqrt(a)` with at least 1 correct bit.\\n        uint256 result = 1 << (log2(a) >> 1);\\n\\n        // At this point `result` is an estimation with one bit of precision. We know the true value is a uint128,\\n        // since it is the square root of a uint256. Newton's method converges quadratically (precision doubles at\\n        // every iteration). We thus need at most 7 iteration to turn our partial result with one bit of precision\\n        // into the expected uint128 result.\\n        unchecked {\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            result = (result + a / result) >> 1;\\n            return min(result, a / result);\\n        }\\n    }\\n\\n    /**\\n     * @notice Calculates sqrt(a), following the selected rounding direction.\\n     */\\n    function sqrt(uint256 a, Rounding rounding) internal pure returns (uint256) {\\n        unchecked {\\n            uint256 result = sqrt(a);\\n            return result + (rounding == Rounding.Up && result * result < a ? 1 : 0);\\n        }\\n    }\\n\\n    /**\\n     * @dev Return the log in base 2, rounded down, of a positive value.\\n     * Returns 0 if given 0.\\n     */\\n    function log2(uint256 value) internal pure returns (uint256) {\\n        uint256 result = 0;\\n        unchecked {\\n            if (value >> 128 > 0) {\\n                value >>= 128;\\n                result += 128;\\n            }\\n            if (value >> 64 > 0) {\\n                value >>= 64;\\n                result += 64;\\n            }\\n            if (value >> 32 > 0) {\\n                value >>= 32;\\n                result += 32;\\n            }\\n            if (value >> 16 > 0) {\\n                value >>= 16;\\n                result += 16;\\n            }\\n            if (value >> 8 > 0) {\\n                value >>= 8;\\n                result += 8;\\n            }\\n            if (value >> 4 > 0) {\\n                value >>= 4;\\n                result += 4;\\n            }\\n            if (value >> 2 > 0) {\\n                value >>= 2;\\n                result += 2;\\n            }\\n            if (value >> 1 > 0) {\\n                result += 1;\\n            }\\n        }\\n        return result;\\n    }\\n\\n    /**\\n     * @dev Return the log in base 2, following the selected rounding direction, of a positive value.\\n     * Returns 0 if given 0.\\n     */\\n    function log2(uint256 value, Rounding rounding) internal pure returns (uint256) {\\n        unchecked {\\n            uint256 result = log2(value);\\n            return result + (rounding == Rounding.Up && 1 << result < value ? 1 : 0);\\n        }\\n    }\\n\\n    /**\\n     * @dev Return the log in base 10, rounded down, of a positive value.\\n     * Returns 0 if given 0.\\n     */\\n    function log10(uint256 value) internal pure returns (uint256) {\\n        uint256 result = 0;\\n        unchecked {\\n            if (value >= 10**64) {\\n                value /= 10**64;\\n                result += 64;\\n            }\\n            if (value >= 10**32) {\\n                value /= 10**32;\\n                result += 32;\\n            }\\n            if (value >= 10**16) {\\n                value /= 10**16;\\n                result += 16;\\n            }\\n            if (value >= 10**8) {\\n                value /= 10**8;\\n                result += 8;\\n            }\\n            if (value >= 10**4) {\\n                value /= 10**4;\\n                result += 4;\\n            }\\n            if (value >= 10**2) {\\n                value /= 10**2;\\n                result += 2;\\n            }\\n            if (value >= 10**1) {\\n                result += 1;\\n            }\\n        }\\n        return result;\\n    }\\n\\n    /**\\n     * @dev Return the log in base 10, following the selected rounding direction, of a positive value.\\n     * Returns 0 if given 0.\\n     */\\n    function log10(uint256 value, Rounding rounding) internal pure returns (uint256) {\\n        unchecked {\\n            uint256 result = log10(value);\\n            return result + (rounding == Rounding.Up && 10**result < value ? 1 : 0);\\n        }\\n    }\\n\\n    /**\\n     * @dev Return the log in base 256, rounded down, of a positive value.\\n     * Returns 0 if given 0.\\n     *\\n     * Adding one to the result gives the number of pairs of hex symbols needed to represent `value` as a hex string.\\n     */\\n    function log256(uint256 value) internal pure returns (uint256) {\\n        uint256 result = 0;\\n        unchecked {\\n            if (value >> 128 > 0) {\\n                value >>= 128;\\n                result += 16;\\n            }\\n            if (value >> 64 > 0) {\\n                value >>= 64;\\n                result += 8;\\n            }\\n            if (value >> 32 > 0) {\\n                value >>= 32;\\n                result += 4;\\n            }\\n            if (value >> 16 > 0) {\\n                value >>= 16;\\n                result += 2;\\n            }\\n            if (value >> 8 > 0) {\\n                result += 1;\\n            }\\n        }\\n        return result;\\n    }\\n\\n    /**\\n     * @dev Return the log in base 10, following the selected rounding direction, of a positive value.\\n     * Returns 0 if given 0.\\n     */\\n    function log256(uint256 value, Rounding rounding) internal pure returns (uint256) {\\n        unchecked {\\n            uint256 result = log256(value);\\n            return result + (rounding == Rounding.Up && 1 << (result * 8) < value ? 1 : 0);\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0xa1e8e83cd0087785df04ac79fb395d9f3684caeaf973d9e2c71caef723a3a5d6\",\"license\":\"MIT\"},\"@openzeppelin/contracts/utils/structs/EnumerableSet.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.8.0) (utils/structs/EnumerableSet.sol)\\n// This file was procedurally generated from scripts/generate/templates/EnumerableSet.js.\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Library for managing\\n * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive\\n * types.\\n *\\n * Sets have the following properties:\\n *\\n * - Elements are added, removed, and checked for existence in constant time\\n * (O(1)).\\n * - Elements are enumerated in O(n). No guarantees are made on the ordering.\\n *\\n * ```\\n * contract Example {\\n *     // Add the library methods\\n *     using EnumerableSet for EnumerableSet.AddressSet;\\n *\\n *     // Declare a set state variable\\n *     EnumerableSet.AddressSet private mySet;\\n * }\\n * ```\\n *\\n * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)\\n * and `uint256` (`UintSet`) are supported.\\n *\\n * [WARNING]\\n * ====\\n * Trying to delete such a structure from storage will likely result in data corruption, rendering the structure\\n * unusable.\\n * See https://github.com/ethereum/solidity/pull/11843[ethereum/solidity#11843] for more info.\\n *\\n * In order to clean an EnumerableSet, you can either remove all elements one by one or create a fresh instance using an\\n * array of EnumerableSet.\\n * ====\\n */\\nlibrary EnumerableSet {\\n    // To implement this library for multiple types with as little code\\n    // repetition as possible, we write it in terms of a generic Set type with\\n    // bytes32 values.\\n    // The Set implementation uses private functions, and user-facing\\n    // implementations (such as AddressSet) are just wrappers around the\\n    // underlying Set.\\n    // This means that we can only create new EnumerableSets for types that fit\\n    // in bytes32.\\n\\n    struct Set {\\n        // Storage of set values\\n        bytes32[] _values;\\n        // Position of the value in the `values` array, plus 1 because index 0\\n        // means a value is not in the set.\\n        mapping(bytes32 => uint256) _indexes;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function _add(Set storage set, bytes32 value) private returns (bool) {\\n        if (!_contains(set, value)) {\\n            set._values.push(value);\\n            // The value is stored at length-1, but we add 1 to all indexes\\n            // and use 0 as a sentinel value\\n            set._indexes[value] = set._values.length;\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function _remove(Set storage set, bytes32 value) private returns (bool) {\\n        // We read and store the value's index to prevent multiple reads from the same storage slot\\n        uint256 valueIndex = set._indexes[value];\\n\\n        if (valueIndex != 0) {\\n            // Equivalent to contains(set, value)\\n            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in\\n            // the array, and then remove the last element (sometimes called as 'swap and pop').\\n            // This modifies the order of the array, as noted in {at}.\\n\\n            uint256 toDeleteIndex = valueIndex - 1;\\n            uint256 lastIndex = set._values.length - 1;\\n\\n            if (lastIndex != toDeleteIndex) {\\n                bytes32 lastValue = set._values[lastIndex];\\n\\n                // Move the last value to the index where the value to delete is\\n                set._values[toDeleteIndex] = lastValue;\\n                // Update the index for the moved value\\n                set._indexes[lastValue] = valueIndex; // Replace lastValue's index to valueIndex\\n            }\\n\\n            // Delete the slot where the moved value was stored\\n            set._values.pop();\\n\\n            // Delete the index for the deleted slot\\n            delete set._indexes[value];\\n\\n            return true;\\n        } else {\\n            return false;\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function _contains(Set storage set, bytes32 value) private view returns (bool) {\\n        return set._indexes[value] != 0;\\n    }\\n\\n    /**\\n     * @dev Returns the number of values on the set. O(1).\\n     */\\n    function _length(Set storage set) private view returns (uint256) {\\n        return set._values.length;\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function _at(Set storage set, uint256 index) private view returns (bytes32) {\\n        return set._values[index];\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function _values(Set storage set) private view returns (bytes32[] memory) {\\n        return set._values;\\n    }\\n\\n    // Bytes32Set\\n\\n    struct Bytes32Set {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {\\n        return _add(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {\\n        return _remove(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {\\n        return _contains(set._inner, value);\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(Bytes32Set storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {\\n        return _at(set._inner, index);\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {\\n        bytes32[] memory store = _values(set._inner);\\n        bytes32[] memory result;\\n\\n        /// @solidity memory-safe-assembly\\n        assembly {\\n            result := store\\n        }\\n\\n        return result;\\n    }\\n\\n    // AddressSet\\n\\n    struct AddressSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(AddressSet storage set, address value) internal returns (bool) {\\n        return _add(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(AddressSet storage set, address value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(AddressSet storage set, address value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(uint256(uint160(value))));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(AddressSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(AddressSet storage set, uint256 index) internal view returns (address) {\\n        return address(uint160(uint256(_at(set._inner, index))));\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(AddressSet storage set) internal view returns (address[] memory) {\\n        bytes32[] memory store = _values(set._inner);\\n        address[] memory result;\\n\\n        /// @solidity memory-safe-assembly\\n        assembly {\\n            result := store\\n        }\\n\\n        return result;\\n    }\\n\\n    // UintSet\\n\\n    struct UintSet {\\n        Set _inner;\\n    }\\n\\n    /**\\n     * @dev Add a value to a set. O(1).\\n     *\\n     * Returns true if the value was added to the set, that is if it was not\\n     * already present.\\n     */\\n    function add(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _add(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Removes a value from a set. O(1).\\n     *\\n     * Returns true if the value was removed from the set, that is if it was\\n     * present.\\n     */\\n    function remove(UintSet storage set, uint256 value) internal returns (bool) {\\n        return _remove(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns true if the value is in the set. O(1).\\n     */\\n    function contains(UintSet storage set, uint256 value) internal view returns (bool) {\\n        return _contains(set._inner, bytes32(value));\\n    }\\n\\n    /**\\n     * @dev Returns the number of values in the set. O(1).\\n     */\\n    function length(UintSet storage set) internal view returns (uint256) {\\n        return _length(set._inner);\\n    }\\n\\n    /**\\n     * @dev Returns the value stored at position `index` in the set. O(1).\\n     *\\n     * Note that there are no guarantees on the ordering of values inside the\\n     * array, and it may change when more values are added or removed.\\n     *\\n     * Requirements:\\n     *\\n     * - `index` must be strictly less than {length}.\\n     */\\n    function at(UintSet storage set, uint256 index) internal view returns (uint256) {\\n        return uint256(_at(set._inner, index));\\n    }\\n\\n    /**\\n     * @dev Return the entire set in an array\\n     *\\n     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed\\n     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that\\n     * this function has an unbounded cost, and using it as part of a state-changing function may render the function\\n     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.\\n     */\\n    function values(UintSet storage set) internal view returns (uint256[] memory) {\\n        bytes32[] memory store = _values(set._inner);\\n        uint256[] memory result;\\n\\n        /// @solidity memory-safe-assembly\\n        assembly {\\n            result := store\\n        }\\n\\n        return result;\\n    }\\n}\\n\",\"keccak256\":\"0xc3ff3f5c4584e1d9a483ad7ced51ab64523201f4e3d3c65293e4ca8aeb77a961\",\"license\":\"MIT\"},\"contracts/Configuration.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nimport \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\n\\nstruct MarketplaceConfig {\\n  CollateralConfig collateral;\\n  ProofConfig proofs;\\n}\\n\\nstruct CollateralConfig {\\n  /// @dev percentage of remaining collateral slot after it has been freed\\n  /// (equivalent to `collateral - (collateral*maxNumberOfSlashes*slashPercentage)/100`)\\n  /// TODO: to be aligned more closely with actual cost of repair once bandwidth incentives are known,\\n  /// see https://github.com/codex-storage/codex-contracts-eth/pull/47#issuecomment-1465511949.\\n  uint8 repairRewardPercentage;\\n  uint8 maxNumberOfSlashes; // frees slot when the number of slashing reaches this value\\n  uint16 slashCriterion; // amount of proofs missed that lead to slashing\\n  uint8 slashPercentage; // percentage of the collateral that is slashed\\n}\\n\\nstruct ProofConfig {\\n  uint256 period; // proofs requirements are calculated per period (in seconds)\\n  uint256 timeout; // mark proofs as missing before the timeout (in seconds)\\n  uint8 downtime; // ignore this much recent blocks for proof requirements\\n  string zkeyHash; // hash of the zkey file which is linked to the verifier\\n}\\n\",\"keccak256\":\"0x6d56eeb718e8be0d64e46b8bade37e480d1b3962838add5363b5e2cc9de78aa5\",\"license\":\"MIT\"},\"contracts/Endian.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\ncontract Endian {\\n  /// reverses byte order to allow conversion between little endian and big\\n  /// endian integers\\n  function _byteSwap(bytes32 input) internal pure returns (bytes32 output) {\\n    output = output | bytes1(input);\\n    for (uint i = 1; i < 32; i++) {\\n      output = output >> 8;\\n      output = output | bytes1(input << (i * 8));\\n    }\\n  }\\n}\\n\",\"keccak256\":\"0xd6acc2a19aaedc1b903681fedf6e302aabdd33695dee215e21b5190a83d0769e\",\"license\":\"MIT\"},\"contracts/Groth16.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nstruct G1Point {\\n  uint256 x;\\n  uint256 y;\\n}\\n\\n// A field element F_{p^2} encoded as `real + i * imag`.\\n// We chose to not represent this as an array of 2 numbers, because both Circom\\n// and Ethereum EIP-197 encode to an array, but with conflicting encodings.\\nstruct Fp2Element {\\n  uint256 real;\\n  uint256 imag;\\n}\\n\\nstruct G2Point {\\n  Fp2Element x;\\n  Fp2Element y;\\n}\\n\\nstruct Groth16Proof {\\n  G1Point a;\\n  G2Point b;\\n  G1Point c;\\n}\\n\\ninterface IGroth16Verifier {\\n  function verify(\\n    Groth16Proof calldata proof,\\n    uint256[] calldata pubSignals\\n  ) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xe1c7a8730cf718c9b69052c81ca3241d7f61c25f3d7944962077d768bf601baf\",\"license\":\"MIT\"},\"contracts/Marketplace.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nimport \\\"@openzeppelin/contracts/token/ERC20/IERC20.sol\\\";\\nimport \\\"@openzeppelin/contracts/utils/math/Math.sol\\\";\\nimport \\\"@openzeppelin/contracts/utils/structs/EnumerableSet.sol\\\";\\nimport \\\"./Configuration.sol\\\";\\nimport \\\"./Requests.sol\\\";\\nimport \\\"./Proofs.sol\\\";\\nimport \\\"./StateRetrieval.sol\\\";\\nimport \\\"./Endian.sol\\\";\\nimport \\\"./Groth16.sol\\\";\\n\\ncontract Marketplace is Proofs, StateRetrieval, Endian {\\n  using EnumerableSet for EnumerableSet.Bytes32Set;\\n  using Requests for Request;\\n\\n  IERC20 private immutable _token;\\n  MarketplaceConfig private _config;\\n\\n  mapping(RequestId => Request) private _requests;\\n  mapping(RequestId => RequestContext) private _requestContexts;\\n  mapping(SlotId => Slot) internal _slots;\\n\\n  MarketplaceTotals internal _marketplaceTotals;\\n\\n  struct RequestContext {\\n    RequestState state;\\n    uint256 slotsFilled;\\n    /// @notice Tracks how much funds should be returned when Request expires to the Request creator\\n    /// @dev The sum is deducted every time a host fills a Slot by precalculated amount that he should receive if the Request expires\\n    uint256 expiryFundsWithdraw;\\n    uint256 startedAt;\\n    uint256 endsAt;\\n    uint256 expiresAt;\\n  }\\n\\n  struct Slot {\\n    SlotState state;\\n    RequestId requestId;\\n    /// @notice Timestamp that signals when slot was filled\\n    /// @dev Used for partial payouts when Requests expires and Hosts are paid out only the time they host the content.\\n    uint256 filledAt;\\n    uint256 slotIndex;\\n    /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.\\n    /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral\\n    /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable\\n    uint256 currentCollateral;\\n    address host;\\n  }\\n\\n  struct ActiveSlot {\\n    Request request;\\n    uint256 slotIndex;\\n  }\\n\\n  constructor(\\n    MarketplaceConfig memory configuration,\\n    IERC20 token_,\\n    IGroth16Verifier verifier\\n  ) Proofs(configuration.proofs, verifier) {\\n    _token = token_;\\n\\n    require(\\n      configuration.collateral.repairRewardPercentage <= 100,\\n      \\\"Must be less than 100\\\"\\n    );\\n    require(\\n      configuration.collateral.slashPercentage <= 100,\\n      \\\"Must be less than 100\\\"\\n    );\\n    require(\\n      configuration.collateral.maxNumberOfSlashes *\\n        configuration.collateral.slashPercentage <=\\n        100,\\n      \\\"Maximum slashing exceeds 100%\\\"\\n    );\\n    _config = configuration;\\n  }\\n\\n  function config() public view returns (MarketplaceConfig memory) {\\n    return _config;\\n  }\\n\\n  function token() public view returns (IERC20) {\\n    return _token;\\n  }\\n\\n  function requestStorage(Request calldata request) public {\\n    require(request.client == msg.sender, \\\"Invalid client address\\\");\\n\\n    RequestId id = request.id();\\n    require(_requests[id].client == address(0), \\\"Request already exists\\\");\\n    require(\\n      request.expiry > 0 && request.expiry < request.ask.duration,\\n      \\\"Expiry not in range\\\"\\n    );\\n    require(\\n      request.ask.maxSlotLoss <= request.ask.slots,\\n      \\\"maxSlotLoss exceeds slots\\\"\\n    );\\n\\n    _requests[id] = request;\\n    _requestContexts[id].endsAt = block.timestamp + request.ask.duration;\\n    _requestContexts[id].expiresAt = block.timestamp + request.expiry;\\n\\n    _addToMyRequests(request.client, id);\\n\\n    uint256 amount = request.price();\\n    _requestContexts[id].expiryFundsWithdraw = amount;\\n    _marketplaceTotals.received += amount;\\n    _transferFrom(msg.sender, amount);\\n\\n    emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);\\n  }\\n\\n  function fillSlot(\\n    RequestId requestId,\\n    uint256 slotIndex,\\n    Groth16Proof calldata proof\\n  ) public requestIsKnown(requestId) {\\n    Request storage request = _requests[requestId];\\n    require(slotIndex < request.ask.slots, \\\"Invalid slot\\\");\\n\\n    SlotId slotId = Requests.slotId(requestId, slotIndex);\\n    Slot storage slot = _slots[slotId];\\n    slot.requestId = requestId;\\n    slot.slotIndex = slotIndex;\\n\\n    require(slotState(slotId) == SlotState.Free, \\\"Slot is not free\\\");\\n\\n    _startRequiringProofs(slotId, request.ask.proofProbability);\\n    submitProof(slotId, proof);\\n\\n    slot.host = msg.sender;\\n    slot.state = SlotState.Filled;\\n    slot.filledAt = block.timestamp;\\n    RequestContext storage context = _requestContexts[requestId];\\n    context.slotsFilled += 1;\\n    context.expiryFundsWithdraw -= _expiryPayoutAmount(\\n      requestId,\\n      block.timestamp\\n    );\\n\\n    // Collect collateral\\n    uint256 collateralAmount = request.ask.collateral;\\n    _transferFrom(msg.sender, collateralAmount);\\n    _marketplaceTotals.received += collateralAmount;\\n    slot.currentCollateral = collateralAmount;\\n\\n    _addToMySlots(slot.host, slotId);\\n\\n    emit SlotFilled(requestId, slotIndex);\\n    if (context.slotsFilled == request.ask.slots) {\\n      context.state = RequestState.Started;\\n      context.startedAt = block.timestamp;\\n      emit RequestFulfilled(requestId);\\n    }\\n  }\\n\\n  function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {\\n    Slot storage slot = _slots[slotId];\\n    require(slot.host == msg.sender, \\\"Slot filled by other host\\\");\\n    SlotState state = slotState(slotId);\\n    require(state != SlotState.Paid, \\\"Already paid\\\");\\n\\n    if (state == SlotState.Finished) {\\n      _payoutSlot(slot.requestId, slotId);\\n    } else if (state == SlotState.Cancelled) {\\n      _payoutCancelledSlot(slot.requestId, slotId);\\n    } else if (state == SlotState.Failed) {\\n      _removeFromMySlots(msg.sender, slotId);\\n    } else if (state == SlotState.Filled) {\\n      _forciblyFreeSlot(slotId);\\n    }\\n  }\\n\\n  function _challengeToFieldElement(\\n    bytes32 challenge\\n  ) internal pure returns (uint256) {\\n    // use only 31 bytes of the challenge to ensure that it fits into the field\\n    bytes32 truncated = bytes32(bytes31(challenge));\\n    // convert from little endian to big endian\\n    bytes32 bigEndian = _byteSwap(truncated);\\n    // convert bytes to integer\\n    return uint256(bigEndian);\\n  }\\n\\n  function _merkleRootToFieldElement(\\n    bytes32 merkleRoot\\n  ) internal pure returns (uint256) {\\n    // convert from little endian to big endian\\n    bytes32 bigEndian = _byteSwap(merkleRoot);\\n    // convert bytes to integer\\n    return uint256(bigEndian);\\n  }\\n\\n  function submitProof(\\n    SlotId id,\\n    Groth16Proof calldata proof\\n  ) public requestIsKnown(_slots[id].requestId) {\\n    Slot storage slot = _slots[id];\\n    Request storage request = _requests[slot.requestId];\\n    uint256[] memory pubSignals = new uint256[](3);\\n    pubSignals[0] = _challengeToFieldElement(getChallenge(id));\\n    pubSignals[1] = _merkleRootToFieldElement(request.content.merkleRoot);\\n    pubSignals[2] = slot.slotIndex;\\n    _proofReceived(id, proof, pubSignals);\\n  }\\n\\n  function markProofAsMissing(SlotId slotId, Period period) public {\\n    require(slotState(slotId) == SlotState.Filled, \\\"Slot not accepting proofs\\\");\\n    _markProofAsMissing(slotId, period);\\n    Slot storage slot = _slots[slotId];\\n    Request storage request = _requests[slot.requestId];\\n\\n    // TODO: Reward for validator that calls this function\\n\\n    if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {\\n      uint256 slashedAmount = (request.ask.collateral *\\n        _config.collateral.slashPercentage) / 100;\\n      slot.currentCollateral -= slashedAmount;\\n      if (\\n        missingProofs(slotId) / _config.collateral.slashCriterion >=\\n        _config.collateral.maxNumberOfSlashes\\n      ) {\\n        // When the number of slashings is at or above the allowed amount,\\n        // free the slot.\\n        _forciblyFreeSlot(slotId);\\n      }\\n    }\\n  }\\n\\n  function _forciblyFreeSlot(SlotId slotId) internal {\\n    Slot storage slot = _slots[slotId];\\n    RequestId requestId = slot.requestId;\\n    RequestContext storage context = _requestContexts[requestId];\\n\\n    _removeFromMySlots(slot.host, slotId);\\n\\n    uint256 slotIndex = slot.slotIndex;\\n    delete _slots[slotId];\\n    context.slotsFilled -= 1;\\n    emit SlotFreed(requestId, slotIndex);\\n    _resetMissingProofs(slotId);\\n\\n    Request storage request = _requests[requestId];\\n    uint256 slotsLost = request.ask.slots - context.slotsFilled;\\n    if (\\n      slotsLost > request.ask.maxSlotLoss &&\\n      context.state == RequestState.Started\\n    ) {\\n      context.state = RequestState.Failed;\\n      context.endsAt = block.timestamp - 1;\\n      emit RequestFailed(requestId);\\n\\n      // TODO: send client remaining funds\\n    }\\n  }\\n\\n  function _payoutSlot(\\n    RequestId requestId,\\n    SlotId slotId\\n  ) private requestIsKnown(requestId) {\\n    RequestContext storage context = _requestContexts[requestId];\\n    Request storage request = _requests[requestId];\\n    context.state = RequestState.Finished;\\n    _removeFromMyRequests(request.client, requestId);\\n    Slot storage slot = _slots[slotId];\\n\\n    _removeFromMySlots(slot.host, slotId);\\n\\n    uint256 amount = _requests[requestId].pricePerSlot() +\\n      slot.currentCollateral;\\n    _marketplaceTotals.sent += amount;\\n    slot.state = SlotState.Paid;\\n    assert(_token.transfer(slot.host, amount));\\n  }\\n\\n  function _payoutCancelledSlot(\\n    RequestId requestId,\\n    SlotId slotId\\n  ) private requestIsKnown(requestId) {\\n    Slot storage slot = _slots[slotId];\\n    _removeFromMySlots(slot.host, slotId);\\n\\n    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +\\n      slot.currentCollateral;\\n    _marketplaceTotals.sent += amount;\\n    slot.state = SlotState.Paid;\\n    assert(_token.transfer(slot.host, amount));\\n  }\\n\\n  /// @notice Withdraws storage request funds back to the client that deposited them.\\n  /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.\\n  /// @param requestId the id of the request\\n  function withdrawFunds(RequestId requestId) public {\\n    Request storage request = _requests[requestId];\\n    require(\\n      block.timestamp > requestExpiry(requestId),\\n      \\\"Request not yet timed out\\\"\\n    );\\n    require(request.client == msg.sender, \\\"Invalid client address\\\");\\n    RequestContext storage context = _requestContexts[requestId];\\n    require(context.state == RequestState.New, \\\"Invalid state\\\");\\n\\n    // Update request state to Cancelled. Handle in the withdraw transaction\\n    // as there needs to be someone to pay for the gas to update the state\\n    context.state = RequestState.Cancelled;\\n    _removeFromMyRequests(request.client, requestId);\\n\\n    emit RequestCancelled(requestId);\\n\\n    uint256 amount = context.expiryFundsWithdraw;\\n    _marketplaceTotals.sent += amount;\\n    assert(_token.transfer(msg.sender, amount));\\n  }\\n\\n  function getActiveSlot(\\n    SlotId slotId\\n  ) public view slotIsNotFree(slotId) returns (ActiveSlot memory) {\\n    Slot storage slot = _slots[slotId];\\n    ActiveSlot memory activeSlot;\\n    activeSlot.request = _requests[slot.requestId];\\n    activeSlot.slotIndex = slot.slotIndex;\\n    return activeSlot;\\n  }\\n\\n  modifier requestIsKnown(RequestId requestId) {\\n    require(_requests[requestId].client != address(0), \\\"Unknown request\\\");\\n    _;\\n  }\\n\\n  function getRequest(\\n    RequestId requestId\\n  ) public view requestIsKnown(requestId) returns (Request memory) {\\n    return _requests[requestId];\\n  }\\n\\n  modifier slotIsNotFree(SlotId slotId) {\\n    require(_slots[slotId].state != SlotState.Free, \\\"Slot is free\\\");\\n    _;\\n  }\\n\\n  function requestEnd(RequestId requestId) public view returns (uint256) {\\n    uint256 end = _requestContexts[requestId].endsAt;\\n    RequestState state = requestState(requestId);\\n    if (state == RequestState.New || state == RequestState.Started) {\\n      return end;\\n    } else {\\n      return Math.min(end, block.timestamp - 1);\\n    }\\n  }\\n\\n  function requestExpiry(RequestId requestId) public view returns (uint256) {\\n    return _requestContexts[requestId].expiresAt;\\n  }\\n\\n  /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot\\n  function _expiryPayoutAmount(\\n    RequestId requestId,\\n    uint256 startingTimestamp\\n  ) private view returns (uint256) {\\n    Request storage request = _requests[requestId];\\n    require(\\n      startingTimestamp < requestExpiry(requestId),\\n      \\\"Start not before expiry\\\"\\n    );\\n\\n    return (requestExpiry(requestId) - startingTimestamp) * request.ask.reward;\\n  }\\n\\n  function getHost(SlotId slotId) public view returns (address) {\\n    return _slots[slotId].host;\\n  }\\n\\n  function requestState(\\n    RequestId requestId\\n  ) public view requestIsKnown(requestId) returns (RequestState) {\\n    RequestContext storage context = _requestContexts[requestId];\\n    if (\\n      context.state == RequestState.New &&\\n      block.timestamp > requestExpiry(requestId)\\n    ) {\\n      return RequestState.Cancelled;\\n    } else if (\\n      context.state == RequestState.Started && block.timestamp > context.endsAt\\n    ) {\\n      return RequestState.Finished;\\n    } else {\\n      return context.state;\\n    }\\n  }\\n\\n  function slotState(SlotId slotId) public view override returns (SlotState) {\\n    Slot storage slot = _slots[slotId];\\n    if (RequestId.unwrap(slot.requestId) == 0) {\\n      return SlotState.Free;\\n    }\\n    RequestState reqState = requestState(slot.requestId);\\n    if (slot.state == SlotState.Paid) {\\n      return SlotState.Paid;\\n    }\\n    if (reqState == RequestState.Cancelled) {\\n      return SlotState.Cancelled;\\n    }\\n    if (reqState == RequestState.Finished) {\\n      return SlotState.Finished;\\n    }\\n    if (reqState == RequestState.Failed) {\\n      return SlotState.Failed;\\n    }\\n    return slot.state;\\n  }\\n\\n  function _transferFrom(address sender, uint256 amount) internal {\\n    address receiver = address(this);\\n    require(_token.transferFrom(sender, receiver, amount), \\\"Transfer failed\\\");\\n  }\\n\\n  event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);\\n  event RequestFulfilled(RequestId indexed requestId);\\n  event RequestFailed(RequestId indexed requestId);\\n  event SlotFilled(RequestId indexed requestId, uint256 slotIndex);\\n  event SlotFreed(RequestId indexed requestId, uint256 slotIndex);\\n  event RequestCancelled(RequestId indexed requestId);\\n\\n  struct MarketplaceTotals {\\n    uint256 received;\\n    uint256 sent;\\n  }\\n}\\n\",\"keccak256\":\"0x9ee322749eef03cc790ac253509d54505768fd63c32c68db094eaaf0e31acb07\",\"license\":\"MIT\"},\"contracts/Periods.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\ncontract Periods {\\n  type Period is uint256;\\n\\n  uint256 internal immutable _secondsPerPeriod;\\n\\n  constructor(uint256 secondsPerPeriod) {\\n    _secondsPerPeriod = secondsPerPeriod;\\n  }\\n\\n  function _periodOf(uint256 timestamp) internal view returns (Period) {\\n    return Period.wrap(timestamp / _secondsPerPeriod);\\n  }\\n\\n  function _blockPeriod() internal view returns (Period) {\\n    return _periodOf(block.timestamp);\\n  }\\n\\n  function _nextPeriod(Period period) internal pure returns (Period) {\\n    return Period.wrap(Period.unwrap(period) + 1);\\n  }\\n\\n  function _periodStart(Period period) internal view returns (uint256) {\\n    return Period.unwrap(period) * _secondsPerPeriod;\\n  }\\n\\n  function _periodEnd(Period period) internal view returns (uint256) {\\n    return _periodStart(_nextPeriod(period));\\n  }\\n\\n  function _isBefore(Period a, Period b) internal pure returns (bool) {\\n    return Period.unwrap(a) < Period.unwrap(b);\\n  }\\n\\n  function _isAfter(Period a, Period b) internal pure returns (bool) {\\n    return _isBefore(b, a);\\n  }\\n}\\n\",\"keccak256\":\"0xd70cb0ff823e635a1f52f39d8d32451d2d17d2588dc0a894d28432af72f878ff\",\"license\":\"MIT\"},\"contracts/Proofs.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nimport \\\"./Configuration.sol\\\";\\nimport \\\"./Requests.sol\\\";\\nimport \\\"./Periods.sol\\\";\\nimport \\\"./Groth16.sol\\\";\\n\\nabstract contract Proofs is Periods {\\n  ProofConfig private _config;\\n  IGroth16Verifier private _verifier;\\n\\n  constructor(\\n    ProofConfig memory config,\\n    IGroth16Verifier verifier\\n  ) Periods(config.period) {\\n    require(block.number > 256, \\\"Insufficient block height\\\");\\n    _config = config;\\n    _verifier = verifier;\\n  }\\n\\n  mapping(SlotId => uint256) private _slotStarts;\\n  mapping(SlotId => uint256) private _probabilities;\\n  mapping(SlotId => uint256) private _missed;\\n  mapping(SlotId => mapping(Period => bool)) private _received;\\n  mapping(SlotId => mapping(Period => bool)) private _missing;\\n\\n  function slotState(SlotId id) public view virtual returns (SlotState);\\n\\n  function missingProofs(SlotId slotId) public view returns (uint256) {\\n    return _missed[slotId];\\n  }\\n\\n  function _resetMissingProofs(SlotId slotId) internal {\\n    _missed[slotId] = 0;\\n  }\\n\\n  function _startRequiringProofs(SlotId id, uint256 probability) internal {\\n    _slotStarts[id] = block.timestamp;\\n    _probabilities[id] = probability;\\n  }\\n\\n  function _getPointer(SlotId id, Period period) internal view returns (uint8) {\\n    uint256 blockNumber = block.number % 256;\\n    // To ensure the pointer does not remain in downtime for many consecutive\\n    // periods, for each period increase, move the pointer 67 blocks. We've\\n    // chosen a prime number to ensure that we don't get cycles.\\n    uint256 periodNumber = (Period.unwrap(period) * 67) % 256;\\n    uint256 idOffset = uint256(SlotId.unwrap(id)) % 256;\\n    uint256 pointer = (blockNumber + periodNumber + idOffset) % 256;\\n    return uint8(pointer);\\n  }\\n\\n  function getPointer(SlotId id) public view returns (uint8) {\\n    return _getPointer(id, _blockPeriod());\\n  }\\n\\n  function _getChallenge(uint8 pointer) internal view returns (bytes32) {\\n    bytes32 hash = blockhash(block.number - 1 - pointer);\\n    assert(uint256(hash) != 0);\\n    return keccak256(abi.encode(hash));\\n  }\\n\\n  function _getChallenge(\\n    SlotId id,\\n    Period period\\n  ) internal view returns (bytes32) {\\n    return _getChallenge(_getPointer(id, period));\\n  }\\n\\n  function getChallenge(SlotId id) public view returns (bytes32) {\\n    return _getChallenge(id, _blockPeriod());\\n  }\\n\\n  function _getProofRequirement(\\n    SlotId id,\\n    Period period\\n  ) internal view returns (bool isRequired, uint8 pointer) {\\n    SlotState state = slotState(id);\\n    Period start = _periodOf(_slotStarts[id]);\\n    if (state != SlotState.Filled || !_isAfter(period, start)) {\\n      return (false, 0);\\n    }\\n    pointer = _getPointer(id, period);\\n    bytes32 challenge = _getChallenge(pointer);\\n    uint256 probability = (_probabilities[id] * (256 - _config.downtime)) / 256;\\n    isRequired = probability == 0 || uint256(challenge) % probability == 0;\\n  }\\n\\n  function _isProofRequired(\\n    SlotId id,\\n    Period period\\n  ) internal view returns (bool) {\\n    bool isRequired;\\n    uint8 pointer;\\n    (isRequired, pointer) = _getProofRequirement(id, period);\\n    return isRequired && pointer >= _config.downtime;\\n  }\\n\\n  function isProofRequired(SlotId id) public view returns (bool) {\\n    return _isProofRequired(id, _blockPeriod());\\n  }\\n\\n  function willProofBeRequired(SlotId id) public view returns (bool) {\\n    bool isRequired;\\n    uint8 pointer;\\n    (isRequired, pointer) = _getProofRequirement(id, _blockPeriod());\\n    return isRequired && pointer < _config.downtime;\\n  }\\n\\n  function _proofReceived(\\n    SlotId id,\\n    Groth16Proof calldata proof,\\n    uint[] memory pubSignals\\n  ) internal {\\n    require(!_received[id][_blockPeriod()], \\\"Proof already submitted\\\");\\n    require(_verifier.verify(proof, pubSignals), \\\"Invalid proof\\\");\\n    _received[id][_blockPeriod()] = true;\\n    emit ProofSubmitted(id);\\n  }\\n\\n  function _markProofAsMissing(SlotId id, Period missedPeriod) internal {\\n    uint256 end = _periodEnd(missedPeriod);\\n    require(end < block.timestamp, \\\"Period has not ended yet\\\");\\n    require(block.timestamp < end + _config.timeout, \\\"Validation timed out\\\");\\n    require(!_received[id][missedPeriod], \\\"Proof was submitted, not missing\\\");\\n    require(_isProofRequired(id, missedPeriod), \\\"Proof was not required\\\");\\n    require(!_missing[id][missedPeriod], \\\"Proof already marked as missing\\\");\\n    _missing[id][missedPeriod] = true;\\n    _missed[id] += 1;\\n  }\\n\\n  event ProofSubmitted(SlotId id);\\n}\\n\",\"keccak256\":\"0x3df73efe46ab3641e142c3d9fcf1bfbbc4e481c4b141b15d952a22bd958014a5\",\"license\":\"MIT\"},\"contracts/Requests.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\ntype RequestId is bytes32;\\ntype SlotId is bytes32;\\n\\nstruct Request {\\n  address client;\\n  Ask ask;\\n  Content content;\\n  uint256 expiry; // amount of seconds since start of the request at which this request expires\\n  bytes32 nonce; // random nonce to differentiate between similar requests\\n}\\n\\nstruct Ask {\\n  uint64 slots; // the number of requested slots\\n  uint256 slotSize; // amount of storage per slot (in number of bytes)\\n  uint256 duration; // how long content should be stored (in seconds)\\n  uint256 proofProbability; // how often storage proofs are required\\n  uint256 reward; // amount of tokens paid per second per slot to hosts\\n  uint256 collateral; // amount of tokens required to be deposited by the hosts in order to fill the slot\\n  uint64 maxSlotLoss; // Max slots that can be lost without data considered to be lost\\n}\\n\\nstruct Content {\\n  string cid; // content id, used to download the dataset\\n  bytes32 merkleRoot; // merkle root of the dataset, used to verify storage proofs\\n}\\n\\nenum RequestState {\\n  New, // [default] waiting to fill slots\\n  Started, // all slots filled, accepting regular proofs\\n  Cancelled, // not enough slots filled before expiry\\n  Finished, // successfully completed\\n  Failed // too many nodes have failed to provide proofs, data lost\\n}\\n\\nenum SlotState {\\n  Free, // [default] not filled yet, or host has vacated the slot\\n  Filled, // host has filled slot\\n  Finished, // successfully completed\\n  Failed, // the request has failed\\n  Paid, // host has been paid\\n  Cancelled // when request was cancelled then slot is cancelled as well\\n}\\n\\nlibrary Requests {\\n  function id(Request memory request) internal pure returns (RequestId) {\\n    return RequestId.wrap(keccak256(abi.encode(request)));\\n  }\\n\\n  function slotId(\\n    RequestId requestId,\\n    uint256 slotIndex\\n  ) internal pure returns (SlotId) {\\n    return SlotId.wrap(keccak256(abi.encode(requestId, slotIndex)));\\n  }\\n\\n  function toRequestIds(\\n    bytes32[] memory ids\\n  ) internal pure returns (RequestId[] memory result) {\\n    // solhint-disable-next-line no-inline-assembly\\n    assembly {\\n      result := ids\\n    }\\n  }\\n\\n  function toSlotIds(\\n    bytes32[] memory ids\\n  ) internal pure returns (SlotId[] memory result) {\\n    // solhint-disable-next-line no-inline-assembly\\n    assembly {\\n      result := ids\\n    }\\n  }\\n\\n  function pricePerSlot(\\n    Request memory request\\n  ) internal pure returns (uint256) {\\n    return request.ask.duration * request.ask.reward;\\n  }\\n\\n  function price(Request memory request) internal pure returns (uint256) {\\n    return request.ask.slots * pricePerSlot(request);\\n  }\\n}\\n\",\"keccak256\":\"0xf598ab550bb20660bfc6a937045d92534c4f8f41676337c221d593c06fe09ba1\",\"license\":\"MIT\"},\"contracts/StateRetrieval.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.23;\\n\\nimport \\\"@openzeppelin/contracts/utils/structs/EnumerableSet.sol\\\";\\nimport \\\"./Requests.sol\\\";\\n\\ncontract StateRetrieval {\\n  using EnumerableSet for EnumerableSet.Bytes32Set;\\n  using Requests for bytes32[];\\n\\n  mapping(address => EnumerableSet.Bytes32Set) private _requestsPerClient;\\n  mapping(address => EnumerableSet.Bytes32Set) private _slotsPerHost;\\n\\n  function myRequests() public view returns (RequestId[] memory) {\\n    return _requestsPerClient[msg.sender].values().toRequestIds();\\n  }\\n\\n  function mySlots() public view returns (SlotId[] memory) {\\n    return _slotsPerHost[msg.sender].values().toSlotIds();\\n  }\\n\\n  function _hasSlots(address host) internal view returns (bool) {\\n    return _slotsPerHost[host].length() > 0;\\n  }\\n\\n  function _addToMyRequests(address client, RequestId requestId) internal {\\n    _requestsPerClient[client].add(RequestId.unwrap(requestId));\\n  }\\n\\n  function _addToMySlots(address host, SlotId slotId) internal {\\n    _slotsPerHost[host].add(SlotId.unwrap(slotId));\\n  }\\n\\n  function _removeFromMyRequests(address client, RequestId requestId) internal {\\n    _requestsPerClient[client].remove(RequestId.unwrap(requestId));\\n  }\\n\\n  function _removeFromMySlots(address host, SlotId slotId) internal {\\n    _slotsPerHost[host].remove(SlotId.unwrap(slotId));\\n  }\\n}\\n\",\"keccak256\":\"0x734c58b16cd1bf57aed889162708140b4a093698963c5cf688308f7d8b2d5deb\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x60c06040523480156200001157600080fd5b5060405162003d3b38038062003d3b833981016040819052620000349162000487565b60208301518051608052816101004311620000965760405162461bcd60e51b815260206004820152601960248201527f496e73756666696369656e7420626c6f636b206865696768740000000000000060448201526064015b60405180910390fd5b81516000908155602083015160015560408301516002805460ff191660ff9092169190911790556060830151839190600390620000d4908262000627565b5050600480546001600160a01b0319166001600160a01b0393841617905550831660a05250825151606460ff9091161115620001535760405162461bcd60e51b815260206004820152601560248201527f4d757374206265206c657373207468616e20313030000000000000000000000060448201526064016200008d565b606483600001516060015160ff161115620001b15760405162461bcd60e51b815260206004820152601560248201527f4d757374206265206c657373207468616e20313030000000000000000000000060448201526064016200008d565b82516060810151602090910151606491620001cc91620006f3565b60ff1611156200021f5760405162461bcd60e51b815260206004820152601d60248201527f4d6178696d756d20736c617368696e672065786365656473203130302500000060448201526064016200008d565b82518051600c805460208085015160408087015160609788015160ff9081166401000000000260ff60201b1961ffff90931662010000029290921664ffffff0000199482166101000261ffff1990971698821698909817959095179290921695909517178355808801518051600d90815591810151600e5593840151600f80549190931660ff19919091161790915592820151869391929190601090620002c7908262000627565b50505090505050505062000725565b634e487b7160e01b600052604160045260246000fd5b604051608081016001600160401b0381118282101715620003115762000311620002d6565b60405290565b604080519081016001600160401b0381118282101715620003115762000311620002d6565b604051601f8201601f191681016001600160401b0381118282101715620003675762000367620002d6565b604052919050565b805160ff811681146200038157600080fd5b919050565b6000608082840312156200039957600080fd5b620003a3620002ec565b90508151815260208083015181830152620003c1604084016200036f565b604083015260608301516001600160401b0380821115620003e157600080fd5b818501915085601f830112620003f657600080fd5b8151818111156200040b576200040b620002d6565b6200041f601f8201601f191685016200033c565b915080825286848285010111156200043657600080fd5b60005b818110156200045657838101850151838201860152840162000439565b5060008482840101525080606085015250505092915050565b80516001600160a01b03811681146200038157600080fd5b6000806000606084860312156200049d57600080fd5b83516001600160401b0380821115620004b557600080fd5b9085019081870360a0811215620004cb57600080fd5b620004d562000317565b6080821215620004e457600080fd5b620004ee620002ec565b9150620004fb846200036f565b82526200050b602085016200036f565b6020830152604084015161ffff811681146200052657600080fd5b604083015262000539606085016200036f565b6060830152908152608083015190828211156200055557600080fd5b620005638983860162000386565b6020820152809650505050506200057d602085016200046f565b91506200058d604085016200046f565b90509250925092565b600181811c90821680620005ab57607f821691505b602082108103620005cc57634e487b7160e01b600052602260045260246000fd5b50919050565b601f82111562000622576000816000526020600020601f850160051c81016020861015620005fd5750805b601f850160051c820191505b818110156200061e5782815560010162000609565b5050505b505050565b81516001600160401b03811115620006435762000643620002d6565b6200065b8162000654845462000596565b84620005d2565b602080601f8311600181146200069357600084156200067a5750858301515b600019600386901b1c1916600185901b1785556200061e565b600085815260208120601f198616915b82811015620006c457888601518255948401946001909101908401620006a3565b5085821015620006e35787850151600019600388901b60f8161c191681555b5050505050600190811b01905550565b60ff81811683821602908116908181146200071e57634e487b7160e01b600052601160045260246000fd5b5092915050565b60805160a0516135cd6200076e600039600081816103ca01528181610bc001528181611ddc0152818161216101526122cd0152600081816126ea015261288901526135cd6000f3fe608060405234801561001057600080fd5b50600436106101825760003560e01c80639777b72c116100d8578063be5cdc481161008c578063f752196b11610066578063f752196b14610388578063fb1e61ca146103a8578063fc0c546a146103c857600080fd5b8063be5cdc4814610342578063c0cc4add14610362578063e8aa0a071461037557600080fd5b8063a3a0807e116100bd578063a3a0807e146102ec578063a6af384b1461030f578063b396dc791461032257600080fd5b80639777b72c146102d1578063a29c29a4146102d957600080fd5b80634641dce61161013a5780636b00c8cf116101145780636b00c8cf146102655780636e2b54ee146102a957806379502c55146102bc57600080fd5b80634641dce61461021857806359cc89ed1461023d5780635da738351461025057600080fd5b806308695fcd1161016b57806308695fcd146101cd578063329b5a0b146101e2578063458d2bf11461020557600080fd5b806302fa8e651461018757806305b90773146101ad575b600080fd5b61019a610195366004612abf565b6103ee565b6040519081526020015b60405180910390f35b6101c06101bb366004612abf565b610465565b6040516101a49190612aee565b6101e06101db366004612b08565b610557565b005b61019a6101f0366004612abf565b60009081526012602052604090206005015490565b61019a610213366004612abf565b6106ad565b61022b610226366004612abf565b6106c6565b60405160ff90911681526020016101a4565b6101e061024b366004612b3d565b6106d9565b6102586109dd565b6040516101a49190612b74565b610291610273366004612abf565b6000908152601360205260409020600501546001600160a01b031690565b6040516001600160a01b0390911681526020016101a4565b6101e06102b7366004612abf565b610a04565b6102c4610c41565b6040516101a49190612bfe565b610258610db2565b6101e06102e7366004612abf565b610dd1565b6102ff6102fa366004612abf565b610fa2565b60405190151581526020016101a4565b6101e061031d366004612c80565b610fd7565b610335610330366004612abf565b6112c3565b6040516101a49190612d89565b610355610350366004612abf565b6114ac565b6040516101a49190612dbb565b6102ff610370366004612abf565b61157a565b6101e0610383366004612dcf565b61158d565b61019a610396366004612abf565b60009081526007602052604090205490565b6103bb6103b6366004612abf565b6116ca565b6040516101a49190612dfd565b7f0000000000000000000000000000000000000000000000000000000000000000610291565b6000818152601260205260408120600401548161040a84610465565b9050600081600481111561042057610420612ad8565b148061043d5750600181600481111561043b5761043b612ad8565b145b15610449575092915050565b61045d82610458600142612e26565b611881565b949350505050565b60008181526011602052604081205482906001600160a01b03166104c25760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064015b60405180910390fd5b600083815260126020526040812090815460ff1660048111156104e7576104e7612ad8565b148015610504575060008481526012602052604090206005015442115b15610513576002925050610551565b6001815460ff16600481111561052b5761052b612ad8565b14801561053b5750806004015442115b1561054a576003925050610551565b5460ff1691505b50919050565b6001610562836114ac565b600581111561057357610573612ad8565b146105c05760405162461bcd60e51b815260206004820152601960248201527f536c6f74206e6f7420616363657074696e672070726f6f66730000000000000060448201526064016104b9565b6105ca8282611899565b6000828152601360209081526040808320600181015484526011909252909120600c5461ffff620100009091041661060e8560009081526007602052604090205490565b6106189190612e4f565b6000036106a757600c54600682015460009160649161064291640100000000900460ff1690612e63565b61064c9190612e7a565b9050808360040160008282546106629190612e26565b9091555050600c54600086815260076020526040902054610100820460ff169162010000900461ffff16906106979190612e7a565b106106a5576106a585611ac6565b505b50505050565b60006106c0826106bb611c6c565b611c77565b92915050565b60006106c0826106d4611c6c565b611c8b565b60008381526011602052604090205483906001600160a01b03166107315760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b6000848152601160205260409020600181015467ffffffffffffffff16841061079c5760405162461bcd60e51b815260206004820152600c60248201527f496e76616c696420736c6f74000000000000000000000000000000000000000060448201526064016104b9565b60408051602080820188905281830187905282518083038401815260609092019092528051910120600090600081815260136020526040812060018101899055600381018890559192506107ef836114ac565b600581111561080057610800612ad8565b1461084d5760405162461bcd60e51b815260206004820152601060248201527f536c6f74206973206e6f7420667265650000000000000000000000000000000060448201526064016104b9565b600483015460008381526005602090815260408083204290556006909152902055610878828661158d565b60058101805473ffffffffffffffffffffffffffffffffffffffff191633179055805460ff1916600190811782554260028301556000888152601260205260408120808301805491939290916108cf908490612e8e565b909155506108df90508842611cf7565b8160020160008282546108f29190612e26565b909155505060068401546109063382611d94565b806014600001600082825461091b9190612e8e565b909155505060048301819055600583015461093f906001600160a01b031685611e9c565b887ff530852268993f91008f1a1e0b09b5c813acd4188481f1fa83c33c7182e814b48960405161097191815260200190565b60405180910390a26001808601549083015467ffffffffffffffff90911690036109d257815460ff1916600117825542600383015560405189907f85e1543bf2f84fe80c6badbce3648c8539ad1df4d2b3d822938ca0538be727e690600090a25b505050505050505050565b336000908152600b602052604090206060906109ff906109fc90611ebe565b90565b905090565b60008181526011602090815260408083206012909252909120600501544211610a6f5760405162461bcd60e51b815260206004820152601960248201527f52657175657374206e6f74207965742074696d6564206f75740000000000000060448201526064016104b9565b80546001600160a01b03163314610ac85760405162461bcd60e51b815260206004820152601660248201527f496e76616c696420636c69656e7420616464726573730000000000000000000060448201526064016104b9565b600082815260126020526040812090815460ff166004811115610aed57610aed612ad8565b14610b3a5760405162461bcd60e51b815260206004820152600d60248201527f496e76616c69642073746174650000000000000000000000000000000000000060448201526064016104b9565b805460ff191660021781558154610b5a906001600160a01b031684611ecb565b60405183907ff903f4774c7bd27355f9d7fcbc382b079b164a697a44ac5d95267a4c3cb3bb2290600090a2600281015460158054829190600090610b9f908490612e8e565b909155505060405163a9059cbb60e01b8152336004820152602481018290527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03169063a9059cbb906044016020604051808303816000875af1158015610c11573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c359190612ea1565b6106a7576106a7612ec3565b610c986040805160c0810182526000918101828152606082018390526080820183905260a0820192909252908190815260408051608081018252600080825260208281018290529282015260608082015291015290565b6040805160c081018252600c805460ff8082168486019081526101008304821660608087019190915261ffff62010000850416608080880191909152640100000000909404831660a087015290855285519283018652600d80548452600e54602085810191909152600f54909316968401969096526010805495969495928701949291840191610d2790612ed9565b80601f0160208091040260200160405190810160405280929190818152602001828054610d5390612ed9565b8015610da05780601f10610d7557610100808354040283529160200191610da0565b820191906000526020600020905b815481529060010190602001808311610d8357829003601f168201915b50505050508152505081525050905090565b336000908152600a602052604090206060906109ff906109fc90611ebe565b806000808281526013602052604090205460ff166005811115610df657610df6612ad8565b03610e325760405162461bcd60e51b815260206004820152600c60248201526b536c6f74206973206672656560a01b60448201526064016104b9565b600082815260136020526040902060058101546001600160a01b03163314610e9c5760405162461bcd60e51b815260206004820152601960248201527f536c6f742066696c6c6564206279206f7468657220686f73740000000000000060448201526064016104b9565b6000610ea7846114ac565b90506004816005811115610ebd57610ebd612ad8565b03610f0a5760405162461bcd60e51b815260206004820152600c60248201527f416c72656164792070616964000000000000000000000000000000000000000060448201526064016104b9565b6002816005811115610f1e57610f1e612ad8565b03610f3657610f31826001015485611eed565b6106a7565b6005816005811115610f4a57610f4a612ad8565b03610f5d57610f318260010154856121da565b6003816005811115610f7157610f71612ad8565b03610f8057610f313385612346565b6001816005811115610f9457610f94612ad8565b036106a7576106a784611ac6565b6000806000610fb884610fb3611c6c565b612368565b909250905081801561045d575060025460ff9081169116109392505050565b33610fe56020830183612f25565b6001600160a01b03161461103b5760405162461bcd60e51b815260206004820152601660248201527f496e76616c696420636c69656e7420616464726573730000000000000000000060448201526064016104b9565b600061104e611049836130b7565b61244b565b6000818152601160205260409020549091506001600160a01b0316156110b65760405162461bcd60e51b815260206004820152601660248201527f5265717565737420616c7265616479206578697374730000000000000000000060448201526064016104b9565b60008261012001351180156110d357506060820135610120830135105b61111f5760405162461bcd60e51b815260206004820152601360248201527f457870697279206e6f7420696e2072616e67650000000000000000000000000060448201526064016104b9565b61112f60408301602084016131a6565b67ffffffffffffffff1661114a610100840160e085016131a6565b67ffffffffffffffff1611156111a25760405162461bcd60e51b815260206004820152601960248201527f6d6178536c6f744c6f7373206578636565647320736c6f74730000000000000060448201526064016104b9565b600081815260116020526040902082906111bc8282613331565b506111cd9050606083013542612e8e565b6000828152601260205260409020600401556111ee61012083013542612e8e565b60008281526012602090815260409091206005019190915561121c9061121690840184612f25565b8261247b565b600061122f61122a846130b7565b61249d565b600083815260126020526040812060020182905560148054929350839290919061125a908490612e8e565b9091555061126a90503382611d94565b7f5fdb86c365a247a4d97dcbcc5c3abde9d6e3e2de26273f3fda8eef5073b9a96c828460200160126000868152602001908152602001600020600501546040516112b693929190613429565b60405180910390a1505050565b6112cb6129f7565b816000808281526013602052604090205460ff1660058111156112f0576112f0612ad8565b0361132c5760405162461bcd60e51b815260206004820152600c60248201526b536c6f74206973206672656560a01b60448201526064016104b9565b60008381526013602052604090206113426129f7565b600180830154600090815260116020908152604091829020825160a0808201855282546001600160a01b03168252845160e0810186529583015467ffffffffffffffff9081168752600284015487860152600384015487870152600484015460608801526005840154608088015260068401549187019190915260078301541660c08601529182019390935281518083018352600884018054929493850192829082906113ee90612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461141a90612ed9565b80156114675780601f1061143c57610100808354040283529160200191611467565b820191906000526020600020905b81548152906001019060200180831161144a57829003601f168201915b505050918352505060019190910154602091820152908252600a83015482820152600b9092015460409091015290825260039092015491810191909152915050919050565b6000818152601360205260408120600181015482036114ce5750600092915050565b60006114dd8260010154610465565b90506004825460ff1660058111156114f7576114f7612ad8565b03611506575060049392505050565b600281600481111561151a5761151a612ad8565b03611529575060059392505050565b600381600481111561153d5761153d612ad8565b0361154c575060029392505050565b600481600481111561156057611560612ad8565b0361156f575060039392505050565b505460ff1692915050565b60006106c082611588611c6c565b6124c2565b6000828152601360209081526040808320600101548084526011909252909120546001600160a01b03166115f55760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b600083815260136020908152604080832060018101548452601183528184208251600380825260808201909452919490939092908201606080368337019050509050611648611643876106ad565b6124f5565b8160008151811061165b5761165b6134a5565b6020908102919091010152600982015461167490612506565b81600181518110611687576116876134a5565b6020026020010181815250508260030154816002815181106116ab576116ab6134a5565b6020026020010181815250506116c2868683612512565b505050505050565b6116d2612a17565b60008281526011602052604090205482906001600160a01b031661172a5760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b600083815260116020908152604091829020825160a0808201855282546001600160a01b03168252845160e081018652600184015467ffffffffffffffff90811682526002850154828701526003850154828801526004850154606083015260058501546080830152600685015492820192909252600784015490911660c082015292810192909252825180840184526008820180549394929392850192829082906117d590612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461180190612ed9565b801561184e5780601f106118235761010080835404028352916020019161184e565b820191906000526020600020905b81548152906001019060200180831161183157829003601f168201915b505050505081526020016001820154815250508152602001600a8201548152602001600b82015481525050915050919050565b60008183106118905781611892565b825b9392505050565b60006118a4826126d0565b90504281106118f55760405162461bcd60e51b815260206004820152601860248201527f506572696f6420686173206e6f7420656e64656420796574000000000000000060448201526064016104b9565b6001546119029082612e8e565b42106119505760405162461bcd60e51b815260206004820152601460248201527f56616c69646174696f6e2074696d6564206f757400000000000000000000000060448201526064016104b9565b600083815260086020908152604080832085845290915290205460ff16156119ba5760405162461bcd60e51b815260206004820181905260248201527f50726f6f6620776173207375626d69747465642c206e6f74206d697373696e6760448201526064016104b9565b6119c483836124c2565b611a105760405162461bcd60e51b815260206004820152601660248201527f50726f6f6620776173206e6f742072657175697265640000000000000000000060448201526064016104b9565b600083815260096020908152604080832085845290915290205460ff1615611a7a5760405162461bcd60e51b815260206004820152601f60248201527f50726f6f6620616c7265616479206d61726b6564206173206d697373696e670060448201526064016104b9565b60008381526009602090815260408083208584528252808320805460ff1916600190811790915586845260079092528220805491929091611abc908490612e8e565b9091555050505050565b60008181526013602090815260408083206001810154808552601290935292206005830154611afe906001600160a01b031685612346565b6003808401546000868152601360205260408120805460ff1916815560018082018390556002820183905593810182905560048101829055600501805473ffffffffffffffffffffffffffffffffffffffff191690558383018054929392909190611b6a908490612e26565b909155505060405181815283907f1d31c9f8dea6e179f6a050db117595feea8937029ea51f5168a4780be7e8f5529060200160405180910390a2600085815260076020526040812055600083815260116020526040812060018085015490820154919291611be2919067ffffffffffffffff16612e26565b600783015490915067ffffffffffffffff1681118015611c1757506001845460ff166004811115611c1557611c15612ad8565b145b15611c6357835460ff19166004178455611c32600142612e26565b600485015560405185907f4769361a442504ecaf038f35e119bcccdd5e42096b24c09e3c17fd17c6684c0290600090a25b50505050505050565b60006109ff426126e3565b6000611892611c868484611c8b565b61270f565b600080611c9a61010043612e4f565b90506000610100611cac856043612e63565b611cb69190612e4f565b90506000611cc661010087612e4f565b9050600061010082611cd88587612e8e565b611ce29190612e8e565b611cec9190612e4f565b979650505050505050565b600082815260116020908152604080832060129092528220600501548310611d615760405162461bcd60e51b815260206004820152601760248201527f5374617274206e6f74206265666f72652065787069727900000000000000000060448201526064016104b9565b600581015483611d808660009081526012602052604090206005015490565b611d8a9190612e26565b61045d9190612e63565b6040517f23b872dd0000000000000000000000000000000000000000000000000000000081526001600160a01b038381166004830152306024830181905260448301849052917f0000000000000000000000000000000000000000000000000000000000000000909116906323b872dd906064016020604051808303816000875af1158015611e27573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611e4b9190612ea1565b611e975760405162461bcd60e51b815260206004820152600f60248201527f5472616e73666572206661696c6564000000000000000000000000000000000060448201526064016104b9565b505050565b6001600160a01b0382166000908152600b60205260409020611e979082612769565b6060600061189283612775565b6001600160a01b0382166000908152600a60205260409020611e9790826127d1565b60008281526011602052604090205482906001600160a01b0316611f455760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b60008381526012602090815260408083206011909252909120815460ff191660031782558054611f7e906001600160a01b031686611ecb565b60008481526013602052604090206005810154611fa4906001600160a01b031686612346565b6004808201546000888152601160209081526040808320815160a0808201845282546001600160a01b03168252835160e081018552600184015467ffffffffffffffff908116825260028501548288015260038501548287015298840154606082015260058401546080820152600684015491810191909152600783015490971660c08801529283019590955280518082018252600886018054949661210195909385019291908290829061205890612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461208490612ed9565b80156120d15780601f106120a6576101008083540402835291602001916120d1565b820191906000526020600020905b8154815290600101906020018083116120b457829003601f168201915b505050505081526020016001820154815250508152602001600a8201548152602001600b820154815250506127dd565b61210b9190612e8e565b905080601460010160008282546121229190612e8e565b9091555050815460ff191660049081178355600583015460405163a9059cbb60e01b81526001600160a01b0391821692810192909252602482018390527f0000000000000000000000000000000000000000000000000000000000000000169063a9059cbb906044016020604051808303816000875af11580156121aa573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906121ce9190612ea1565b611c6357611c63612ec3565b60008281526011602052604090205482906001600160a01b03166122325760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b60008281526013602052604090206005810154612258906001600160a01b031684612346565b6000816004015461226d868460020154611cf7565b6122779190612e8e565b9050806014600101600082825461228e9190612e8e565b9091555050815460ff191660049081178355600583015460405163a9059cbb60e01b81526001600160a01b0391821692810192909252602482018390527f0000000000000000000000000000000000000000000000000000000000000000169063a9059cbb906044016020604051808303816000875af1158015612316573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061233a9190612ea1565b6106a5576106a5612ec3565b6001600160a01b0382166000908152600b60205260409020611e9790826127d1565b6000806000612376856114ac565b60008681526005602052604081205491925090612392906126e3565b905060018260058111156123a8576123a8612ad8565b1415806123bc57506123ba85826127f9565b155b156123cf57600080935093505050612444565b6123d98686611c8b565b925060006123e68461270f565b600254909150600090610100906124009060ff16826134bb565b60008a81526006602052604090205461241d9161ffff1690612e63565b6124279190612e7a565b905080158061243d575061243b8183612e4f565b155b9550505050505b9250929050565b60008160405160200161245e9190612dfd565b604051602081830303815290604052805190602001209050919050565b6001600160a01b0382166000908152600a60205260409020611e979082612769565b60006124a8826127dd565b6020830151516106c0919067ffffffffffffffff16612e63565b60008060006124d18585612368565b90925090508180156124ec575060025460ff90811690821610155b95945050505050565b600060ff1982168161045d82612803565b60008061189283612803565b600083815260086020526040812090612529611c6c565b815260208101919091526040016000205460ff161561258a5760405162461bcd60e51b815260206004820152601760248201527f50726f6f6620616c7265616479207375626d697474656400000000000000000060448201526064016104b9565b600480546040517f94c8919d0000000000000000000000000000000000000000000000000000000081526001600160a01b03909116916394c8919d916125d49186918691016134d6565b602060405180830381865afa1580156125f1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906126159190612ea1565b6126615760405162461bcd60e51b815260206004820152600d60248201527f496e76616c69642070726f6f660000000000000000000000000000000000000060448201526064016104b9565b600083815260086020526040812060019161267a611c6c565b815260200190815260200160002060006101000a81548160ff0219169083151502179055507f3b989d183b84b02259d7c14b34a9c9eb0fccb4c355a920d25e581e25aef4993d836040516112b691815260200190565b60006106c06126de83612875565b612882565b60006106c07f000000000000000000000000000000000000000000000000000000000000000083612e7a565b60008060ff8316612721600143612e26565b61272b9190612e26565b409050600081900361273f5761273f612ec3565b60408051602081018390520160405160208183030381529060405280519060200120915050919050565b600061189283836128ae565b6060816000018054806020026020016040519081016040528092919081815260200182805480156127c557602002820191906000526020600020905b8154815260200190600101908083116127b1575b50505050509050919050565b600061189283836128fd565b602081015160808101516040909101516000916106c091612e63565b6000818311611892565b7fff00000000000000000000000000000000000000000000000000000000000000811660015b602081101561055157600891821c91612843908290612e63565b83901b7fff00000000000000000000000000000000000000000000000000000000000000169190911790600101612829565b60006106c0826001612e8e565b60006106c07f000000000000000000000000000000000000000000000000000000000000000083612e63565b60008181526001830160205260408120546128f5575081546001818101845560008481526020808220909301849055845484825282860190935260409020919091556106c0565b5060006106c0565b600081815260018301602052604081205480156129e6576000612921600183612e26565b855490915060009061293590600190612e26565b905081811461299a576000866000018281548110612955576129556134a5565b9060005260206000200154905080876000018481548110612978576129786134a5565b6000918252602080832090910192909255918252600188019052604090208390555b85548690806129ab576129ab613581565b6001900381819060005260206000200160009055905585600101600086815260200190815260200160002060009055600193505050506106c0565b60009150506106c0565b5092915050565b6040518060400160405280612a0a612a17565b8152602001600081525090565b6040518060a0016040528060006001600160a01b03168152602001612a866040518060e00160405280600067ffffffffffffffff1681526020016000815260200160008152602001600081526020016000815260200160008152602001600067ffffffffffffffff1681525090565b8152602001612aab604051806040016040528060608152602001600080191681525090565b815260006020820181905260409091015290565b600060208284031215612ad157600080fd5b5035919050565b634e487b7160e01b600052602160045260246000fd5b6020810160058310612b0257612b02612ad8565b91905290565b60008060408385031215612b1b57600080fd5b50508035926020909101359150565b6000610100828403121561055157600080fd5b60008060006101408486031215612b5357600080fd5b8335925060208401359150612b6b8560408601612b2a565b90509250925092565b6020808252825182820181905260009190848201906040850190845b81811015612bac57835183529284019291840191600101612b90565b50909695505050505050565b6000815180845260005b81811015612bde57602081850181015186830182015201612bc2565b506000602082860101526020601f19601f83011685010191505092915050565b602081526000825160ff815116602084015260ff602082015116604084015261ffff604082015116606084015260ff606082015116608084015250602083015160a080840152805160c0840152602081015160e084015260ff60408201511661010084015260608101519050608061012084015261045d610140840182612bb8565b600060208284031215612c9257600080fd5b813567ffffffffffffffff811115612ca957600080fd5b8201610160818503121561189257600080fd5b6000815160408452612cd16040850182612bb8565b602093840151949093019390935250919050565b60006101606001600160a01b038351168452602083015167ffffffffffffffff808251166020870152602082015160408701526040820151606087015260608201516080870152608082015160a087015260a082015160c08701528060c08301511660e08701525050604083015181610100860152612d6682860182612cbc565b915050606083015161012085015260808301516101408501528091505092915050565b602081526000825160406020840152612da56060840182612ce5565b9050602084015160408401528091505092915050565b6020810160068310612b0257612b02612ad8565b6000806101208385031215612de357600080fd5b82359150612df48460208501612b2a565b90509250929050565b6020815260006118926020830184612ce5565b634e487b7160e01b600052601160045260246000fd5b818103818111156106c0576106c0612e10565b634e487b7160e01b600052601260045260246000fd5b600082612e5e57612e5e612e39565b500690565b80820281158282048414176106c0576106c0612e10565b600082612e8957612e89612e39565b500490565b808201808211156106c0576106c0612e10565b600060208284031215612eb357600080fd5b8151801515811461189257600080fd5b634e487b7160e01b600052600160045260246000fd5b600181811c90821680612eed57607f821691505b60208210810361055157634e487b7160e01b600052602260045260246000fd5b6001600160a01b0381168114612f2257600080fd5b50565b600060208284031215612f3757600080fd5b813561189281612f0d565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b60405290565b60405160a0810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b60405160e0810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b604051601f8201601f1916810167ffffffffffffffff81118282101715612ff057612ff0612f42565b604052919050565b67ffffffffffffffff81168114612f2257600080fd5b60006040828403121561302057600080fd5b613028612f58565b9050813567ffffffffffffffff8082111561304257600080fd5b818401915084601f83011261305657600080fd5b813560208282111561306a5761306a612f42565b61307c601f8301601f19168201612fc7565b9250818352868183860101111561309257600080fd5b8181850182850137600081838501015282855280860135818601525050505092915050565b60008136036101608112156130cb57600080fd5b6130d3612f81565b83356130de81612f0d565b815260e0601f19830112156130f257600080fd5b6130fa612fa4565b9150602084013561310a81612ff8565b8083525060408401356020830152606084013560408301526080840135606083015260a0840135608083015260c084013560a083015260e084013561314e81612ff8565b60c083015260208101919091526101008301359067ffffffffffffffff82111561317757600080fd5b6131833683860161300e565b604082015261012084013560608201526101409093013560808401525090919050565b6000602082840312156131b857600080fd5b813561189281612ff8565b600081356106c081612ff8565b60008235603e198336030181126131e657600080fd5b9190910192915050565b601f821115611e97576000816000526020600020601f850160051c810160208610156132195750805b601f850160051c820191505b818110156116c257828155600101613225565b8135601e1983360301811261324c57600080fd5b8201803567ffffffffffffffff81111561326557600080fd5b6020813603818401131561327857600080fd5b61328c826132868654612ed9565b866131f0565b6000601f8311600181146132c257600084156132aa57508482018301355b600019600386901b1c1916600185901b17865561331f565b600086815260209020601f19851690835b828110156132f45787850186013582559385019360019091019085016132d3565b50858210156133135760001960f88760031b161c198585890101351681555b505060018460011b0186555b50508085013560018501555050505050565b813561333c81612f0d565b6001600160a01b03811673ffffffffffffffffffffffffffffffffffffffff1983541617825550602082013561337181612ff8565b60018201805467ffffffffffffffff191667ffffffffffffffff83161790555060408201356002820155606082013560038201556080820135600482015560a0820135600582015560c082013560068201556133f56133d260e084016131c3565b6007830167ffffffffffffffff821667ffffffffffffffff198254161781555050565b61340f6134066101008401846131d0565b60088301613238565b610120820135600a820155610140820135600b8201555050565b8381526101208101833561343c81612ff8565b67ffffffffffffffff8082166020850152602086013560408501526040860135606085015260608601356080850152608086013560a085015260a086013560c085015260c0860135915061348f82612ff8565b1660e08301526101009091019190915292915050565b634e487b7160e01b600052603260045260246000fd5b61ffff8281168282160390808211156129f0576129f0612e10565b82358152602080840135908201526000610120828101613506604085016040880180358252602090810135910152565b613520608085016080880180358252602090810135910152565b61353a60c0850160c0880180358252602090810135910152565b61010084019190915283519081905261014083019060209081860160005b8281101561357457815185529383019390830190600101613558565b5092979650505050505050565b634e487b7160e01b600052603160045260246000fdfea264697066735822122099659a9931cecccd41437be42e823c61816daa8199d19ec5dea6879dc181e5d564736f6c63430008170033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101825760003560e01c80639777b72c116100d8578063be5cdc481161008c578063f752196b11610066578063f752196b14610388578063fb1e61ca146103a8578063fc0c546a146103c857600080fd5b8063be5cdc4814610342578063c0cc4add14610362578063e8aa0a071461037557600080fd5b8063a3a0807e116100bd578063a3a0807e146102ec578063a6af384b1461030f578063b396dc791461032257600080fd5b80639777b72c146102d1578063a29c29a4146102d957600080fd5b80634641dce61161013a5780636b00c8cf116101145780636b00c8cf146102655780636e2b54ee146102a957806379502c55146102bc57600080fd5b80634641dce61461021857806359cc89ed1461023d5780635da738351461025057600080fd5b806308695fcd1161016b57806308695fcd146101cd578063329b5a0b146101e2578063458d2bf11461020557600080fd5b806302fa8e651461018757806305b90773146101ad575b600080fd5b61019a610195366004612abf565b6103ee565b6040519081526020015b60405180910390f35b6101c06101bb366004612abf565b610465565b6040516101a49190612aee565b6101e06101db366004612b08565b610557565b005b61019a6101f0366004612abf565b60009081526012602052604090206005015490565b61019a610213366004612abf565b6106ad565b61022b610226366004612abf565b6106c6565b60405160ff90911681526020016101a4565b6101e061024b366004612b3d565b6106d9565b6102586109dd565b6040516101a49190612b74565b610291610273366004612abf565b6000908152601360205260409020600501546001600160a01b031690565b6040516001600160a01b0390911681526020016101a4565b6101e06102b7366004612abf565b610a04565b6102c4610c41565b6040516101a49190612bfe565b610258610db2565b6101e06102e7366004612abf565b610dd1565b6102ff6102fa366004612abf565b610fa2565b60405190151581526020016101a4565b6101e061031d366004612c80565b610fd7565b610335610330366004612abf565b6112c3565b6040516101a49190612d89565b610355610350366004612abf565b6114ac565b6040516101a49190612dbb565b6102ff610370366004612abf565b61157a565b6101e0610383366004612dcf565b61158d565b61019a610396366004612abf565b60009081526007602052604090205490565b6103bb6103b6366004612abf565b6116ca565b6040516101a49190612dfd565b7f0000000000000000000000000000000000000000000000000000000000000000610291565b6000818152601260205260408120600401548161040a84610465565b9050600081600481111561042057610420612ad8565b148061043d5750600181600481111561043b5761043b612ad8565b145b15610449575092915050565b61045d82610458600142612e26565b611881565b949350505050565b60008181526011602052604081205482906001600160a01b03166104c25760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064015b60405180910390fd5b600083815260126020526040812090815460ff1660048111156104e7576104e7612ad8565b148015610504575060008481526012602052604090206005015442115b15610513576002925050610551565b6001815460ff16600481111561052b5761052b612ad8565b14801561053b5750806004015442115b1561054a576003925050610551565b5460ff1691505b50919050565b6001610562836114ac565b600581111561057357610573612ad8565b146105c05760405162461bcd60e51b815260206004820152601960248201527f536c6f74206e6f7420616363657074696e672070726f6f66730000000000000060448201526064016104b9565b6105ca8282611899565b6000828152601360209081526040808320600181015484526011909252909120600c5461ffff620100009091041661060e8560009081526007602052604090205490565b6106189190612e4f565b6000036106a757600c54600682015460009160649161064291640100000000900460ff1690612e63565b61064c9190612e7a565b9050808360040160008282546106629190612e26565b9091555050600c54600086815260076020526040902054610100820460ff169162010000900461ffff16906106979190612e7a565b106106a5576106a585611ac6565b505b50505050565b60006106c0826106bb611c6c565b611c77565b92915050565b60006106c0826106d4611c6c565b611c8b565b60008381526011602052604090205483906001600160a01b03166107315760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b6000848152601160205260409020600181015467ffffffffffffffff16841061079c5760405162461bcd60e51b815260206004820152600c60248201527f496e76616c696420736c6f74000000000000000000000000000000000000000060448201526064016104b9565b60408051602080820188905281830187905282518083038401815260609092019092528051910120600090600081815260136020526040812060018101899055600381018890559192506107ef836114ac565b600581111561080057610800612ad8565b1461084d5760405162461bcd60e51b815260206004820152601060248201527f536c6f74206973206e6f7420667265650000000000000000000000000000000060448201526064016104b9565b600483015460008381526005602090815260408083204290556006909152902055610878828661158d565b60058101805473ffffffffffffffffffffffffffffffffffffffff191633179055805460ff1916600190811782554260028301556000888152601260205260408120808301805491939290916108cf908490612e8e565b909155506108df90508842611cf7565b8160020160008282546108f29190612e26565b909155505060068401546109063382611d94565b806014600001600082825461091b9190612e8e565b909155505060048301819055600583015461093f906001600160a01b031685611e9c565b887ff530852268993f91008f1a1e0b09b5c813acd4188481f1fa83c33c7182e814b48960405161097191815260200190565b60405180910390a26001808601549083015467ffffffffffffffff90911690036109d257815460ff1916600117825542600383015560405189907f85e1543bf2f84fe80c6badbce3648c8539ad1df4d2b3d822938ca0538be727e690600090a25b505050505050505050565b336000908152600b602052604090206060906109ff906109fc90611ebe565b90565b905090565b60008181526011602090815260408083206012909252909120600501544211610a6f5760405162461bcd60e51b815260206004820152601960248201527f52657175657374206e6f74207965742074696d6564206f75740000000000000060448201526064016104b9565b80546001600160a01b03163314610ac85760405162461bcd60e51b815260206004820152601660248201527f496e76616c696420636c69656e7420616464726573730000000000000000000060448201526064016104b9565b600082815260126020526040812090815460ff166004811115610aed57610aed612ad8565b14610b3a5760405162461bcd60e51b815260206004820152600d60248201527f496e76616c69642073746174650000000000000000000000000000000000000060448201526064016104b9565b805460ff191660021781558154610b5a906001600160a01b031684611ecb565b60405183907ff903f4774c7bd27355f9d7fcbc382b079b164a697a44ac5d95267a4c3cb3bb2290600090a2600281015460158054829190600090610b9f908490612e8e565b909155505060405163a9059cbb60e01b8152336004820152602481018290527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03169063a9059cbb906044016020604051808303816000875af1158015610c11573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610c359190612ea1565b6106a7576106a7612ec3565b610c986040805160c0810182526000918101828152606082018390526080820183905260a0820192909252908190815260408051608081018252600080825260208281018290529282015260608082015291015290565b6040805160c081018252600c805460ff8082168486019081526101008304821660608087019190915261ffff62010000850416608080880191909152640100000000909404831660a087015290855285519283018652600d80548452600e54602085810191909152600f54909316968401969096526010805495969495928701949291840191610d2790612ed9565b80601f0160208091040260200160405190810160405280929190818152602001828054610d5390612ed9565b8015610da05780601f10610d7557610100808354040283529160200191610da0565b820191906000526020600020905b815481529060010190602001808311610d8357829003601f168201915b50505050508152505081525050905090565b336000908152600a602052604090206060906109ff906109fc90611ebe565b806000808281526013602052604090205460ff166005811115610df657610df6612ad8565b03610e325760405162461bcd60e51b815260206004820152600c60248201526b536c6f74206973206672656560a01b60448201526064016104b9565b600082815260136020526040902060058101546001600160a01b03163314610e9c5760405162461bcd60e51b815260206004820152601960248201527f536c6f742066696c6c6564206279206f7468657220686f73740000000000000060448201526064016104b9565b6000610ea7846114ac565b90506004816005811115610ebd57610ebd612ad8565b03610f0a5760405162461bcd60e51b815260206004820152600c60248201527f416c72656164792070616964000000000000000000000000000000000000000060448201526064016104b9565b6002816005811115610f1e57610f1e612ad8565b03610f3657610f31826001015485611eed565b6106a7565b6005816005811115610f4a57610f4a612ad8565b03610f5d57610f318260010154856121da565b6003816005811115610f7157610f71612ad8565b03610f8057610f313385612346565b6001816005811115610f9457610f94612ad8565b036106a7576106a784611ac6565b6000806000610fb884610fb3611c6c565b612368565b909250905081801561045d575060025460ff9081169116109392505050565b33610fe56020830183612f25565b6001600160a01b03161461103b5760405162461bcd60e51b815260206004820152601660248201527f496e76616c696420636c69656e7420616464726573730000000000000000000060448201526064016104b9565b600061104e611049836130b7565b61244b565b6000818152601160205260409020549091506001600160a01b0316156110b65760405162461bcd60e51b815260206004820152601660248201527f5265717565737420616c7265616479206578697374730000000000000000000060448201526064016104b9565b60008261012001351180156110d357506060820135610120830135105b61111f5760405162461bcd60e51b815260206004820152601360248201527f457870697279206e6f7420696e2072616e67650000000000000000000000000060448201526064016104b9565b61112f60408301602084016131a6565b67ffffffffffffffff1661114a610100840160e085016131a6565b67ffffffffffffffff1611156111a25760405162461bcd60e51b815260206004820152601960248201527f6d6178536c6f744c6f7373206578636565647320736c6f74730000000000000060448201526064016104b9565b600081815260116020526040902082906111bc8282613331565b506111cd9050606083013542612e8e565b6000828152601260205260409020600401556111ee61012083013542612e8e565b60008281526012602090815260409091206005019190915561121c9061121690840184612f25565b8261247b565b600061122f61122a846130b7565b61249d565b600083815260126020526040812060020182905560148054929350839290919061125a908490612e8e565b9091555061126a90503382611d94565b7f5fdb86c365a247a4d97dcbcc5c3abde9d6e3e2de26273f3fda8eef5073b9a96c828460200160126000868152602001908152602001600020600501546040516112b693929190613429565b60405180910390a1505050565b6112cb6129f7565b816000808281526013602052604090205460ff1660058111156112f0576112f0612ad8565b0361132c5760405162461bcd60e51b815260206004820152600c60248201526b536c6f74206973206672656560a01b60448201526064016104b9565b60008381526013602052604090206113426129f7565b600180830154600090815260116020908152604091829020825160a0808201855282546001600160a01b03168252845160e0810186529583015467ffffffffffffffff9081168752600284015487860152600384015487870152600484015460608801526005840154608088015260068401549187019190915260078301541660c08601529182019390935281518083018352600884018054929493850192829082906113ee90612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461141a90612ed9565b80156114675780601f1061143c57610100808354040283529160200191611467565b820191906000526020600020905b81548152906001019060200180831161144a57829003601f168201915b505050918352505060019190910154602091820152908252600a83015482820152600b9092015460409091015290825260039092015491810191909152915050919050565b6000818152601360205260408120600181015482036114ce5750600092915050565b60006114dd8260010154610465565b90506004825460ff1660058111156114f7576114f7612ad8565b03611506575060049392505050565b600281600481111561151a5761151a612ad8565b03611529575060059392505050565b600381600481111561153d5761153d612ad8565b0361154c575060029392505050565b600481600481111561156057611560612ad8565b0361156f575060039392505050565b505460ff1692915050565b60006106c082611588611c6c565b6124c2565b6000828152601360209081526040808320600101548084526011909252909120546001600160a01b03166115f55760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b600083815260136020908152604080832060018101548452601183528184208251600380825260808201909452919490939092908201606080368337019050509050611648611643876106ad565b6124f5565b8160008151811061165b5761165b6134a5565b6020908102919091010152600982015461167490612506565b81600181518110611687576116876134a5565b6020026020010181815250508260030154816002815181106116ab576116ab6134a5565b6020026020010181815250506116c2868683612512565b505050505050565b6116d2612a17565b60008281526011602052604090205482906001600160a01b031661172a5760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b600083815260116020908152604091829020825160a0808201855282546001600160a01b03168252845160e081018652600184015467ffffffffffffffff90811682526002850154828701526003850154828801526004850154606083015260058501546080830152600685015492820192909252600784015490911660c082015292810192909252825180840184526008820180549394929392850192829082906117d590612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461180190612ed9565b801561184e5780601f106118235761010080835404028352916020019161184e565b820191906000526020600020905b81548152906001019060200180831161183157829003601f168201915b505050505081526020016001820154815250508152602001600a8201548152602001600b82015481525050915050919050565b60008183106118905781611892565b825b9392505050565b60006118a4826126d0565b90504281106118f55760405162461bcd60e51b815260206004820152601860248201527f506572696f6420686173206e6f7420656e64656420796574000000000000000060448201526064016104b9565b6001546119029082612e8e565b42106119505760405162461bcd60e51b815260206004820152601460248201527f56616c69646174696f6e2074696d6564206f757400000000000000000000000060448201526064016104b9565b600083815260086020908152604080832085845290915290205460ff16156119ba5760405162461bcd60e51b815260206004820181905260248201527f50726f6f6620776173207375626d69747465642c206e6f74206d697373696e6760448201526064016104b9565b6119c483836124c2565b611a105760405162461bcd60e51b815260206004820152601660248201527f50726f6f6620776173206e6f742072657175697265640000000000000000000060448201526064016104b9565b600083815260096020908152604080832085845290915290205460ff1615611a7a5760405162461bcd60e51b815260206004820152601f60248201527f50726f6f6620616c7265616479206d61726b6564206173206d697373696e670060448201526064016104b9565b60008381526009602090815260408083208584528252808320805460ff1916600190811790915586845260079092528220805491929091611abc908490612e8e565b9091555050505050565b60008181526013602090815260408083206001810154808552601290935292206005830154611afe906001600160a01b031685612346565b6003808401546000868152601360205260408120805460ff1916815560018082018390556002820183905593810182905560048101829055600501805473ffffffffffffffffffffffffffffffffffffffff191690558383018054929392909190611b6a908490612e26565b909155505060405181815283907f1d31c9f8dea6e179f6a050db117595feea8937029ea51f5168a4780be7e8f5529060200160405180910390a2600085815260076020526040812055600083815260116020526040812060018085015490820154919291611be2919067ffffffffffffffff16612e26565b600783015490915067ffffffffffffffff1681118015611c1757506001845460ff166004811115611c1557611c15612ad8565b145b15611c6357835460ff19166004178455611c32600142612e26565b600485015560405185907f4769361a442504ecaf038f35e119bcccdd5e42096b24c09e3c17fd17c6684c0290600090a25b50505050505050565b60006109ff426126e3565b6000611892611c868484611c8b565b61270f565b600080611c9a61010043612e4f565b90506000610100611cac856043612e63565b611cb69190612e4f565b90506000611cc661010087612e4f565b9050600061010082611cd88587612e8e565b611ce29190612e8e565b611cec9190612e4f565b979650505050505050565b600082815260116020908152604080832060129092528220600501548310611d615760405162461bcd60e51b815260206004820152601760248201527f5374617274206e6f74206265666f72652065787069727900000000000000000060448201526064016104b9565b600581015483611d808660009081526012602052604090206005015490565b611d8a9190612e26565b61045d9190612e63565b6040517f23b872dd0000000000000000000000000000000000000000000000000000000081526001600160a01b038381166004830152306024830181905260448301849052917f0000000000000000000000000000000000000000000000000000000000000000909116906323b872dd906064016020604051808303816000875af1158015611e27573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611e4b9190612ea1565b611e975760405162461bcd60e51b815260206004820152600f60248201527f5472616e73666572206661696c6564000000000000000000000000000000000060448201526064016104b9565b505050565b6001600160a01b0382166000908152600b60205260409020611e979082612769565b6060600061189283612775565b6001600160a01b0382166000908152600a60205260409020611e9790826127d1565b60008281526011602052604090205482906001600160a01b0316611f455760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b60008381526012602090815260408083206011909252909120815460ff191660031782558054611f7e906001600160a01b031686611ecb565b60008481526013602052604090206005810154611fa4906001600160a01b031686612346565b6004808201546000888152601160209081526040808320815160a0808201845282546001600160a01b03168252835160e081018552600184015467ffffffffffffffff908116825260028501548288015260038501548287015298840154606082015260058401546080820152600684015491810191909152600783015490971660c08801529283019590955280518082018252600886018054949661210195909385019291908290829061205890612ed9565b80601f016020809104026020016040519081016040528092919081815260200182805461208490612ed9565b80156120d15780601f106120a6576101008083540402835291602001916120d1565b820191906000526020600020905b8154815290600101906020018083116120b457829003601f168201915b505050505081526020016001820154815250508152602001600a8201548152602001600b820154815250506127dd565b61210b9190612e8e565b905080601460010160008282546121229190612e8e565b9091555050815460ff191660049081178355600583015460405163a9059cbb60e01b81526001600160a01b0391821692810192909252602482018390527f0000000000000000000000000000000000000000000000000000000000000000169063a9059cbb906044016020604051808303816000875af11580156121aa573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906121ce9190612ea1565b611c6357611c63612ec3565b60008281526011602052604090205482906001600160a01b03166122325760405162461bcd60e51b815260206004820152600f60248201526e155b9adb9bdddb881c995c5d595cdd608a1b60448201526064016104b9565b60008281526013602052604090206005810154612258906001600160a01b031684612346565b6000816004015461226d868460020154611cf7565b6122779190612e8e565b9050806014600101600082825461228e9190612e8e565b9091555050815460ff191660049081178355600583015460405163a9059cbb60e01b81526001600160a01b0391821692810192909252602482018390527f0000000000000000000000000000000000000000000000000000000000000000169063a9059cbb906044016020604051808303816000875af1158015612316573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061233a9190612ea1565b6106a5576106a5612ec3565b6001600160a01b0382166000908152600b60205260409020611e9790826127d1565b6000806000612376856114ac565b60008681526005602052604081205491925090612392906126e3565b905060018260058111156123a8576123a8612ad8565b1415806123bc57506123ba85826127f9565b155b156123cf57600080935093505050612444565b6123d98686611c8b565b925060006123e68461270f565b600254909150600090610100906124009060ff16826134bb565b60008a81526006602052604090205461241d9161ffff1690612e63565b6124279190612e7a565b905080158061243d575061243b8183612e4f565b155b9550505050505b9250929050565b60008160405160200161245e9190612dfd565b604051602081830303815290604052805190602001209050919050565b6001600160a01b0382166000908152600a60205260409020611e979082612769565b60006124a8826127dd565b6020830151516106c0919067ffffffffffffffff16612e63565b60008060006124d18585612368565b90925090508180156124ec575060025460ff90811690821610155b95945050505050565b600060ff1982168161045d82612803565b60008061189283612803565b600083815260086020526040812090612529611c6c565b815260208101919091526040016000205460ff161561258a5760405162461bcd60e51b815260206004820152601760248201527f50726f6f6620616c7265616479207375626d697474656400000000000000000060448201526064016104b9565b600480546040517f94c8919d0000000000000000000000000000000000000000000000000000000081526001600160a01b03909116916394c8919d916125d49186918691016134d6565b602060405180830381865afa1580156125f1573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906126159190612ea1565b6126615760405162461bcd60e51b815260206004820152600d60248201527f496e76616c69642070726f6f660000000000000000000000000000000000000060448201526064016104b9565b600083815260086020526040812060019161267a611c6c565b815260200190815260200160002060006101000a81548160ff0219169083151502179055507f3b989d183b84b02259d7c14b34a9c9eb0fccb4c355a920d25e581e25aef4993d836040516112b691815260200190565b60006106c06126de83612875565b612882565b60006106c07f000000000000000000000000000000000000000000000000000000000000000083612e7a565b60008060ff8316612721600143612e26565b61272b9190612e26565b409050600081900361273f5761273f612ec3565b60408051602081018390520160405160208183030381529060405280519060200120915050919050565b600061189283836128ae565b6060816000018054806020026020016040519081016040528092919081815260200182805480156127c557602002820191906000526020600020905b8154815260200190600101908083116127b1575b50505050509050919050565b600061189283836128fd565b602081015160808101516040909101516000916106c091612e63565b6000818311611892565b7fff00000000000000000000000000000000000000000000000000000000000000811660015b602081101561055157600891821c91612843908290612e63565b83901b7fff00000000000000000000000000000000000000000000000000000000000000169190911790600101612829565b60006106c0826001612e8e565b60006106c07f000000000000000000000000000000000000000000000000000000000000000083612e63565b60008181526001830160205260408120546128f5575081546001818101845560008481526020808220909301849055845484825282860190935260409020919091556106c0565b5060006106c0565b600081815260018301602052604081205480156129e6576000612921600183612e26565b855490915060009061293590600190612e26565b905081811461299a576000866000018281548110612955576129556134a5565b9060005260206000200154905080876000018481548110612978576129786134a5565b6000918252602080832090910192909255918252600188019052604090208390555b85548690806129ab576129ab613581565b6001900381819060005260206000200160009055905585600101600086815260200190815260200160002060009055600193505050506106c0565b60009150506106c0565b5092915050565b6040518060400160405280612a0a612a17565b8152602001600081525090565b6040518060a0016040528060006001600160a01b03168152602001612a866040518060e00160405280600067ffffffffffffffff1681526020016000815260200160008152602001600081526020016000815260200160008152602001600067ffffffffffffffff1681525090565b8152602001612aab604051806040016040528060608152602001600080191681525090565b815260006020820181905260409091015290565b600060208284031215612ad157600080fd5b5035919050565b634e487b7160e01b600052602160045260246000fd5b6020810160058310612b0257612b02612ad8565b91905290565b60008060408385031215612b1b57600080fd5b50508035926020909101359150565b6000610100828403121561055157600080fd5b60008060006101408486031215612b5357600080fd5b8335925060208401359150612b6b8560408601612b2a565b90509250925092565b6020808252825182820181905260009190848201906040850190845b81811015612bac57835183529284019291840191600101612b90565b50909695505050505050565b6000815180845260005b81811015612bde57602081850181015186830182015201612bc2565b506000602082860101526020601f19601f83011685010191505092915050565b602081526000825160ff815116602084015260ff602082015116604084015261ffff604082015116606084015260ff606082015116608084015250602083015160a080840152805160c0840152602081015160e084015260ff60408201511661010084015260608101519050608061012084015261045d610140840182612bb8565b600060208284031215612c9257600080fd5b813567ffffffffffffffff811115612ca957600080fd5b8201610160818503121561189257600080fd5b6000815160408452612cd16040850182612bb8565b602093840151949093019390935250919050565b60006101606001600160a01b038351168452602083015167ffffffffffffffff808251166020870152602082015160408701526040820151606087015260608201516080870152608082015160a087015260a082015160c08701528060c08301511660e08701525050604083015181610100860152612d6682860182612cbc565b915050606083015161012085015260808301516101408501528091505092915050565b602081526000825160406020840152612da56060840182612ce5565b9050602084015160408401528091505092915050565b6020810160068310612b0257612b02612ad8565b6000806101208385031215612de357600080fd5b82359150612df48460208501612b2a565b90509250929050565b6020815260006118926020830184612ce5565b634e487b7160e01b600052601160045260246000fd5b818103818111156106c0576106c0612e10565b634e487b7160e01b600052601260045260246000fd5b600082612e5e57612e5e612e39565b500690565b80820281158282048414176106c0576106c0612e10565b600082612e8957612e89612e39565b500490565b808201808211156106c0576106c0612e10565b600060208284031215612eb357600080fd5b8151801515811461189257600080fd5b634e487b7160e01b600052600160045260246000fd5b600181811c90821680612eed57607f821691505b60208210810361055157634e487b7160e01b600052602260045260246000fd5b6001600160a01b0381168114612f2257600080fd5b50565b600060208284031215612f3757600080fd5b813561189281612f0d565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b60405290565b60405160a0810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b60405160e0810167ffffffffffffffff81118282101715612f7b57612f7b612f42565b604051601f8201601f1916810167ffffffffffffffff81118282101715612ff057612ff0612f42565b604052919050565b67ffffffffffffffff81168114612f2257600080fd5b60006040828403121561302057600080fd5b613028612f58565b9050813567ffffffffffffffff8082111561304257600080fd5b818401915084601f83011261305657600080fd5b813560208282111561306a5761306a612f42565b61307c601f8301601f19168201612fc7565b9250818352868183860101111561309257600080fd5b8181850182850137600081838501015282855280860135818601525050505092915050565b60008136036101608112156130cb57600080fd5b6130d3612f81565b83356130de81612f0d565b815260e0601f19830112156130f257600080fd5b6130fa612fa4565b9150602084013561310a81612ff8565b8083525060408401356020830152606084013560408301526080840135606083015260a0840135608083015260c084013560a083015260e084013561314e81612ff8565b60c083015260208101919091526101008301359067ffffffffffffffff82111561317757600080fd5b6131833683860161300e565b604082015261012084013560608201526101409093013560808401525090919050565b6000602082840312156131b857600080fd5b813561189281612ff8565b600081356106c081612ff8565b60008235603e198336030181126131e657600080fd5b9190910192915050565b601f821115611e97576000816000526020600020601f850160051c810160208610156132195750805b601f850160051c820191505b818110156116c257828155600101613225565b8135601e1983360301811261324c57600080fd5b8201803567ffffffffffffffff81111561326557600080fd5b6020813603818401131561327857600080fd5b61328c826132868654612ed9565b866131f0565b6000601f8311600181146132c257600084156132aa57508482018301355b600019600386901b1c1916600185901b17865561331f565b600086815260209020601f19851690835b828110156132f45787850186013582559385019360019091019085016132d3565b50858210156133135760001960f88760031b161c198585890101351681555b505060018460011b0186555b50508085013560018501555050505050565b813561333c81612f0d565b6001600160a01b03811673ffffffffffffffffffffffffffffffffffffffff1983541617825550602082013561337181612ff8565b60018201805467ffffffffffffffff191667ffffffffffffffff83161790555060408201356002820155606082013560038201556080820135600482015560a0820135600582015560c082013560068201556133f56133d260e084016131c3565b6007830167ffffffffffffffff821667ffffffffffffffff198254161781555050565b61340f6134066101008401846131d0565b60088301613238565b610120820135600a820155610140820135600b8201555050565b8381526101208101833561343c81612ff8565b67ffffffffffffffff8082166020850152602086013560408501526040860135606085015260608601356080850152608086013560a085015260a086013560c085015260c0860135915061348f82612ff8565b1660e08301526101009091019190915292915050565b634e487b7160e01b600052603260045260246000fd5b61ffff8281168282160390808211156129f0576129f0612e10565b82358152602080840135908201526000610120828101613506604085016040880180358252602090810135910152565b613520608085016080880180358252602090810135910152565b61353a60c0850160c0880180358252602090810135910152565b61010084019190915283519081905261014083019060209081860160005b8281101561357457815185529383019390830190600101613558565b5092979650505050505050565b634e487b7160e01b600052603160045260246000fdfea264697066735822122099659a9931cecccd41437be42e823c61816daa8199d19ec5dea6879dc181e5d564736f6c63430008170033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "withdrawFunds(bytes32)": {
+        "details": "Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.",
+        "params": {
+          "requestId": "the id of the request"
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "withdrawFunds(bytes32)": {
+        "notice": "Withdraws storage request funds back to the client that deposited them."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 4669,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_config",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_struct(ProofConfig)2218_storage"
+      },
+      {
+        "astId": 4672,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_verifier",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_contract(IGroth16Verifier)2400"
+      },
+      {
+        "astId": 4707,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_slotStarts",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_uint256)"
+      },
+      {
+        "astId": 4712,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_probabilities",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_uint256)"
+      },
+      {
+        "astId": 4717,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_missed",
+        "offset": 0,
+        "slot": "7",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_uint256)"
+      },
+      {
+        "astId": 4725,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_received",
+        "offset": 0,
+        "slot": "8",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_mapping(t_userDefinedValueType(Period)4527,t_bool))"
+      },
+      {
+        "astId": 4733,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_missing",
+        "offset": 0,
+        "slot": "9",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_mapping(t_userDefinedValueType(Period)4527,t_bool))"
+      },
+      {
+        "astId": 5403,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_requestsPerClient",
+        "offset": 0,
+        "slot": "10",
+        "type": "t_mapping(t_address,t_struct(Bytes32Set)1781_storage)"
+      },
+      {
+        "astId": 5408,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_slotsPerHost",
+        "offset": 0,
+        "slot": "11",
+        "type": "t_mapping(t_address,t_struct(Bytes32Set)1781_storage)"
+      },
+      {
+        "astId": 3020,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_config",
+        "offset": 0,
+        "slot": "12",
+        "type": "t_struct(MarketplaceConfig)2199_storage"
+      },
+      {
+        "astId": 3026,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_requests",
+        "offset": 0,
+        "slot": "17",
+        "type": "t_mapping(t_userDefinedValueType(RequestId)5236,t_struct(Request)5251_storage)"
+      },
+      {
+        "astId": 3032,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_requestContexts",
+        "offset": 0,
+        "slot": "18",
+        "type": "t_mapping(t_userDefinedValueType(RequestId)5236,t_struct(RequestContext)3056_storage)"
+      },
+      {
+        "astId": 3038,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_slots",
+        "offset": 0,
+        "slot": "19",
+        "type": "t_mapping(t_userDefinedValueType(SlotId)5238,t_struct(Slot)3073_storage)"
+      },
+      {
+        "astId": 3041,
+        "contract": "contracts/Marketplace.sol:Marketplace",
+        "label": "_marketplaceTotals",
+        "offset": 0,
+        "slot": "20",
+        "type": "t_struct(MarketplaceTotals)4522_storage"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_array(t_bytes32)dyn_storage": {
+        "base": "t_bytes32",
+        "encoding": "dynamic_array",
+        "label": "bytes32[]",
+        "numberOfBytes": "32"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_contract(IGroth16Verifier)2400": {
+        "encoding": "inplace",
+        "label": "contract IGroth16Verifier",
+        "numberOfBytes": "20"
+      },
+      "t_enum(RequestState)5277": {
+        "encoding": "inplace",
+        "label": "enum RequestState",
+        "numberOfBytes": "1"
+      },
+      "t_enum(SlotState)5284": {
+        "encoding": "inplace",
+        "label": "enum SlotState",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_struct(Bytes32Set)1781_storage)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => struct EnumerableSet.Bytes32Set)",
+        "numberOfBytes": "32",
+        "value": "t_struct(Bytes32Set)1781_storage"
+      },
+      "t_mapping(t_bytes32,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_userDefinedValueType(Period)4527,t_bool)": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(Period)4527",
+        "label": "mapping(Periods.Period => bool)",
+        "numberOfBytes": "32",
+        "value": "t_bool"
+      },
+      "t_mapping(t_userDefinedValueType(RequestId)5236,t_struct(Request)5251_storage)": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(RequestId)5236",
+        "label": "mapping(RequestId => struct Request)",
+        "numberOfBytes": "32",
+        "value": "t_struct(Request)5251_storage"
+      },
+      "t_mapping(t_userDefinedValueType(RequestId)5236,t_struct(RequestContext)3056_storage)": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(RequestId)5236",
+        "label": "mapping(RequestId => struct Marketplace.RequestContext)",
+        "numberOfBytes": "32",
+        "value": "t_struct(RequestContext)3056_storage"
+      },
+      "t_mapping(t_userDefinedValueType(SlotId)5238,t_mapping(t_userDefinedValueType(Period)4527,t_bool))": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(SlotId)5238",
+        "label": "mapping(SlotId => mapping(Periods.Period => bool))",
+        "numberOfBytes": "32",
+        "value": "t_mapping(t_userDefinedValueType(Period)4527,t_bool)"
+      },
+      "t_mapping(t_userDefinedValueType(SlotId)5238,t_struct(Slot)3073_storage)": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(SlotId)5238",
+        "label": "mapping(SlotId => struct Marketplace.Slot)",
+        "numberOfBytes": "32",
+        "value": "t_struct(Slot)3073_storage"
+      },
+      "t_mapping(t_userDefinedValueType(SlotId)5238,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_userDefinedValueType(SlotId)5238",
+        "label": "mapping(SlotId => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_string_storage": {
+        "encoding": "bytes",
+        "label": "string",
+        "numberOfBytes": "32"
+      },
+      "t_struct(Ask)5266_storage": {
+        "encoding": "inplace",
+        "label": "struct Ask",
+        "members": [
+          {
+            "astId": 5253,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slots",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint64"
+          },
+          {
+            "astId": 5255,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slotSize",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5257,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "duration",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5259,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "proofProbability",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5261,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "reward",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5263,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "collateral",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5265,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "maxSlotLoss",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint64"
+          }
+        ],
+        "numberOfBytes": "224"
+      },
+      "t_struct(Bytes32Set)1781_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSet.Bytes32Set",
+        "members": [
+          {
+            "astId": 1780,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "_inner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(Set)1587_storage"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(CollateralConfig)2209_storage": {
+        "encoding": "inplace",
+        "label": "struct CollateralConfig",
+        "members": [
+          {
+            "astId": 2202,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "repairRewardPercentage",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8"
+          },
+          {
+            "astId": 2204,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "maxNumberOfSlashes",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_uint8"
+          },
+          {
+            "astId": 2206,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slashCriterion",
+            "offset": 2,
+            "slot": "0",
+            "type": "t_uint16"
+          },
+          {
+            "astId": 2208,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slashPercentage",
+            "offset": 4,
+            "slot": "0",
+            "type": "t_uint8"
+          }
+        ],
+        "numberOfBytes": "32"
+      },
+      "t_struct(Content)5271_storage": {
+        "encoding": "inplace",
+        "label": "struct Content",
+        "members": [
+          {
+            "astId": 5268,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "cid",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_string_storage"
+          },
+          {
+            "astId": 5270,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "merkleRoot",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bytes32"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(MarketplaceConfig)2199_storage": {
+        "encoding": "inplace",
+        "label": "struct MarketplaceConfig",
+        "members": [
+          {
+            "astId": 2195,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "collateral",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(CollateralConfig)2209_storage"
+          },
+          {
+            "astId": 2198,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "proofs",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_struct(ProofConfig)2218_storage"
+          }
+        ],
+        "numberOfBytes": "160"
+      },
+      "t_struct(MarketplaceTotals)4522_storage": {
+        "encoding": "inplace",
+        "label": "struct Marketplace.MarketplaceTotals",
+        "members": [
+          {
+            "astId": 4519,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "received",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 4521,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "sent",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(ProofConfig)2218_storage": {
+        "encoding": "inplace",
+        "label": "struct ProofConfig",
+        "members": [
+          {
+            "astId": 2211,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "period",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2213,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "timeout",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2215,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "downtime",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint8"
+          },
+          {
+            "astId": 2217,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "zkeyHash",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_string_storage"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_struct(Request)5251_storage": {
+        "encoding": "inplace",
+        "label": "struct Request",
+        "members": [
+          {
+            "astId": 5240,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "client",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 5243,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "ask",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_struct(Ask)5266_storage"
+          },
+          {
+            "astId": 5246,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "content",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_struct(Content)5271_storage"
+          },
+          {
+            "astId": 5248,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "expiry",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 5250,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "nonce",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_bytes32"
+          }
+        ],
+        "numberOfBytes": "384"
+      },
+      "t_struct(RequestContext)3056_storage": {
+        "encoding": "inplace",
+        "label": "struct Marketplace.RequestContext",
+        "members": [
+          {
+            "astId": 3044,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "state",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_enum(RequestState)5277"
+          },
+          {
+            "astId": 3046,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slotsFilled",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3049,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "expiryFundsWithdraw",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3051,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "startedAt",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3053,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "endsAt",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3055,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "expiresAt",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "192"
+      },
+      "t_struct(Set)1587_storage": {
+        "encoding": "inplace",
+        "label": "struct EnumerableSet.Set",
+        "members": [
+          {
+            "astId": 1582,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "_values",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_array(t_bytes32)dyn_storage"
+          },
+          {
+            "astId": 1586,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "_indexes",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_mapping(t_bytes32,t_uint256)"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(Slot)3073_storage": {
+        "encoding": "inplace",
+        "label": "struct Marketplace.Slot",
+        "members": [
+          {
+            "astId": 3059,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "state",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_enum(SlotState)5284"
+          },
+          {
+            "astId": 3062,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "requestId",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_userDefinedValueType(RequestId)5236"
+          },
+          {
+            "astId": 3065,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "filledAt",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3067,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "slotIndex",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3070,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "currentCollateral",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 3072,
+            "contract": "contracts/Marketplace.sol:Marketplace",
+            "label": "host",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address"
+          }
+        ],
+        "numberOfBytes": "192"
+      },
+      "t_uint16": {
+        "encoding": "inplace",
+        "label": "uint16",
+        "numberOfBytes": "2"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint64": {
+        "encoding": "inplace",
+        "label": "uint64",
+        "numberOfBytes": "8"
+      },
+      "t_uint8": {
+        "encoding": "inplace",
+        "label": "uint8",
+        "numberOfBytes": "1"
+      },
+      "t_userDefinedValueType(Period)4527": {
+        "encoding": "inplace",
+        "label": "Periods.Period",
+        "numberOfBytes": "32"
+      },
+      "t_userDefinedValueType(RequestId)5236": {
+        "encoding": "inplace",
+        "label": "RequestId",
+        "numberOfBytes": "32"
+      },
+      "t_userDefinedValueType(SlotId)5238": {
+        "encoding": "inplace",
+        "label": "SlotId",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
