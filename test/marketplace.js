@@ -22,6 +22,14 @@ async function waitUntilStarted(contract, request, proof, token) {
   }
 }
 
+async function waitUntilStarted(contract, request, proof, token, payoutAddress) {
+  await token.approve(contract.address, price(request) * request.ask.slots)
+
+  for (let i = 0; i < request.ask.slots; i++) {
+    await contract.fillSlot(requestId(request), i, proof, payoutAddress)
+  }
+}
+
 async function waitUntilFinished(contract, requestId) {
   const end = (await contract.requestEnd(requestId)).toNumber()
   // We do +1, because the end check in contract is done as `>` and not `>=`.
@@ -49,10 +57,24 @@ async function waitUntilSlotFailed(contract, request, slot) {
   }
 }
 
+function patchFillSlotOverloads(contract) {
+  contract.fillSlot = async (requestId, slotIndex, proof, payoutAddress) => {
+    if(!payoutAddress) {
+      // calls `fillSlot` overload without payoutAddress
+      const fn = contract["fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"]
+
+      return await fn(requestId, slotIndex, proof)
+    }
+    const fn = contract["fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address)"]
+    return await fn(requestId, slotIndex, proof, payoutAddress)
+  }
+}
+
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
+  patchFillSlotOverloads,
 }
