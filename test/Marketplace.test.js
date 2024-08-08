@@ -21,6 +21,7 @@ const {
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
+  patchFillSlotOverloads,
 } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
@@ -114,6 +115,7 @@ describe("Marketplace", function () {
       token.address,
       verifier.address
     )
+    patchFillSlotOverloads(marketplace)
 
     request = await exampleRequest()
     request.client = client.address
@@ -131,6 +133,7 @@ describe("Marketplace", function () {
   function switchAccount(account) {
     token = token.connect(account)
     marketplace = marketplace.connect(account)
+    patchFillSlotOverloads(marketplace)
   }
 
   describe("requesting storage", function () {
@@ -481,6 +484,22 @@ describe("Marketplace", function () {
       )
     })
 
+    it("pays to host payout address when contract has finished and returns collateral to host address", async function () {
+      await waitUntilStarted(marketplace, request, proof, token, host2.address)
+      await waitUntilFinished(marketplace, requestId(request))
+      const startBalanceHostAddr = await token.balanceOf(host.address)
+      const startBalancePayoutAddr = await token.balanceOf(host2.address)
+      await marketplace.freeSlot(slotId(slot))
+      const endBalanceHostAddr = await token.balanceOf(host.address)
+      const endBalancePayoutAddr = await token.balanceOf(host2.address)
+      expect(endBalanceHostAddr - startBalanceHostAddr).to.equal(
+        request.ask.collateral
+      )
+      expect(endBalancePayoutAddr - startBalancePayoutAddr).to.equal(
+        pricePerSlot(request)
+      )
+    })
+
     it("pays the host when contract was cancelled", async function () {
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
@@ -497,6 +516,30 @@ describe("Marketplace", function () {
       const endBalance = await token.balanceOf(host.address)
       expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
         expectedPartialPayout
+      )
+    })
+
+    it("pays to host payoutAddress when contract was cancelled, and returns collateral to host address", async function () {
+      // Lets advance the time more into the expiry window
+      const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
+      const expiresAt = (
+        await marketplace.requestExpiry(requestId(request))
+      ).toNumber()
+
+      await advanceTimeToForNextBlock(filledAt)
+      await marketplace.fillSlot(slot.request, slot.index, proof, host2.address)
+      await waitUntilCancelled(request)
+      const startBalanceHostAddr = await token.balanceOf(host.address)
+      await marketplace.freeSlot(slotId(slot))
+
+      const expectedPartialPayout = (expiresAt - filledAt) * request.ask.reward
+      const endBalancePayoutAddr = await token.balanceOf(host2.address)
+      expect(endBalancePayoutAddr - ACCOUNT_STARTING_BALANCE).to.be.equal(
+        expectedPartialPayout
+      )
+      const endBalanceHostAddr = await token.balanceOf(host.address)
+      expect(endBalanceHostAddr - startBalanceHostAddr).to.be.equal(
+        request.ask.collateral
       )
     })
 
