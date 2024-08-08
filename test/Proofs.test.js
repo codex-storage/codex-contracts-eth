@@ -22,6 +22,7 @@ describe("Proofs", function () {
   const timeout = 5
   const downtime = 64
   const probability = 4 // require a proof roughly once every 4 periods
+  const downtimeProduct = 67
   const { periodOf, periodEnd } = periodic(period)
 
   let proofs
@@ -33,7 +34,7 @@ describe("Proofs", function () {
     await deployments.fixture(["Verifier"])
     const verifier = await deployments.get("Groth16Verifier")
     proofs = await Proofs.deploy(
-      { period, timeout, downtime, zkeyHash: "" },
+      { period, timeout, downtime, zkeyHash: "", downtimeProduct },
       verifier.address
     )
   })
