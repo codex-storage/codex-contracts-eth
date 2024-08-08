@@ -19,7 +19,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   MarketplaceConfig private _config;
 
   mapping(RequestId => Request) private _requests;
-  mapping(RequestId => RequestContext) private _requestContexts;
+  mapping(RequestId => RequestContext) internal _requestContexts;
   mapping(SlotId => Slot) internal _slots;
 
   MarketplaceTotals internal _marketplaceTotals;

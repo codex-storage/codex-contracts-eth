@@ -1,5 +1,9 @@
 using ERC20A as Token;
 
+methods {
+    function Token.balanceOf(address) external returns (uint256) envfree;
+}
+
 /*--------------------------------------------
 |              Ghosts and hooks              |
 --------------------------------------------*/
@@ -23,6 +27,26 @@ hook Sload uint256 defaultValue currentContract._marketplaceTotals.sent {
 hook Sstore currentContract._marketplaceTotals.sent uint256 defaultValue (uint256 defaultValue_old) {
     totalSent = totalSent + defaultValue - defaultValue_old;
 }
+
+function canCancelRequest(method f) returns bool {
+    return f.selector == sig:withdrawFunds(Marketplace.RequestId).selector;
+}
+
+function canStartRequest(method f) returns bool {
+    return f.selector == sig:fillSlot(Marketplace.RequestId, uint256, Marketplace.Groth16Proof).selector;
+}
+
+function canFinishRequest(method f) returns bool {
+    return f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+}
+
+function canFailRequest(method f) returns bool {
+    return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector || 
+        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+}
+
+invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
+    to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
 
 /*--------------------------------------------
 |                 Properties                 |
@@ -55,4 +79,52 @@ rule totalSentCannotDecrease(env e, method f) {
     mathint total_after = totalSent;
 
     assert total_after >= total_before;
+}
+
+rule allowedRequestStateChanges(env e, method f) {
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+    f(e, args);
+    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
+
+    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Started => requestStateBefore == Marketplace.RequestState.New;
+    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Finished => requestStateBefore == Marketplace.RequestState.Started;
+    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Failed => requestStateBefore == Marketplace.RequestState.Started;
+    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Cancelled => requestStateBefore == Marketplace.RequestState.New;
+}
+
+rule functionsCausingRequestStateChanges(env e, method f) {
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+    f(e, args);
+    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
+
+    // RequestState.New -> RequestState.Started
+    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Started => canStartRequest(f);
+
+    // RequestState.Started -> RequestState.Finished
+    assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Finished => canFinishRequest(f);
+
+    // RequestState.Started -> RequestState.Failed
+    assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Failed => canFailRequest(f);
+
+    // RequestState.New -> RequestState.Cancelled
+    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Cancelled => canCancelRequest(f);
+}
+
+rule finishedRequestCannotBeStartedAgain(env e, method f) {
+
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+    require requestStateBefore == Marketplace.RequestState.Finished;
+    f(e, args);
+    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
+
+    assert requestStateBefore == requestStateAfter;
 }
