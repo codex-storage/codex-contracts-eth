@@ -118,7 +118,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param id Slot's ID for which the requirements are gathered. If the Slot's state is other than Filled, `false` is always returned. 
+   * @param id Slot's ID for which the requirements are gathered. If the Slot's state is other than Filled, `false` is always returned.
    * @param period Period for which the requirements are gathered.
    */
   function _getProofRequirement(
@@ -153,7 +153,7 @@ abstract contract Proofs is Periods {
   }
 
   /**
-   * @param id Slot's ID for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned. 
+   * @param id Slot's ID for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned.
    * @return bool indicating if proof is required for current period
    */
   function isProofRequired(SlotId id) public view returns (bool) {
@@ -167,7 +167,7 @@ abstract contract Proofs is Periods {
    * will be required later on in the Period.
    *
    * @dev for more info about downtime see [timing of storage proofs](https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md#pointer-downtime)
-   * @param id SlotId for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned. 
+   * @param id SlotId for which the proof requirements should be checked. If the Slot's state is other than Filled, `false` is always returned.
    * @return bool
    */
   function willProofBeRequired(SlotId id) public view returns (bool) {
