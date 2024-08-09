@@ -72,6 +72,22 @@ invariant totalSupplyIsSumOfBalances()
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
     to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
 
+// STATUS - in progress (fails on constructor state due to a strange behaviour in the tool)
+// _marketplaceTotals.received - _marketplaceTotals.sent == tokenBalanceOfContract
+// https://prover.certora.com/output/3106/4e6cac8055ac45bb92840e14d9b095eb/?anonymousKey=655a42ca6306a023db78914d5a188d8ec2882771
+invariant totalSentIsLessThanOrEqualTotalReceived()
+    totalReceived - totalSent <= to_mathint(Token.balanceOf(currentContract))
+    {
+        preserved fillSlot(MarketplaceHarness.RequestId requestId, uint256 slotIndex, MarketplaceHarness.Groth16Proof proof) with (env e2) {
+            require e2.msg.sender != currentContract;
+            requireInvariant totalSupplyIsSumOfBalances();
+        }
+        preserved requestStorage(MarketplaceHarness.Request request) with (env e3) {
+            require e3.msg.sender != currentContract;
+            requireInvariant totalSupplyIsSumOfBalances();
+        }
+    }
+
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
