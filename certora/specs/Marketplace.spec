@@ -2,11 +2,24 @@ using ERC20A as Token;
 
 methods {
     function Token.balanceOf(address) external returns (uint256) envfree;
+    function Token.totalSupply() external returns (uint256) envfree;
 }
 
 /*--------------------------------------------
 |              Ghosts and hooks              |
 --------------------------------------------*/
+
+ghost mathint sumOfBalances {
+    init_state axiom sumOfBalances == 0;
+}
+
+hook Sload uint256 balance Token._balances[KEY address addr] {
+    require sumOfBalances >= to_mathint(balance);
+}
+
+hook Sstore Token._balances[KEY address addr] uint256 newValue (uint256 oldValue) {
+    sumOfBalances = sumOfBalances - oldValue + newValue;
+}
 
 ghost mathint totalReceived;
 
@@ -28,6 +41,10 @@ hook Sstore currentContract._marketplaceTotals.sent uint256 defaultValue (uint25
     totalSent = totalSent + defaultValue - defaultValue_old;
 }
 
+/*--------------------------------------------
+|              Helper functions              |
+--------------------------------------------*/
+
 function canCancelRequest(method f) returns bool {
     return f.selector == sig:withdrawFunds(Marketplace.RequestId).selector;
 }
@@ -44,6 +61,13 @@ function canFailRequest(method f) returns bool {
     return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector || 
         f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
+
+/*--------------------------------------------
+|                 Invariants                 |
+--------------------------------------------*/
+
+invariant totalSupplyIsSumOfBalances()
+    to_mathint(Token.totalSupply()) == sumOfBalances;
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
     to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
