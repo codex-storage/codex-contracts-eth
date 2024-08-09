@@ -3,6 +3,7 @@ using ERC20A as Token;
 methods {
     function Token.balanceOf(address) external returns (uint256) envfree;
     function Token.totalSupply() external returns (uint256) envfree;
+    function publicPeriodEnd(Periods.Period) external returns (uint256) envfree;
 }
 
 /*--------------------------------------------
@@ -39,6 +40,27 @@ hook Sload uint256 defaultValue currentContract._marketplaceTotals.sent {
 
 hook Sstore currentContract._marketplaceTotals.sent uint256 defaultValue (uint256 defaultValue_old) {
     totalSent = totalSent + defaultValue - defaultValue_old;
+}
+
+ghost uint256 lastBlockTimestampGhost;
+
+hook TIMESTAMP uint v {
+    require lastBlockTimestampGhost <= v;
+    lastBlockTimestampGhost = v;
+}
+
+ghost mapping(MarketplaceHarness.SlotId => mapping(Periods.Period => bool)) _missingMirror {
+    init_state axiom forall MarketplaceHarness.SlotId a. 
+            forall Periods.Period b. 
+            _missingMirror[a][b] == false;
+}
+
+hook Sload bool defaultValue _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period period] {
+    require _missingMirror[slotId][period] == defaultValue;
+}
+
+hook Sstore _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period period] bool defaultValue {
+    _missingMirror[slotId][period] = defaultValue;
 }
 
 /*--------------------------------------------
@@ -87,6 +109,12 @@ invariant totalSentIsLessThanOrEqualTotalReceived()
             requireInvariant totalSupplyIsSumOfBalances();
         }
     }
+
+// STATUS - verified
+// can set missing if period was passed
+// https://prover.certora.com/output/3106/026b36c118e44ad0824a51c50647c497/?anonymousKey=29879706f3d343555bb6122d071c9409d4e9876d
+invariant cantBeMissedIfInPeriod(MarketplaceHarness.SlotId slotId, Periods.Period period)
+    lastBlockTimestampGhost <= publicPeriodEnd(period) => !_missingMirror[slotId][period];
 
 /*--------------------------------------------
 |                 Properties                 |
