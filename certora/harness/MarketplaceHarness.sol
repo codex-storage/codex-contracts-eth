@@ -14,5 +14,9 @@ contract MarketplaceHarness is Marketplace {
     function requestContext(RequestId requestId) public returns (Marketplace.RequestContext memory) {
         return _requestContexts[requestId];
     }
+
+    function publicPeriodEnd(Period period) public view returns (uint256) {
+        return _periodEnd(period);
+    }
 }
 
