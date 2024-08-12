@@ -14,14 +14,6 @@ async function waitUntilCancelled(request) {
   await advanceTimeToForNextBlock((await currentTime()) + request.expiry + 1)
 }
 
-async function waitUntilStarted(contract, request, proof, token) {
-  await token.approve(contract.address, price(request) * request.ask.slots)
-
-  for (let i = 0; i < request.ask.slots; i++) {
-    await contract.fillSlot(requestId(request), i, proof)
-  }
-}
-
 async function waitUntilStarted(
   contract,
   request,
@@ -63,36 +55,10 @@ async function waitUntilSlotFailed(contract, request, slot) {
   }
 }
 
-/**
- * Patch the Marketplace contract object, adding a `fillSlot` function that
- * accepts an optional `payoutAddress` parameter, to call the corresponding
- * `fillSlot` overload in the Marketplace contract. Solidity supports function
- * overloading while javascript does not. This is is a workaround for that
- * discrepancy.
- */
-function patchFillSlotOverloads(contract) {
-  contract.fillSlot = async (requestId, slotIndex, proof, payoutAddress) => {
-    if (!payoutAddress) {
-      // calls `fillSlot` overload without payoutAddress
-      const fn =
-        contract[
-          "fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"
-        ]
-      return await fn(requestId, slotIndex, proof)
-    }
-    const fn =
-      contract[
-        "fillSlot(bytes32,uint256,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address)"
-      ]
-    return await fn(requestId, slotIndex, proof, payoutAddress)
-  }
-}
-
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
-  patchFillSlotOverloads,
 }

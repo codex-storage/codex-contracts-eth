@@ -116,25 +116,6 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Fills a slot with the payout address set to the address of the host
-     filling the slot.
-   * @param requestId RequestId identifying the request containing the slot to
-     fill.
-   * @param slotIndex Index of the slot in the request.
-   * @param proof Groth16 proof procing possession of the slot data.
-   * @dev This overload is an alternative way of providing an optional parameter
-     for payoutAddress, used for instances where a host does not specify a
-     separate payout address.
-   */
-  function fillSlot(
-    RequestId requestId,
-    uint256 slotIndex,
-    Groth16Proof calldata proof
-  ) public requestIsKnown(requestId) {
-    fillSlot(requestId, slotIndex, proof, msg.sender);
-  }
-
-  /**
    * @notice Fills a slot. Reverts if an invalid proof of the slot data is
      provided.
    * @param requestId RequestId identifying the request containing the slot to
