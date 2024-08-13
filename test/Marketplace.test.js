@@ -435,9 +435,9 @@ describe("Marketplace", function () {
     it("fails to free slot when slot not filled", async function () {
       slot.index = 5
       let nonExistentId = slotId(slot)
-      await expect(marketplace.freeSlot(nonExistentId, host.address)).to.be.revertedWith(
-        "Slot is free"
-      )
+      await expect(
+        marketplace.freeSlot(nonExistentId, host.address)
+      ).to.be.revertedWith("Slot is free")
     })
 
     it("can only be freed by the host occupying the slot", async function () {
@@ -469,7 +469,6 @@ describe("Marketplace", function () {
       switchAccount(host)
       await token.approve(marketplace.address, request.ask.collateral)
     })
-
 
     it("pays to host payout address when contract has finished and returns collateral to host address", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
@@ -526,9 +525,9 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot), host.address)
-      await expect(marketplace.freeSlot(slotId(slot), host.address)).to.be.revertedWith(
-        "Already paid"
-      )
+      await expect(
+        marketplace.freeSlot(slotId(slot), host.address)
+      ).to.be.revertedWith("Already paid")
     })
 
     it("cannot be filled again", async function () {

@@ -14,12 +14,7 @@ async function waitUntilCancelled(request) {
   await advanceTimeToForNextBlock((await currentTime()) + request.expiry + 1)
 }
 
-async function waitUntilStarted(
-  contract,
-  request,
-  proof,
-  token
-) {
+async function waitUntilStarted(contract, request, proof, token) {
   await token.approve(contract.address, price(request) * request.ask.slots)
 
   for (let i = 0; i < request.ask.slots; i++) {
