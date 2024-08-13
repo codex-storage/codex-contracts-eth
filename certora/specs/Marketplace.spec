@@ -63,6 +63,27 @@ hook Sstore _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period pe
     _missingMirror[slotId][period] = defaultValue;
 }
 
+ghost mathint requestStateChangesCount {
+    init_state axiom requestStateChangesCount == 0;
+}
+
+hook Sstore _requestContexts[KEY Marketplace.RequestId requestId].state Marketplace.RequestState newState (Marketplace.RequestState oldState) {
+    if (oldState != newState) {
+        requestStateChangesCount = requestStateChangesCount + 1;
+    }
+}
+
+ghost mathint slotStateChangesCount {
+    init_state axiom slotStateChangesCount == 0;
+}
+
+hook Sstore _slots[KEY Marketplace.SlotId slotId].state Marketplace.SlotState newState (Marketplace.SlotState oldState) {
+    if (oldState != newState) {
+        slotStateChangesCount = slotStateChangesCount + 1;
+    }
+}
+
+
 /*--------------------------------------------
 |              Helper functions              |
 --------------------------------------------*/
@@ -179,4 +200,26 @@ rule finishedRequestCannotBeStartedAgain(env e, method f) {
     Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
 
     assert requestStateBefore == requestStateAfter;
+}
+
+rule requestStateChangesOnlyOncePerFunctionCall(env e, method f) {
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    mathint requestStateChangesCountBefore = requestStateChangesCount;
+    f(e, args);
+    mathint requestStateChangesCountAfter = requestStateChangesCount;
+
+    assert requestStateChangesCountAfter <= requestStateChangesCountBefore + 1;
+}
+
+rule slotStateChangesOnlyOncePerFunctionCall(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+
+    mathint slotStateChangesCountBefore = slotStateChangesCount;
+    f(e, args);
+    mathint slotStateChangesCountAfter =slotStateChangesCount; 
+
+    assert slotStateChangesCountAfter <= slotStateChangesCountBefore + 1;
 }
