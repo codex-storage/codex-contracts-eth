@@ -111,7 +111,7 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:freeSlot(Marketplace.SlotId, address).selector;
 }
 
 function canFailRequest(method f) returns bool {
