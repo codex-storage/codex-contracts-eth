@@ -96,12 +96,20 @@ describe("Marketplace", function () {
   beforeEach(async function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
-    ;[client, clientPayout, host1, host2, host3, hostPayout] = await ethers.getSigners()
+    ;[client, clientPayout, host1, host2, host3, hostPayout] =
+      await ethers.getSigners()
     host = host1
 
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
-    for (let account of [client, clientPayout, host1, host2, host3, hostPayout]) {
+    for (let account of [
+      client,
+      clientPayout,
+      host1,
+      host2,
+      host3,
+      hostPayout,
+    ]) {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
 
@@ -599,16 +607,16 @@ describe("Marketplace", function () {
 
     it("rejects withdraw when request not yet timed out", async function () {
       switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request, clientPayout.address)).to.be.revertedWith(
-        "Request not yet timed out"
-      )
+      await expect(
+        marketplace.withdrawFunds(slot.request, clientPayout.address)
+      ).to.be.revertedWith("Request not yet timed out")
     })
 
     it("rejects withdraw when wrong account used", async function () {
       await waitUntilCancelled(request)
-      await expect(marketplace.withdrawFunds(slot.request, clientPayout.address)).to.be.revertedWith(
-        "Invalid client address"
-      )
+      await expect(
+        marketplace.withdrawFunds(slot.request, clientPayout.address)
+      ).to.be.revertedWith("Invalid client address")
     })
 
     it("rejects withdraw when in wrong state", async function () {
@@ -623,15 +631,17 @@ describe("Marketplace", function () {
       }
       await waitUntilCancelled(request)
       switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request, clientPayout.address)).to.be.revertedWith(
-        "Invalid state"
-      )
+      await expect(
+        marketplace.withdrawFunds(slot.request, clientPayout.address)
+      ).to.be.revertedWith("Invalid state")
     })
 
     it("emits event once request is cancelled", async function () {
       await waitUntilCancelled(request)
       switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request, clientPayout.address))
+      await expect(
+        marketplace.withdrawFunds(slot.request, clientPayout.address)
+      )
         .to.emit(marketplace, "RequestCancelled")
         .withArgs(requestId(request))
     })
