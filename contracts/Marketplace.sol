@@ -330,7 +330,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
      transaction must originate from the depositer address.
    * @param requestId the id of the request
    */
-  function withdrawFunds(RequestId requestId) public {
+  /// @param withdrawAddress the address to withdraw funds to
+  function withdrawFunds(RequestId requestId, address withdrawAddress) public {
     Request storage request = _requests[requestId];
     require(
       block.timestamp > requestExpiry(requestId),
@@ -349,7 +350,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     uint256 amount = context.expiryFundsWithdraw;
     _marketplaceTotals.sent += amount;
-    assert(_token.transfer(msg.sender, amount));
+    assert(_token.transfer(withdrawAddress, amount));
   }
 
   function getActiveSlot(
