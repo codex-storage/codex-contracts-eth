@@ -50,9 +50,19 @@ hook TIMESTAMP uint v {
 }
 
 ghost mapping(MarketplaceHarness.SlotId => mapping(Periods.Period => bool)) _missingMirror {
-    init_state axiom forall MarketplaceHarness.SlotId a. 
-            forall Periods.Period b. 
+    init_state axiom forall MarketplaceHarness.SlotId a.
+            forall Periods.Period b.
             _missingMirror[a][b] == false;
+}
+
+ghost mapping(MarketplaceHarness.SlotId => uint256) _missedMirror {
+    init_state axiom forall MarketplaceHarness.SlotId a.
+            _missedMirror[a] == 0;
+}
+
+ghost mapping(MarketplaceHarness.SlotId => mathint) _missedCalculated {
+    init_state axiom forall MarketplaceHarness.SlotId a.
+            _missedCalculated[a] == 0;
 }
 
 hook Sload bool defaultValue _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period period] {
@@ -61,6 +71,11 @@ hook Sload bool defaultValue _missing[KEY MarketplaceHarness.SlotId slotId][KEY 
 
 hook Sstore _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period period] bool defaultValue {
     _missingMirror[slotId][period] = defaultValue;
+    _missedCalculated[slotId] = _missedCalculated[slotId] + 1;
+}
+
+hook Sstore _missed[KEY MarketplaceHarness.SlotId slotId] uint256 defaultValue {
+    _missedMirror[slotId] = defaultValue;
 }
 
 ghost mathint requestStateChangesCount {
@@ -83,7 +98,6 @@ hook Sstore _slots[KEY Marketplace.SlotId slotId].state Marketplace.SlotState ne
     }
 }
 
-
 /*--------------------------------------------
 |              Helper functions              |
 --------------------------------------------*/
@@ -101,7 +115,7 @@ function canFinishRequest(method f) returns bool {
 }
 
 function canFailRequest(method f) returns bool {
-    return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector || 
+    return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
         f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
@@ -114,6 +128,9 @@ invariant totalSupplyIsSumOfBalances()
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
     to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
+
+invariant slotMissedShouldBeEqualToNumberOfMissedPeriods(env e, Marketplace.SlotId slotId)
+    to_mathint(_missedMirror[slotId]) == _missedCalculated[slotId];
 
 // STATUS - verified
 // can set missing if period was passed
@@ -219,7 +236,7 @@ rule slotStateChangesOnlyOncePerFunctionCall(env e, method f) {
 
     mathint slotStateChangesCountBefore = slotStateChangesCount;
     f(e, args);
-    mathint slotStateChangesCountAfter =slotStateChangesCount; 
+    mathint slotStateChangesCountAfter =slotStateChangesCount;
 
     assert slotStateChangesCountAfter <= slotStateChangesCountBefore + 1;
 }

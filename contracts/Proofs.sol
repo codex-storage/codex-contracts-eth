@@ -203,6 +203,7 @@ abstract contract Proofs is Periods {
    * @dev Reverts when:
    *    - missedPeriod has not ended yet ended
    *    - missing proof was time-barred
+   *    - proof was submitted
    *    - proof was not required for missedPeriod period
    *    - proof was already marked as missing
    */
