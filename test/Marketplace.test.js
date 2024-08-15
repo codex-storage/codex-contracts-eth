@@ -57,18 +57,24 @@ describe("Marketplace constructor", function () {
     await revert()
   })
 
-  function testPercentageOverflow(property) {
+  function testPercentageOverflow(property, expectedError) {
     it(`should reject for ${property} overflowing percentage values`, async () => {
       config.collateral[property] = 101
 
       await expect(
         Marketplace.deploy(config, token.address, verifier.address)
-      ).to.be.revertedWith("Must be less than 100")
+      ).to.be.revertedWith(expectedError)
     })
   }
 
-  testPercentageOverflow("repairRewardPercentage")
-  testPercentageOverflow("slashPercentage")
+  testPercentageOverflow(
+    "repairRewardPercentage",
+    "Marketplace_RepairRewardPercentageTooHigh"
+  )
+  testPercentageOverflow(
+    "slashPercentage",
+    "Marketplace_SlashPercentageTooHigh"
+  )
 
   it("should reject when total slash percentage exceeds 100%", async () => {
     config.collateral.slashPercentage = 1
@@ -76,7 +82,7 @@ describe("Marketplace constructor", function () {
 
     await expect(
       Marketplace.deploy(config, token.address, verifier.address)
-    ).to.be.revertedWith("Maximum slashing exceeds 100%")
+    ).to.be.revertedWith("Marketplace_MaximumSlashingTooHigh")
   })
 })
 
@@ -159,7 +165,7 @@ describe("Marketplace", function () {
       let invalid = { ...request, client: host.address }
       await token.approve(marketplace.address, price(invalid))
       await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
-        "Invalid client address"
+        "Marketplace_InvalidClientAddress"
       )
     })
 
@@ -176,19 +182,19 @@ describe("Marketplace", function () {
 
       request.expiry = request.ask.duration + 1
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Expiry not in range"
+        "Marketplace_InvalidExpiry"
       )
 
       request.expiry = 0
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Expiry not in range"
+        "Marketplace_InvalidExpiry"
       )
     })
 
     it("is rejected when maxSlotLoss exceeds slots", async function () {
       request.ask.maxSlotLoss = request.ask.slots + 1
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "maxSlotLoss exceeds slots"
+        "Marketplace_InvalidMaxSlotLoss"
       )
     })
 
@@ -196,7 +202,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Request already exists"
+        "Marketplace_RequestAlreadyExists"
       )
     })
   })
@@ -224,7 +230,7 @@ describe("Marketplace", function () {
 
     it("fails to retrieve a request of an empty slot", async function () {
       expect(marketplace.getActiveSlot(slotId(slot))).to.be.revertedWith(
-        "Slot is free"
+        "Marketplace_SlotIsFree"
       )
     })
 
@@ -238,21 +244,21 @@ describe("Marketplace", function () {
     it("is rejected when proof is incorrect", async function () {
       await expect(
         marketplace.fillSlot(slot.request, slot.index, invalidProof())
-      ).to.be.revertedWith("Invalid proof")
+      ).to.be.revertedWith("Proofs_InvalidProof")
     })
 
     it("is rejected when slot already filled", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is unknown", async function () {
       let unknown = await exampleRequest()
       await expect(
         marketplace.fillSlot(requestId(unknown), 0, proof)
-      ).to.be.revertedWith("Unknown request")
+      ).to.be.revertedWith("Marketplace_UnknownRequest")
     })
 
     it("is rejected when request is cancelled", async function () {
@@ -264,7 +270,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await expect(
         marketplace.fillSlot(requestId(expired), slot.index, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is finished", async function () {
@@ -272,7 +278,7 @@ describe("Marketplace", function () {
       await waitUntilFinished(marketplace, slot.request)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is failed", async function () {
@@ -280,14 +286,14 @@ describe("Marketplace", function () {
       await waitUntilFailed(marketplace, request)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
 
     it("is rejected when slot index not in range", async function () {
       const invalid = request.ask.slots
       await expect(
         marketplace.fillSlot(slot.request, invalid, proof)
-      ).to.be.revertedWith("Invalid slot")
+      ).to.be.revertedWith("Marketplace_InvalidSlot")
     })
 
     it("fails when all slots are already filled", async function () {
@@ -302,7 +308,7 @@ describe("Marketplace", function () {
       }
       await expect(
         marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
   })
 
@@ -436,7 +442,7 @@ describe("Marketplace", function () {
       slot.index = 5
       let nonExistentId = slotId(slot)
       await expect(marketplace.freeSlot(nonExistentId)).to.be.revertedWith(
-        "Slot is free"
+        "Marketplace_SlotIsFree"
       )
     })
 
@@ -444,7 +450,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       switchAccount(client)
       await expect(marketplace.freeSlot(id)).to.be.revertedWith(
-        "Slot filled by other host"
+        "Marketplace_InvalidSlotHost"
       )
     })
 
@@ -513,7 +519,7 @@ describe("Marketplace", function () {
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
       await expect(marketplace.freeSlot(slotId(slot))).to.be.revertedWith(
-        "Already paid"
+        "Marketplace_AlreadyPaid"
       )
     })
 
@@ -571,7 +577,7 @@ describe("Marketplace", function () {
       }
       await expect(
         marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Slot is not free")
+      ).to.be.revertedWith("Marketplace_SlotNotFree")
     })
   })
 
@@ -587,14 +593,14 @@ describe("Marketplace", function () {
     it("rejects withdraw when request not yet timed out", async function () {
       switchAccount(client)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Request not yet timed out"
+        "Marketplace_RequestNotYetTimedOut"
       )
     })
 
     it("rejects withdraw when wrong account used", async function () {
       await waitUntilCancelled(request)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Invalid client address"
+        "Marketplace_InvalidClientAddress"
       )
     })
 
@@ -611,7 +617,7 @@ describe("Marketplace", function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Invalid state"
+        "Marketplace_InvalidState"
       )
     })
 
@@ -930,7 +936,7 @@ describe("Marketplace", function () {
       let missedPeriod = periodOf(await currentTime())
       await expect(
         marketplace.markProofAsMissing(slotId(slot), missedPeriod)
-      ).to.be.revertedWith("Slot not accepting proofs")
+      ).to.be.revertedWith("Marketplace_SlotNotAcceptingProofs")
     })
 
     describe("slashing when missing proofs", function () {
