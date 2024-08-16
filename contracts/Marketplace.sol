@@ -166,13 +166,25 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     }
   }
 
-  function freeSlot(
-    SlotId slotId,
-    address rewardRecipient
-  ) public slotIsNotFree(slotId) {
-    return freeSlot(slotId, rewardRecipient, msg.sender);
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     finished or cancelled requests to the host that has filled the slot.
+   * @param slotId id of the slot to free
+   * @dev The host that filled the slot must have initiated the transaction
+     (msg.sender). This overload allows `rewardRecipient` and
+     `collateralRecipient` to be optional.
+   */
+  function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
+    return freeSlot(slotId, msg.sender, msg.sender);
   }
 
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     finished or cancelled requests.
+   * @param slotId id of the slot to free
+   * @param rewardRecipient address to send rewards to
+   * @param collateralRecipient address to refund collateral to
+   */
   function freeSlot(
     SlotId slotId,
     address rewardRecipient,
@@ -339,14 +351,27 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Withdraws storage request funds back to the client that deposited
-     them.
-   * @dev Request must be expired, must be in RequestState.New, and the
+   * @notice Withdraws remaining storage request funds back to the client that
+     deposited them.
+   * @dev Request must be expired, must be in RequestStat e.New, and the
      transaction must originate from the depositer address.
    * @param requestId the id of the request
    */
-  /// @param withdrawAddress the address to withdraw funds to
-  function withdrawFunds(RequestId requestId, address withdrawAddress) public {
+  function withdrawFunds(RequestId requestId) public {
+    withdrawFunds(requestId, msg.sender);
+  }
+
+  /**
+   * @notice Withdraws storage request funds to the provided address.
+   * @dev Request must be expired, must be in RequestState.New, and the
+     transaction must originate from the depositer address.
+   * @param requestId the id of the request
+   * @param withdrawRecipient address to return the remaining funds to
+   */
+  function withdrawFunds(
+    RequestId requestId,
+    address withdrawRecipient
+  ) public {
     Request storage request = _requests[requestId];
     require(
       block.timestamp > requestExpiry(requestId),
@@ -365,7 +390,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     uint256 amount = context.expiryFundsWithdraw;
     _marketplaceTotals.sent += amount;
-    assert(_token.transfer(withdrawAddress, amount));
+    assert(_token.transfer(withdrawRecipient, amount));
   }
 
   function getActiveSlot(
