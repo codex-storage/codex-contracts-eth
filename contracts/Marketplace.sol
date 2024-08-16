@@ -327,7 +327,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   /**
    * @notice Pays out a host for duration of time that the slot was filled, and
      returns the collateral.
-   * @dev The payouts are sent to the payoutAddress, and collateral is returned
+   * @dev The payouts are sent to the rewardRecipient, and collateral is returned
      to the host address.
    * @param requestId RequestId of the request that contains the slot to be paid
      out.

@@ -103,7 +103,7 @@ hook Sstore _slots[KEY Marketplace.SlotId slotId].state Marketplace.SlotState ne
 --------------------------------------------*/
 
 function canCancelRequest(method f) returns bool {
-    return f.selector == sig:withdrawFunds(Marketplace.RequestId, address).selector;
+    return f.selector == sig:withdrawFunds(Marketplace.RequestId).selector;
 }
 
 function canStartRequest(method f) returns bool {
@@ -111,12 +111,12 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address).selector;
+    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
 }
 
 function canFailRequest(method f) returns bool {
     return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
 }
 
 /*--------------------------------------------
