@@ -118,7 +118,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     RequestId requestId,
     uint256 slotIndex,
     Groth16Proof calldata proof
-  ) public requestIsKnown(requestId) {
+  ) public requestIsKnown(requestId) requestNotFinished(requestId) {
     Request storage request = _requests[requestId];
     require(slotIndex < request.ask.slots, "Invalid slot");
 
@@ -127,7 +127,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     slot.requestId = requestId;
     slot.slotIndex = slotIndex;
 
-    require(slotState(slotId) == SlotState.Free, "Slot is not free");
+    require(slotState(slotId) == SlotState.Free, "Slot is not free"); // revert
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
@@ -251,7 +251,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
       context.state == RequestState.Started
     ) {
       context.state = RequestState.Failed;
-      context.endsAt = block.timestamp - 1;
+      context.endsAt = block.timestamp - 1; // Ended
       emit RequestFailed(requestId);
 
       // TODO: send client remaining funds
@@ -331,6 +331,14 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     _;
   }
 
+  modifier requestNotFinished(RequestId requestId) {
+    require(
+      _requestContexts[requestId].state != RequestState.Finished,
+      "Request is cancelled or finished"
+    );
+    _;
+  }
+
   function getRequest(
     RequestId requestId
   ) public view requestIsKnown(requestId) returns (Request memory) {
@@ -377,32 +385,32 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   function requestState(
     RequestId requestId
   ) public view requestIsKnown(requestId) returns (RequestState) {
-    RequestContext storage context = _requestContexts[requestId];
+    RequestContext storage context = _requestContexts[requestId]; // Cancelled
     if (
       context.state == RequestState.New &&
       block.timestamp > requestExpiry(requestId)
     ) {
       return RequestState.Cancelled;
     } else if (
-      context.state == RequestState.Started && block.timestamp > context.endsAt
+      (context.state == RequestState.Started || context.state == RequestState.New) && block.timestamp > context.endsAt
     ) {
       return RequestState.Finished;
     } else {
-      return context.state;
+      return context.state; // Cancelled
     }
   }
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
-    Slot storage slot = _slots[slotId];
+    Slot storage slot = _slots[slotId]; // Free
     if (RequestId.unwrap(slot.requestId) == 0) {
       return SlotState.Free;
     }
-    RequestState reqState = requestState(slot.requestId);
     if (slot.state == SlotState.Paid) {
       return SlotState.Paid;
     }
+    RequestState reqState = requestState(slot.requestId); // Failed
     if (reqState == RequestState.Cancelled) {
-      return SlotState.Cancelled;
+      return SlotState.Cancelled; // Cancelled
     }
     if (reqState == RequestState.Finished) {
       return SlotState.Finished;

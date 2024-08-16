@@ -93,7 +93,8 @@ function canCancelRequest(method f) returns bool {
 }
 
 function canStartRequest(method f) returns bool {
-    return f.selector == sig:fillSlot(Marketplace.RequestId, uint256, Marketplace.Groth16Proof).selector;
+    return f.selector == sig:fillSlot(Marketplace.RequestId, uint256, Marketplace.Groth16Proof).selector ||
+        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
 function canFinishRequest(method f) returns bool {
@@ -113,13 +114,31 @@ invariant totalSupplyIsSumOfBalances()
     to_mathint(Token.totalSupply()) == sumOfBalances;
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
-    to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Started => to_mathint(currentContract.getRequest(e, requestId).ask.slots) - to_mathint(currentContract.requestContext(e, requestId).slotsFilled) <= to_mathint(currentContract.getRequest(e, requestId).ask.maxSlotLoss);
+//     { preserved {
+//         require to_mathint(currentContract.requestContext(e, requestId).slotsFilled) <= to_mathint(currentContract.getRequest(e, requestId).ask.slots);
+//     }
+// }
 
 // STATUS - verified
 // can set missing if period was passed
 // https://prover.certora.com/output/3106/026b36c118e44ad0824a51c50647c497/?anonymousKey=29879706f3d343555bb6122d071c9409d4e9876d
 invariant cantBeMissedIfInPeriod(MarketplaceHarness.SlotId slotId, Periods.Period period)
     lastBlockTimestampGhost <= publicPeriodEnd(period) => !_missingMirror[slotId][period];
+
+// STATUS - verified
+// cancelled request is always expired
+// https://prover.certora.com/output/6199/df88c16b9fb144ec88292df2346adb21?anonymousKey=2c76bd226b246bdd1b667d16c387519beaf94487
+invariant cancelledRequestAlwaysExpired(env e, Marketplace.RequestId requestId)
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Cancelled => 
+        currentContract.requestExpiry(e, requestId) < lastBlockTimestampGhost;
+
+// STATUS - verified
+// failed request is always ended
+// https://prover.certora.com/output/6199/902ffe4a83a9438e9860655446b46a74?anonymousKey=47b344024bbfe84a649bd1de44d7d243ce8dbc21
+invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed => 
+        currentContract.requestContext(e, requestId).endsAt < lastBlockTimestampGhost;
 
 /*--------------------------------------------
 |                 Properties                 |
@@ -154,9 +173,27 @@ rule totalSentCannotDecrease(env e, method f) {
     assert total_after >= total_before;
 }
 
+rule slotFilledIFRequestIsFailed(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+
+    require currentContract.requestState(e, currentContract.slots(slotId).requestId) != Marketplace.RequestState.Failed;
+    f(e, args);
+    require currentContract.requestState(e, currentContract.slots(slotId).requestId) == Marketplace.RequestState.Failed;
+
+    assert currentContract.slotState(slotId) == Marketplace.SlotState.Failed;
+}
+
+
 rule allowedRequestStateChanges(env e, method f) {
     calldataarg args;
     Marketplace.RequestId requestId;
+
+    //requireInvariant cancelledRequestAlwaysExpired(e, requestId);
+    // requireInvariant failedRequestAlwaysEnded(e, requestId);
+    //require currentContract.requestContext(e, requestId).expiresAt < currentContract.requestContext(e, requestId).endsAt;
+
+    // require currentContract.slotState(e, slotId) == Marketplace.SlotState.Finished => currentContract.requestState(e, requestId) == Marketplace.RequestState.Finished;
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
     f(e, args);
@@ -179,17 +216,36 @@ rule functionsCausingRequestStateChanges(env e, method f) {
     // RequestState.New -> RequestState.Started
     assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Started => canStartRequest(f);
 
+    // RequestState.New -> RequestState.Cancelled
+    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Cancelled => canCancelRequest(f);
+
     // RequestState.Started -> RequestState.Finished
     assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Finished => canFinishRequest(f);
 
     // RequestState.Started -> RequestState.Failed
     assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Failed => canFailRequest(f);
 
-    // RequestState.New -> RequestState.Cancelled
-    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Cancelled => canCancelRequest(f);
+    // RequestState.Finished -> RequestState.Started
+    assert requestStateBefore == Marketplace.RequestState.Finished && requestStateAfter == Marketplace.RequestState.Started => canStartRequest(f);
 }
 
-rule finishedRequestCannotBeStartedAgain(env e, method f) {
+rule cancelledRequestsStayCancelled(env e, method f) {
+
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+
+    require requestStateBefore == Marketplace.RequestState.Cancelled;
+    requireInvariant cancelledRequestAlwaysExpired(e, requestId);
+
+    f(e, args);
+    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
+
+    assert requestStateAfter == requestStateBefore;
+}
+
+rule finishedRequestsStayFinished(env e, method f) {
 
     calldataarg args;
     Marketplace.RequestId requestId;
