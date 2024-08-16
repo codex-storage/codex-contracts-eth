@@ -21,6 +21,7 @@ const {
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
+  patchFreeSlotOverloads,
 } = require("./marketplace")
 const { price, pricePerSlot } = require("./price")
 const {
@@ -87,7 +88,7 @@ describe("Marketplace", function () {
   let marketplace
   let token
   let verifier
-  let client, clientPayout, host, host1, host2, host3, hostPayout
+  let client, clientWithdrawRecipient, host, host1, host2, host3, hostRewardRecipient, hostCollateralRecipient
   let request
   let slot
 
@@ -96,7 +97,7 @@ describe("Marketplace", function () {
   beforeEach(async function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
-    ;[client, clientPayout, host1, host2, host3, hostPayout] =
+    ;[client, clientWithdrawRecipient, host1, host2, host3, hostRewardRecipient, hostCollateralRecipient] =
       await ethers.getSigners()
     host = host1
 
@@ -104,11 +105,12 @@ describe("Marketplace", function () {
     token = await TestToken.deploy()
     for (let account of [
       client,
-      clientPayout,
+      clientWithdrawRecipient,
       host1,
       host2,
       host3,
-      hostPayout,
+      hostRewardRecipient,
+      hostCollateralRecipient,
     ]) {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
@@ -122,6 +124,7 @@ describe("Marketplace", function () {
       token.address,
       verifier.address
     )
+    patchFreeSlotOverloads(marketplace)
 
     request = await exampleRequest()
     request.client = client.address
@@ -139,6 +142,7 @@ describe("Marketplace", function () {
   function switchAccount(account) {
     token = token.connect(account)
     marketplace = marketplace.connect(account)
+    patchFreeSlotOverloads(marketplace)
   }
 
   describe("requesting storage", function () {
@@ -482,10 +486,10 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       const startBalanceHostAddr = await token.balanceOf(host.address)
-      const startBalancePayoutAddr = await token.balanceOf(hostPayout.address)
-      await marketplace.freeSlot(slotId(slot), hostPayout.address)
+      const startBalancePayoutAddr = await token.balanceOf(hostRewardRecipient.address)
+      await marketplace.freeSlot(slotId(slot), hostRewardRecipient.address)
       const endBalanceHostAddr = await token.balanceOf(host.address)
-      const endBalancePayoutAddr = await token.balanceOf(hostPayout.address)
+      const endBalancePayoutAddr = await token.balanceOf(hostRewardRecipient.address)
       expect(endBalanceHostAddr - startBalanceHostAddr).to.equal(
         request.ask.collateral
       )
@@ -505,10 +509,10 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       const startBalanceHostAddr = await token.balanceOf(host.address)
-      await marketplace.freeSlot(slotId(slot), hostPayout.address)
+      await marketplace.freeSlot(slotId(slot), hostRewardRecipient.address)
 
       const expectedPartialPayout = (expiresAt - filledAt) * request.ask.reward
-      const endBalancePayoutAddr = await token.balanceOf(hostPayout.address)
+      const endBalancePayoutAddr = await token.balanceOf(hostRewardRecipient.address)
       expect(endBalancePayoutAddr - ACCOUNT_STARTING_BALANCE).to.be.equal(
         expectedPartialPayout
       )
@@ -521,10 +525,10 @@ describe("Marketplace", function () {
     it("does not pay when the contract hasn't ended", async function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const startBalanceHost = await token.balanceOf(host.address)
-      const startBalancePayout = await token.balanceOf(hostPayout.address)
-      await marketplace.freeSlot(slotId(slot), hostPayout.address)
+      const startBalancePayout = await token.balanceOf(hostRewardRecipient.address)
+      await marketplace.freeSlot(slotId(slot), hostRewardRecipient.address)
       const endBalanceHost = await token.balanceOf(host.address)
-      const endBalancePayout = await token.balanceOf(hostPayout.address)
+      const endBalancePayout = await token.balanceOf(hostRewardRecipient.address)
       expect(endBalanceHost).to.equal(startBalanceHost)
       expect(endBalancePayout).to.equal(startBalancePayout)
     })
@@ -608,14 +612,14 @@ describe("Marketplace", function () {
     it("rejects withdraw when request not yet timed out", async function () {
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientPayout.address)
+        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       ).to.be.revertedWith("Request not yet timed out")
     })
 
     it("rejects withdraw when wrong account used", async function () {
       await waitUntilCancelled(request)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientPayout.address)
+        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       ).to.be.revertedWith("Invalid client address")
     })
 
@@ -632,7 +636,7 @@ describe("Marketplace", function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientPayout.address)
+        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       ).to.be.revertedWith("Invalid state")
     })
 
@@ -640,7 +644,7 @@ describe("Marketplace", function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientPayout.address)
+        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       )
         .to.emit(marketplace, "RequestCancelled")
         .withArgs(requestId(request))
@@ -650,10 +654,10 @@ describe("Marketplace", function () {
       await waitUntilCancelled(request)
       switchAccount(client)
       const startBalanceClient = await token.balanceOf(client.address)
-      const startBalancePayout = await token.balanceOf(clientPayout.address)
-      await marketplace.withdrawFunds(slot.request, clientPayout.address)
+      const startBalancePayout = await token.balanceOf(clientWithdrawRecipient.address)
+      await marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       const endBalanceClient = await token.balanceOf(client.address)
-      const endBalancePayout = await token.balanceOf(clientPayout.address)
+      const endBalancePayout = await token.balanceOf(clientWithdrawRecipient.address)
       expect(endBalanceClient).to.equal(startBalanceClient)
       expect(endBalancePayout - startBalancePayout).to.equal(price(request))
     })
@@ -668,14 +672,14 @@ describe("Marketplace", function () {
       await advanceTimeToForNextBlock(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
-      const expectedPartialHostPayout =
+      const expectedPartialhostRewardRecipient =
         (expiresAt - filledAt) * request.ask.reward
 
       switchAccount(client)
-      await marketplace.withdrawFunds(slot.request, clientPayout.address)
-      const endBalance = await token.balanceOf(clientPayout.address)
+      await marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
+      const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
       expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
-        price(request) - expectedPartialHostPayout
+        price(request) - expectedPartialhostRewardRecipient
       )
     })
   })
@@ -704,7 +708,7 @@ describe("Marketplace", function () {
     it("remains 'Cancelled' when client withdraws funds", async function () {
       await waitUntilCancelled(request)
       switchAccount(client)
-      await marketplace.withdrawFunds(slot.request, clientPayout.address)
+      await marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
       expect(await marketplace.requestState(slot.request)).to.equal(Cancelled)
     })
 
@@ -1057,7 +1061,7 @@ describe("Marketplace", function () {
     it("removes request from list when funds are withdrawn", async function () {
       await marketplace.requestStorage(request)
       await waitUntilCancelled(request)
-      await marketplace.withdrawFunds(requestId(request), clientPayout.address)
+      await marketplace.withdrawFunds(requestId(request), clientWithdrawRecipient.address)
       expect(await marketplace.myRequests()).to.deep.equal([])
     })
 

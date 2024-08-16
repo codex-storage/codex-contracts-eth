@@ -168,7 +168,15 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
   function freeSlot(
     SlotId slotId,
-    address payoutAddress
+    address rewardRecipient
+  ) public slotIsNotFree(slotId) {
+    return freeSlot(slotId, rewardRecipient, msg.sender);
+  }
+
+  function freeSlot(
+    SlotId slotId,
+    address rewardRecipient,
+    address collateralRecipient
   ) public slotIsNotFree(slotId) {
     Slot storage slot = _slots[slotId];
     require(slot.host == msg.sender, "Slot filled by other host");
@@ -176,9 +184,14 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     require(state != SlotState.Paid, "Already paid");
 
     if (state == SlotState.Finished) {
-      _payoutSlot(slot.requestId, slotId, payoutAddress);
+      _payoutSlot(slot.requestId, slotId, rewardRecipient, collateralRecipient);
     } else if (state == SlotState.Cancelled) {
-      _payoutCancelledSlot(slot.requestId, slotId, payoutAddress);
+      _payoutCancelledSlot(
+        slot.requestId,
+        slotId,
+        rewardRecipient,
+        collateralRecipient
+      );
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
@@ -280,7 +293,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   function _payoutSlot(
     RequestId requestId,
     SlotId slotId,
-    address payoutAddress
+    address rewardRecipient,
+    address collateralRecipient
   ) private requestIsKnown(requestId) {
     RequestContext storage context = _requestContexts[requestId];
     Request storage request = _requests[requestId];
@@ -294,8 +308,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(payoutAddress, payoutAmount));
-    assert(_token.transfer(slot.host, collateralAmount));
+    assert(_token.transfer(rewardRecipient, payoutAmount));
+    assert(_token.transfer(collateralRecipient, collateralAmount));
   }
 
   /**
@@ -310,7 +324,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
   function _payoutCancelledSlot(
     RequestId requestId,
     SlotId slotId,
-    address payoutAddress
+    address rewardRecipient,
+    address collateralRecipient
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
@@ -319,8 +334,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(payoutAddress, payoutAmount));
-    assert(_token.transfer(slot.host, collateralAmount));
+    assert(_token.transfer(rewardRecipient, payoutAmount));
+    assert(_token.transfer(collateralRecipient, collateralAmount));
   }
 
   /**

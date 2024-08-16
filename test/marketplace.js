@@ -49,10 +49,24 @@ async function waitUntilSlotFailed(contract, request, slot) {
   }
 }
 
+function patchFreeSlotOverloads(contract) {
+  contract.freeSlot = async (slotId, rewardRecipient, collateralRecipient) => {
+    if (!collateralRecipient) {
+      // calls `freeSlot` overload without collateralRecipient
+      const fn = contract["freeSlot(bytes32,address)"]
+
+      return await fn(slotId, rewardRecipient)
+    }
+    const fn = contract["freeSlot(bytes32,address,address)"]
+    return await fn(slotId, rewardRecipient, collateralRecipient)
+  }
+}
+
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
+  patchFreeSlotOverloads,
 }
