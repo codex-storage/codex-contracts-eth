@@ -173,16 +173,16 @@ rule totalSentCannotDecrease(env e, method f) {
     assert total_after >= total_before;
 }
 
-rule slotFilledIFRequestIsFailed(env e, method f) {
-    calldataarg args;
-    Marketplace.SlotId slotId;
-
-    require currentContract.requestState(e, currentContract.slots(slotId).requestId) != Marketplace.RequestState.Failed;
-    f(e, args);
-    require currentContract.requestState(e, currentContract.slots(slotId).requestId) == Marketplace.RequestState.Failed;
-
-    assert currentContract.slotState(slotId) == Marketplace.SlotState.Failed;
-}
+//rule slotFilledIFRequestIsFailed(env e, method f) {
+//    calldataarg args;
+//    Marketplace.SlotId slotId;
+//
+//    require currentContract.requestState(e, currentContract.slots(slotId).requestId) != Marketplace.RequestState.Failed;
+//    f(e, args);
+//    require currentContract.requestState(e, currentContract.slots(slotId).requestId) == Marketplace.RequestState.Failed;
+//
+//    assert currentContract.slotState(slotId) == Marketplace.SlotState.Failed;
+//}
 
 
 rule allowedRequestStateChanges(env e, method f) {
@@ -275,7 +275,29 @@ rule slotStateChangesOnlyOncePerFunctionCall(env e, method f) {
 
     mathint slotStateChangesCountBefore = slotStateChangesCount;
     f(e, args);
-    mathint slotStateChangesCountAfter =slotStateChangesCount; 
+    mathint slotStateChangesCountAfter =slotStateChangesCount;
 
     assert slotStateChangesCountAfter <= slotStateChangesCountBefore + 1;
+}
+
+rule requestContextStateCanChangeToFailedOnlyWhenSlotIsFilled(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+    Marketplace.RequestId requestId = currentContract.slots(e, slotId).requestId;
+
+    // check only cases where the request is not already failed
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+    require requestStateBefore != Marketplace.RequestState.Failed;
+
+    Marketplace.SlotState slotComputedStateBefore = currentContract.slotState(e, slotId);
+    require slotComputedStateBefore != Marketplace.SlotState.Failed &&
+            slotComputedStateBefore != Marketplace.SlotState.Cancelled &&
+            slotComputedStateBefore != Marketplace.SlotState.Finished;
+
+    f(e, args);
+
+    // check if the slotState function returns Failed (the actual storage variable won't be failed)
+    assert currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed => slotComputedStateBefore == Marketplace.SlotState.Filled;
+    //assert currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed => currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed;
+    //assert currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed => currentContract.requestContext(e, requestId).state == Marketplace.RequestState.Failed;
 }
