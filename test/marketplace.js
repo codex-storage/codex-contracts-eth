@@ -49,10 +49,41 @@ async function waitUntilSlotFailed(contract, request, slot) {
   }
 }
 
+function patchOverloads(contract) {
+  contract.freeSlot = async (slotId, rewardRecipient, collateralRecipient) => {
+    const logicalXor = (a, b) => (a || b) && !(a && b)
+    if (logicalXor(rewardRecipient, collateralRecipient)) {
+      // XOR, if exactly one is truthy
+      throw new Error(
+        "Invalid freeSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither."
+      )
+    }
+
+    if (!rewardRecipient && !collateralRecipient) {
+      // calls `freeSlot` overload without `rewardRecipient` and `collateralRecipient`
+      const fn = contract["freeSlot(bytes32)"]
+      return await fn(slotId)
+    }
+
+    const fn = contract["freeSlot(bytes32,address,address)"]
+    return await fn(slotId, rewardRecipient, collateralRecipient)
+  }
+  contract.withdrawFunds = async (requestId, withdrawRecipient) => {
+    if (!withdrawRecipient) {
+      // calls `withdrawFunds` overload without `withdrawRecipient`
+      const fn = contract["withdrawFunds(bytes32)"]
+      return await fn(requestId)
+    }
+    const fn = contract["withdrawFunds(bytes32,address)"]
+    return await fn(requestId, withdrawRecipient)
+  }
+}
+
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,
+  patchOverloads,
 }

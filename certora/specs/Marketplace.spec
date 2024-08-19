@@ -111,12 +111,12 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
 }
 
 function canFailRequest(method f) returns bool {
     return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
 }
 
 /*--------------------------------------------

@@ -46,7 +46,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     /// @dev When Slot is filled, the collateral is collected in amount of request.ask.collateral
     /// @dev When Host is slashed for missing a proof the slashed amount is reflected in this variable
     uint256 currentCollateral;
-    address host;
+    address host; // address used for collateral interactions and identifying hosts
   }
 
   struct ActiveSlot {
@@ -114,6 +114,14 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
 
+  /**
+   * @notice Fills a slot. Reverts if an invalid proof of the slot data is
+     provided.
+   * @param requestId RequestId identifying the request containing the slot to
+     fill.
+   * @param slotIndex Index of the slot in the request.
+   * @param proof Groth16 proof procing possession of the slot data.
+   */
   function fillSlot(
     RequestId requestId,
     uint256 slotIndex,
@@ -158,19 +166,48 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     }
   }
 
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     finished or cancelled requests to the host that has filled the slot.
+   * @param slotId id of the slot to free
+   * @dev The host that filled the slot must have initiated the transaction
+     (msg.sender). This overload allows `rewardRecipient` and
+     `collateralRecipient` to be optional.
+   */
   function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
+    return freeSlot(slotId, msg.sender, msg.sender);
+  }
+
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     finished or cancelled requests.
+   * @param slotId id of the slot to free
+   * @param rewardRecipient address to send rewards to
+   * @param collateralRecipient address to refund collateral to
+   */
+  function freeSlot(
+    SlotId slotId,
+    address rewardRecipient,
+    address collateralRecipient
+  ) public slotIsNotFree(slotId) {
     Slot storage slot = _slots[slotId];
     require(slot.host == msg.sender, "Slot filled by other host");
     SlotState state = slotState(slotId);
     require(state != SlotState.Paid, "Already paid");
 
     if (state == SlotState.Finished) {
-      _payoutSlot(slot.requestId, slotId);
+      _payoutSlot(slot.requestId, slotId, rewardRecipient, collateralRecipient);
     } else if (state == SlotState.Cancelled) {
-      _payoutCancelledSlot(slot.requestId, slotId);
+      _payoutCancelledSlot(
+        slot.requestId,
+        slotId,
+        rewardRecipient,
+        collateralRecipient
+      );
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
+      // free slot without returning collateral, effectively a 100% slash
       _forciblyFreeSlot(slotId);
     }
   }
@@ -231,6 +268,13 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     }
   }
 
+  /**
+   * @notice Abandons the slot without returning collateral, effectively slashing the
+     entire collateral.
+   * @param slotId SlotId of the slot to free.
+   * @dev _slots[slotId] is deleted, resetting _slots[slotId].currentCollateral
+     to 0.
+  */
   function _forciblyFreeSlot(SlotId slotId) internal {
     Slot storage slot = _slots[slotId];
     RequestId requestId = slot.requestId;
@@ -260,7 +304,9 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
   function _payoutSlot(
     RequestId requestId,
-    SlotId slotId
+    SlotId slotId,
+    address rewardRecipient,
+    address collateralRecipient
   ) private requestIsKnown(requestId) {
     RequestContext storage context = _requestContexts[requestId];
     Request storage request = _requests[requestId];
@@ -270,31 +316,62 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _requests[requestId].pricePerSlot() +
-      slot.currentCollateral;
-    _marketplaceTotals.sent += amount;
+    uint256 payoutAmount = _requests[requestId].pricePerSlot();
+    uint256 collateralAmount = slot.currentCollateral;
+    _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(slot.host, amount));
+    assert(_token.transfer(rewardRecipient, payoutAmount));
+    assert(_token.transfer(collateralRecipient, collateralAmount));
   }
 
+  /**
+   * @notice Pays out a host for duration of time that the slot was filled, and
+     returns the collateral.
+   * @dev The payouts are sent to the rewardRecipient, and collateral is returned
+     to the host address.
+   * @param requestId RequestId of the request that contains the slot to be paid
+     out.
+   * @param slotId SlotId of the slot to be paid out.
+   */
   function _payoutCancelledSlot(
     RequestId requestId,
-    SlotId slotId
+    SlotId slotId,
+    address rewardRecipient,
+    address collateralRecipient
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 amount = _expiryPayoutAmount(requestId, slot.filledAt) +
-      slot.currentCollateral;
-    _marketplaceTotals.sent += amount;
+    uint256 payoutAmount = _expiryPayoutAmount(requestId, slot.filledAt);
+    uint256 collateralAmount = slot.currentCollateral;
+    _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(slot.host, amount));
+    assert(_token.transfer(rewardRecipient, payoutAmount));
+    assert(_token.transfer(collateralRecipient, collateralAmount));
   }
 
-  /// @notice Withdraws storage request funds back to the client that deposited them.
-  /// @dev Request must be expired, must be in RequestState.New, and the transaction must originate from the depositer address.
-  /// @param requestId the id of the request
+  /**
+   * @notice Withdraws remaining storage request funds back to the client that
+     deposited them.
+   * @dev Request must be expired, must be in RequestStat e.New, and the
+     transaction must originate from the depositer address.
+   * @param requestId the id of the request
+   */
   function withdrawFunds(RequestId requestId) public {
+    withdrawFunds(requestId, msg.sender);
+  }
+
+  /**
+   * @notice Withdraws storage request funds to the provided address.
+   * @dev Request must be expired, must be in RequestState.New, and the
+     transaction must originate from the depositer address.
+   * @param requestId the id of the request
+   * @param withdrawRecipient address to return the remaining funds to
+   */
+  function withdrawFunds(
+    RequestId requestId,
+    address withdrawRecipient
+  ) public {
     Request storage request = _requests[requestId];
     require(
       block.timestamp > requestExpiry(requestId),
@@ -313,7 +390,7 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
 
     uint256 amount = context.expiryFundsWithdraw;
     _marketplaceTotals.sent += amount;
-    assert(_token.transfer(msg.sender, amount));
+    assert(_token.transfer(withdrawRecipient, amount));
   }
 
   function getActiveSlot(
@@ -356,7 +433,14 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     return _requestContexts[requestId].expiresAt;
   }
 
-  /// @notice Calculates the amount that should be payed out to a host if a request expires based on when the host fills the slot
+  /**
+   * @notice Calculates the amount that should be paid out to a host if a request
+   * expires based on when the host fills the slot
+   * @param requestId RequestId of the request used to calculate the payout
+   * amount.
+   * @param startingTimestamp timestamp indicating when a host filled a slot and
+   * started providing proofs.
+   */
   function _expiryPayoutAmount(
     RequestId requestId,
     uint256 startingTimestamp
