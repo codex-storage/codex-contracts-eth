@@ -1,6 +1,6 @@
 const { advanceTimeToForNextBlock, currentTime } = require("./evm")
 const { slotId, requestId } = require("./ids")
-const { price } = require("./price")
+const { maxPrice } = require("./price")
 
 /**
  * @dev This will not advance the time right on the "expiry threshold" but will most probably "overshoot it"
@@ -14,11 +14,18 @@ async function waitUntilCancelled(request) {
   await advanceTimeToForNextBlock((await currentTime()) + request.expiry + 1)
 }
 
-async function waitUntilStarted(contract, request, proof, token) {
-  await token.approve(contract.address, price(request) * request.ask.slots)
+async function waitUntilStarted(
+  contract,
+  request,
+  proof,
+  token,
+  ignoreSlotIndexes = []
+) {
+  await token.approve(contract.address, maxPrice(request) * request.ask.slots)
 
   for (let i = 0; i < request.ask.slots; i++) {
-    await contract.fillSlot(requestId(request), i, proof)
+    if (!ignoreSlotIndexes.includes(i))
+      await contract.fillSlot(requestId(request), i, proof)
   }
 }
 
