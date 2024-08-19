@@ -74,13 +74,7 @@ library Requests {
     }
   }
 
-  function pricePerSlot(
-    Request memory request
-  ) internal pure returns (uint256) {
-    return request.ask.duration * request.ask.reward;
-  }
-
-  function price(Request memory request) internal pure returns (uint256) {
-    return request.ask.slots * pricePerSlot(request);
+  function maxPrice(Request memory request) internal pure returns (uint256) {
+    return request.ask.slots * request.ask.duration * request.ask.reward;
   }
 }
