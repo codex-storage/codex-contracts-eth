@@ -29,8 +29,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     RequestState state;
     uint256 slotsFilled;
     /// @notice Tracks how much funds should be returned to the client as not all funds might be used for hosting the request
-    /// @dev The sum starts on the full reward amount for the request and is deducted every time a host fills a Slot by precalculated amount that the host should receive
-    ///  if the he successfully finished the request (eq. for the time between when he filled the slot and request's end).
+    /// @dev The sum starts with the full reward amount for the request and is reduced every time a host fills a slot. The reduction is calculated from the duration of time between the slot being filled and the request's end. This is the amount that will be paid out to the host when the request successfully finishes.
     uint256 fundsToReturnToClient;
     uint256 startedAt;
     uint256 endsAt;
@@ -41,7 +40,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     SlotState state;
     RequestId requestId;
     /// @notice Timestamp that signals when slot was filled
-    /// @dev Used for calculating payouts as Hosts are payed based on time they actually host the content
+    /// @dev Used for calculating payouts as hosts are paid based on time they actually host the content
     uint256 filledAt;
     uint256 slotIndex;
     /// @notice Tracks the current amount of host's collateral that is to be payed out at the end of Slot's lifespan.
@@ -362,7 +361,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   /**
    * @notice Withdraws remaining storage request funds back to the client that
      deposited them.
-   * @dev Request must be expired (hence be in RequestStat e.New), failed or finished, and the
+   * @dev Request must be cancelled, failed or finished, and the
      transaction must originate from the depositor address.
    * @param requestId the id of the request
    */
@@ -400,9 +399,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       context.state = RequestState.Cancelled;
       emit RequestCancelled(requestId);
 
-      // The fundsToReturnToClient tracks funds to be returned for requests that succesfully finishes
-      // When request get cancelled, we need to refund the funds which should have payed for the duration
-      // between <expiresAt;endsAt> for every slot that was filled.
+      // `fundsToReturnToClient` currently tracks funds to be returned for requests that successfully finish.
+      // When requests are cancelled, funds earmarked for payment for the duration
+      // between request expiry and request end (for every slot that was filled), should be returned to the client.
+      // Update `fundsToReturnToClient` to reflect this.
       context.fundsToReturnToClient +=
         context.slotsFilled *
         _payoutAmount(requestId, requestExpiry(requestId));
@@ -465,7 +465,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Calculates the amount that should be payed out to a host that successfully finished the request
+   * @notice Calculates the amount that should be paid out to a host that successfully finished the request
    * @param requestId RequestId of the request used to calculate the payout
    * amount.
    * @param startingTimestamp timestamp indicating when a host filled a slot and
@@ -483,7 +483,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       );
   }
 
-  /// @notice Calculates the amount that should be payed out to a host
+  /// @notice Calculates the amount that should be paid out to a host
   function _payoutAmount(
     RequestId requestId,
     uint256 startingTimestamp,

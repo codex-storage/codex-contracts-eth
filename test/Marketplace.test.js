@@ -790,7 +790,7 @@ describe("Marketplace", function () {
       )
       expect(endBalanceClient).to.equal(startBalanceClient)
 
-      expect(endBalancePayout - startBalancePayout).to.lt(
+      expect(endBalancePayout - startBalancePayout).to.be.lt(
         request.expiry * request.ask.reward
       )
     })
