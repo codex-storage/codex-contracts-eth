@@ -386,19 +386,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[requestId];
     require(request.client == msg.sender, "Invalid client address");
     RequestContext storage context = _requestContexts[requestId];
+    RequestState state = requestState(requestId);
     require(
-      context.state == RequestState.New ||
-        context.state == RequestState.Failed ||
-        requestState(requestId) == RequestState.Finished,
+      state == RequestState.Cancelled ||
+        state == RequestState.Failed ||
+        state == RequestState.Finished,
       "Invalid state"
     );
     require(context.fundsToReturnToClient != 0, "Nothing to withdraw");
 
-    if (context.state == RequestState.New) {
-      require(
-        block.timestamp > requestExpiry(requestId),
-        "Request not yet timed out"
-      );
+    if (state == RequestState.Cancelled) {
       context.state = RequestState.Cancelled;
       emit RequestCancelled(requestId);
 
@@ -409,7 +406,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       context.fundsToReturnToClient +=
         context.slotsFilled *
         _payoutAmount(requestId, requestExpiry(requestId));
-    } else if (context.state == RequestState.Failed) {
+    } else if (state == RequestState.Failed) {
       // For Failed requests the client is refunded whole amount.
       context.fundsToReturnToClient = request.maxPrice();
     } else {
@@ -458,7 +455,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (state == RequestState.New || state == RequestState.Started) {
       return end;
     } else {
-      /// For F
       return Math.min(end, block.timestamp - 1);
     }
   }
