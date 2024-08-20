@@ -719,7 +719,7 @@ describe("Marketplace", function () {
       switchAccount(client)
       await expect(
         marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Request not yet timed out")
+      ).to.be.revertedWith("Invalid state")
     })
 
     it("rejects withdraw when wrong account used", async function () {
@@ -875,8 +875,8 @@ describe("Marketplace", function () {
 
       const expectedHostPayout = payoutForDuration(
         request,
-        (await marketplace.requestEnd(requestId(request))).toNumber(),
-        filledAt
+        filledAt,
+        (await marketplace.requestEnd(requestId(request))).toNumber()
       )
 
       switchAccount(client)
