@@ -873,10 +873,11 @@ describe("Marketplace", function () {
       await expect(marketplace.freeSlot(id)).to.emit(marketplace, "SlotFreed")
       await waitUntilFinished(marketplace, requestId(request))
 
-      const expectedHostPayout =
-        ((await marketplace.requestEnd(requestId(request))).toNumber() -
-          filledAt) *
-        request.ask.reward
+      const expectedHostPayout = payoutForDuration(
+        request,
+        (await marketplace.requestEnd(requestId(request))).toNumber(),
+        filledAt
+      )
 
       switchAccount(client)
       await marketplace.withdrawFunds(
