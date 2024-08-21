@@ -222,6 +222,21 @@ rule totalSentCannotDecrease(env e, method f) {
     assert total_after >= total_before;
 }
 
+rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+
+    requireInvariant paidSlotAlwaysHasFinishedOrCancelledRequest(e, slotId);
+
+    require currentContract.requestState(e, currentContract.slots(e, slotId).requestId) != Marketplace.RequestState.Failed;
+    f(e, args);
+    require currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Failed;
+
+    assert currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed ||
+        currentContract.slotState(e, slotId) == Marketplace.SlotState.Free;
+}
+
+
 rule allowedRequestStateChanges(env e, method f) {
     calldataarg args;
     Marketplace.RequestId requestId;
