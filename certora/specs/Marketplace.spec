@@ -241,15 +241,53 @@ rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
 
 rule allowedRequestStateChanges(env e, method f) {
     calldataarg args;
-    Marketplace.RequestId requestId;
+    Marketplace.SlotId slotId;
+
+    Marketplace.RequestId requestId = currentContract.slots(e, slotId).requestId;
+
+    // needed, otherwise it finds counter examples where 
+    // `SlotState.Cancelled` and `RequestState.New`
+    requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
+    // needed, otherwise it finds counter example where
+    // `SlotState.Finished` and `RequestState.New`
+    requireInvariant finishedSlotAlwaysHasFinishedRequest(e, slotId);
+
+    // Without this, the prover will find counter examples with `requestId == 0`,
+    // which are unlikely in practice as `requestId` is a hash from a request object.
+    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
+    // which ultimately results in counter examples where we have a state change
+    // RequestState.Cancelled -> RequestState.Finished, which is forbidden.
+    // 
+    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/3a4f410e6367422ba60b218a08c04fae?anonymousKey=0d7003af4ee9bc18c0da0c80a216a6815d397370
+    // 
+    // The `require` below is a hack to ensure we exclude such cases as the code 
+    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't 
+    // sufficient here)
+    require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
+
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
-    f(e, args);
+
+    // we need to check for `freeSlot(slotId)` here to ensure it's being called with
+    // the slotId we're interested in and not any other slotId (that may not pass the
+    // required invariants)
+    if (f.selector == sig:freeSlot(Marketplace.SlotId).selector || f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector) {
+        freeSlot(e, slotId);
+    } else {
+        f(e, args);
+    }
     Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
 
+    // RequestState.New -> RequestState.Started
     assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Started => requestStateBefore == Marketplace.RequestState.New;
+
+    // RequestState.Started -> RequestState.Finished
     assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Finished => requestStateBefore == Marketplace.RequestState.Started;
+
+    // RequestState.Started -> RequestState.Failed
     assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Failed => requestStateBefore == Marketplace.RequestState.Started;
+
+    // RequestState.New -> RequestState.Cancelled
     assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Cancelled => requestStateBefore == Marketplace.RequestState.New;
 }
 
