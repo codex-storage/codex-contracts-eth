@@ -468,7 +468,8 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     ) {
       return RequestState.Cancelled;
     } else if (
-      context.state == RequestState.Started && block.timestamp > context.endsAt
+      (context.state == RequestState.Started ||
+        context.state == RequestState.New) && block.timestamp > context.endsAt
     ) {
       return RequestState.Finished;
     } else {
