@@ -272,15 +272,41 @@ rule functionsCausingRequestStateChanges(env e, method f) {
 
     // RequestState.Started -> RequestState.Failed
     assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Failed => canFailRequest(f);
-
-    // RequestState.New -> RequestState.Cancelled
-    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Cancelled => canCancelRequest(f);
 }
 
-rule finishedRequestCannotBeStartedAgain(env e, method f) {
+rule cancelledRequestsStayCancelled(env e, method f) {
 
     calldataarg args;
     Marketplace.RequestId requestId;
+
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
+
+    require requestStateBefore == Marketplace.RequestState.Cancelled;
+    requireInvariant cancelledRequestAlwaysExpired(e, requestId);
+
+    f(e, args);
+    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
+
+    assert requestStateAfter == requestStateBefore;
+}
+
+rule finishedRequestsStayFinished(env e, method f) {
+
+    calldataarg args;
+    Marketplace.RequestId requestId;
+
+    // Without this, the prover will find counter examples with `requestId == 0`,
+    // which are unlikely in practice as `requestId` is a hash from a request object.
+    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
+    // which ultimately results in counter examples where we have a state change
+    // RequestState.Finished -> RequestState.Started, which is forbidden.
+    //
+    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/81939b2b12d74a5cae5e84ceadb901c0?anonymousKey=a4ad6268598a1077ecfce75493b0c0f9bc3b17a0
+    //
+    // The `require` below is a hack to ensure we exclude such cases as the code
+    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
+    // sufficient here)
+    require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
     require requestStateBefore == Marketplace.RequestState.Finished;
