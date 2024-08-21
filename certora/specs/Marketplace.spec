@@ -120,12 +120,14 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
+    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
+        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
 function canFailRequest(method f) returns bool {
     return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector;
+        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
+        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
 /*--------------------------------------------
@@ -261,6 +263,9 @@ rule functionsCausingRequestStateChanges(env e, method f) {
 
     // RequestState.New -> RequestState.Started
     assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Started => canStartRequest(f);
+
+    // RequestState.New -> RequestState.Cancelled
+    assert requestStateBefore == Marketplace.RequestState.New && requestStateAfter == Marketplace.RequestState.Cancelled => canCancelRequest(f);
 
     // RequestState.Started -> RequestState.Finished
     assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Finished => canFinishRequest(f);
