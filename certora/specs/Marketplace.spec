@@ -71,11 +71,20 @@ hook Sload bool defaultValue _missing[KEY MarketplaceHarness.SlotId slotId][KEY 
 
 hook Sstore _missing[KEY MarketplaceHarness.SlotId slotId][KEY Periods.Period period] bool defaultValue {
     _missingMirror[slotId][period] = defaultValue;
-    _missedCalculated[slotId] = _missedCalculated[slotId] + 1;
+    if (defaultValue) {
+        _missedCalculated[slotId] = _missedCalculated[slotId] + 1;
+    }
+}
+
+hook Sload uint256 defaultValue _missed[KEY MarketplaceHarness.SlotId slotId] {
+    require _missedMirror[slotId] == defaultValue;
 }
 
 hook Sstore _missed[KEY MarketplaceHarness.SlotId slotId] uint256 defaultValue {
     _missedMirror[slotId] = defaultValue;
+    if (defaultValue == 0) {
+        _missedCalculated[slotId] = 0;
+    }
 }
 
 ghost mathint requestStateChangesCount {
@@ -129,6 +138,8 @@ invariant totalSupplyIsSumOfBalances()
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
     to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
 
+// STATUS - verified
+// https://prover.certora.com/output/6199/6e2383ea040347eabeeb1008bc257ae6?anonymousKey=e1a6a00310a44ed264b1f98b03fa29273e68fca9
 invariant slotMissedShouldBeEqualToNumberOfMissedPeriods(env e, Marketplace.SlotId slotId)
     to_mathint(_missedMirror[slotId]) == _missedCalculated[slotId];
 
