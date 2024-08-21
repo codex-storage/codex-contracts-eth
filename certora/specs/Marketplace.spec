@@ -149,6 +149,13 @@ invariant slotMissedShouldBeEqualToNumberOfMissedPeriods(env e, Marketplace.Slot
 invariant cantBeMissedIfInPeriod(MarketplaceHarness.SlotId slotId, Periods.Period period)
     lastBlockTimestampGhost <= publicPeriodEnd(period) => !_missingMirror[slotId][period];
 
+// STATUS - verified
+// cancelled request is always expired
+// https://prover.certora.com/output/6199/36b12b897f3941faa00fb4ab6871be8e?anonymousKey=de98a02041b841fb2fa67af4222f29fac258249f
+invariant cancelledRequestAlwaysExpired(env e, Marketplace.RequestId requestId)
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Cancelled =>
+        currentContract.requestExpiry(e, requestId) < lastBlockTimestampGhost;
+
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
