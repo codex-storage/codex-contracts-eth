@@ -156,6 +156,13 @@ invariant cancelledRequestAlwaysExpired(env e, Marketplace.RequestId requestId)
     currentContract.requestState(e, requestId) == Marketplace.RequestState.Cancelled =>
         currentContract.requestExpiry(e, requestId) < lastBlockTimestampGhost;
 
+// STATUS - verified
+// failed request is always ended
+// https://prover.certora.com/output/6199/902ffe4a83a9438e9860655446b46a74?anonymousKey=47b344024bbfe84a649bd1de44d7d243ce8dbc21
+invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed =>
+        currentContract.requestContext(e, requestId).endsAt < lastBlockTimestampGhost;
+
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
