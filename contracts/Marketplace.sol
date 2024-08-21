@@ -350,9 +350,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMySlots(slot.host, slotId);
 
     uint256 payoutAmount = _payoutAmount(
-        requestId,
-        slot.filledAt,
-        requestExpiry(requestId)
+      requestId,
+      slot.filledAt,
+      requestExpiry(requestId)
     );
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
