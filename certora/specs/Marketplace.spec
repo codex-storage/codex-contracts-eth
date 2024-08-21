@@ -163,6 +163,13 @@ invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
     currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed =>
         currentContract.requestContext(e, requestId).endsAt < lastBlockTimestampGhost;
 
+// STATUS - verified
+// finished slot always has finished request
+// https://prover.certora.com/output/6199/3371ee4f80354ac9b05b1c84c53b6154?anonymousKey=eab83785acb61ccd31ed0c9d5a2e9e2b24099156
+invariant finishedSlotAlwaysHasFinishedRequest(env e, Marketplace.SlotId slotId)
+    currentContract.slotState(e, slotId) == Marketplace.SlotState.Finished =>
+        currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Finished;
+
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
