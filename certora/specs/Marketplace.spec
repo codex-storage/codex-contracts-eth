@@ -182,6 +182,13 @@ invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId 
       }
     }
 
+// STATUS - verified
+// cancelled slot always belongs to cancelled request
+// https://prover.certora.com/output/6199/80d5dc73d406436db166071e277283f1?anonymousKey=d5d175960dc40f72e22ba8e31c6904a488277e57
+invariant cancelledSlotAlwaysHasCancelledRequest(env e, Marketplace.SlotId slotId)
+    currentContract.slotState(e, slotId) == Marketplace.SlotState.Cancelled =>
+        currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Cancelled;
+
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
