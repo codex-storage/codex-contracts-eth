@@ -136,7 +136,7 @@ invariant totalSupplyIsSumOfBalances()
     to_mathint(Token.totalSupply()) == sumOfBalances;
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
-    to_mathint(currentContract.requestContext(e, requestId).slotsFilled) == to_mathint(currentContract.getRequest(e, requestId).ask.slots) => currentContract.requestState(e, requestId) == Marketplace.RequestState.Started;
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Started => to_mathint(currentContract.getRequest(e, requestId).ask.slots) - to_mathint(currentContract.requestContext(e, requestId).slotsFilled) <= to_mathint(currentContract.getRequest(e, requestId).ask.maxSlotLoss);
 
 // STATUS - verified
 // https://prover.certora.com/output/6199/6e2383ea040347eabeeb1008bc257ae6?anonymousKey=e1a6a00310a44ed264b1f98b03fa29273e68fca9
