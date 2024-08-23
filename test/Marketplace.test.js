@@ -211,6 +211,13 @@ describe("Marketplace", function () {
       )
     })
 
+    it("is rejected with insufficient slots ", async function () {
+      request.ask.slots = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Insufficient slots"
+      )
+    })
+
     it("is rejected when maxSlotLoss exceeds slots", async function () {
       request.ask.maxSlotLoss = request.ask.slots + 1
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
