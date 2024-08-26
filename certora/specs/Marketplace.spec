@@ -107,6 +107,36 @@ hook Sstore _slots[KEY Marketplace.SlotId slotId].state Marketplace.SlotState ne
     }
 }
 
+ghost mapping(MarketplaceHarness.SlotId => MarketplaceHarness.RequestId) slotIdToRequestId;
+
+hook Sload Marketplace.RequestId defaultValue _slots[KEY MarketplaceHarness.SlotId SlotId].requestId {
+    require slotIdToRequestId[SlotId] == defaultValue;
+}
+
+hook Sstore _slots[KEY MarketplaceHarness.SlotId SlotId].requestId Marketplace.RequestId defaultValue {
+    slotIdToRequestId[SlotId] = defaultValue;
+}
+
+ghost mapping(MarketplaceHarness.RequestId => uint256) slotsFilledGhost;
+
+hook Sload uint256 defaultValue _requestContexts[KEY MarketplaceHarness.RequestId RequestId].slotsFilled {
+    require slotsFilledGhost[RequestId] == defaultValue;
+}
+
+hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].slotsFilled uint256 defaultValue {
+    slotsFilledGhost[RequestId] = defaultValue;
+}
+
+ghost mapping(MarketplaceHarness.RequestId => uint256) endsAtGhost;
+
+hook Sload uint256 defaultValue _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt {
+    require endsAtGhost[RequestId] == defaultValue;
+}
+
+hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt uint256 defaultValue {
+    endsAtGhost[RequestId] = defaultValue;
+}
+
 /*--------------------------------------------
 |              Helper functions              |
 --------------------------------------------*/
@@ -138,7 +168,7 @@ invariant totalSupplyIsSumOfBalances()
     to_mathint(Token.totalSupply()) == sumOfBalances;
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
-    currentContract.requestState(e, requestId) == Marketplace.RequestState.Started => to_mathint(currentContract.getRequest(e, requestId).ask.slots) - to_mathint(currentContract.requestContext(e, requestId).slotsFilled) <= to_mathint(currentContract.getRequest(e, requestId).ask.maxSlotLoss);
+    currentContract.requestState(e, requestId) == Marketplace.RequestState.Started => to_mathint(currentContract.getRequest(e, requestId).ask.slots) - slotsFilledGhost[requestId] <= to_mathint(currentContract.getRequest(e, requestId).ask.maxSlotLoss);
 
 // STATUS - verified
 // https://prover.certora.com/output/6199/6e2383ea040347eabeeb1008bc257ae6?anonymousKey=e1a6a00310a44ed264b1f98b03fa29273e68fca9
@@ -160,24 +190,24 @@ invariant cancelledRequestAlwaysExpired(env e, Marketplace.RequestId requestId)
 
 // STATUS - verified
 // failed request is always ended
-// https://prover.certora.com/output/6199/902ffe4a83a9438e9860655446b46a74?anonymousKey=47b344024bbfe84a649bd1de44d7d243ce8dbc21
+// https://prover.certora.com/output/6199/3c5e57311e474f26aa7d9e9481c5880a?anonymousKey=36e39932ee488bb35fe23e38d8d4091190e047af
 invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
     currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed =>
-        currentContract.requestContext(e, requestId).endsAt < lastBlockTimestampGhost;
+        endsAtGhost[requestId] < lastBlockTimestampGhost;
 
 // STATUS - verified
 // finished slot always has finished request
 // https://prover.certora.com/output/6199/3371ee4f80354ac9b05b1c84c53b6154?anonymousKey=eab83785acb61ccd31ed0c9d5a2e9e2b24099156
 invariant finishedSlotAlwaysHasFinishedRequest(env e, Marketplace.SlotId slotId)
     currentContract.slotState(e, slotId) == Marketplace.SlotState.Finished =>
-        currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Finished;
+        currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Finished;
 
 // STATUS - verified
 // paid slot always has finished or cancelled request
 // https://prover.certora.com/output/6199/d0e165ed5d594f9fb477602af06cfeb1?anonymousKey=01ffaad46027786c38d78e5a41c03ce002032200
 invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId slotId)
      currentContract.slotState(e, slotId) == Marketplace.SlotState.Paid =>
-         currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Finished || currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Cancelled
+         currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Finished || currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Cancelled
     { preserved {
         requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
       }
@@ -188,7 +218,7 @@ invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId 
 // https://prover.certora.com/output/6199/80d5dc73d406436db166071e277283f1?anonymousKey=d5d175960dc40f72e22ba8e31c6904a488277e57
 invariant cancelledSlotAlwaysHasCancelledRequest(env e, Marketplace.SlotId slotId)
     currentContract.slotState(e, slotId) == Marketplace.SlotState.Cancelled =>
-        currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Cancelled;
+        currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Cancelled;
 
 /*--------------------------------------------
 |                 Properties                 |
@@ -223,15 +253,16 @@ rule totalSentCannotDecrease(env e, method f) {
     assert total_after >= total_before;
 }
 
+// https://prover.certora.com/output/6199/0b56a7cdb3f9466db08f2a4677eddaac?anonymousKey=351ce9d5561f6c2aff1b38942e307735428bb83f
 rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
     calldataarg args;
     Marketplace.SlotId slotId;
 
     requireInvariant paidSlotAlwaysHasFinishedOrCancelledRequest(e, slotId);
 
-    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, currentContract.slots(e, slotId).requestId);
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, slotIdToRequestId[slotId]);
     f(e, args);
-    Marketplace.RequestState requestAfter = currentContract.requestState(e, currentContract.slots(e, slotId).requestId);
+    Marketplace.RequestState requestAfter = currentContract.requestState(e, slotIdToRequestId[slotId]);
 
     assert requestStateBefore != Marketplace.RequestState.Failed && requestAfter == Marketplace.RequestState.Failed => currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed || currentContract.slotState(e, slotId) == Marketplace.SlotState.Free;
 }
@@ -241,7 +272,7 @@ rule allowedRequestStateChanges(env e, method f) {
     calldataarg args;
     Marketplace.SlotId slotId;
 
-    Marketplace.RequestId requestId = currentContract.slots(e, slotId).requestId;
+    Marketplace.RequestId requestId = slotIdToRequestId[slotId];
 
     // needed, otherwise it finds counter examples where 
     // `SlotState.Cancelled` and `RequestState.New`

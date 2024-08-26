@@ -11,14 +11,6 @@ import {RequestId, SlotId} from "../../contracts/Requests.sol";
 contract MarketplaceHarness is Marketplace {
     constructor(MarketplaceConfig memory config, IERC20 token, IGroth16Verifier verifier) Marketplace(config, token, verifier) {}
 
-    function requestContext(RequestId requestId) public returns (Marketplace.RequestContext memory) {
-        return _requestContexts[requestId];
-    }
-
-    function slots(SlotId slotId) public returns (Marketplace.Slot memory) {
-        return _slots[slotId];
-    }
-
     function publicPeriodEnd(Period period) public view returns (uint256) {
         return _periodEnd(period);
     }
