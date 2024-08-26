@@ -174,13 +174,12 @@ invariant finishedSlotAlwaysHasFinishedRequest(env e, Marketplace.SlotId slotId)
 
 // STATUS - verified
 // paid slot always has finished or cancelled request
-// https://prover.certora.com/output/6199/6217a927ff2c43bea1124f6ae54a78fb?anonymousKey=d5e09d0d12658fd6b5f298fc04cea88da892c62d
+// https://prover.certora.com/output/6199/d0e165ed5d594f9fb477602af06cfeb1?anonymousKey=01ffaad46027786c38d78e5a41c03ce002032200
 invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId slotId)
      currentContract.slotState(e, slotId) == Marketplace.SlotState.Paid =>
          currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Finished || currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Cancelled
     { preserved {
-        // ensures we start with a paid slot
-        require currentContract.slotState(e, slotId) == Marketplace.SlotState.Paid;
+        requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
       }
     }
 
