@@ -230,12 +230,11 @@ rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
 
     requireInvariant paidSlotAlwaysHasFinishedOrCancelledRequest(e, slotId);
 
-    require currentContract.requestState(e, currentContract.slots(e, slotId).requestId) != Marketplace.RequestState.Failed;
+    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, currentContract.slots(e, slotId).requestId);
     f(e, args);
-    require currentContract.requestState(e, currentContract.slots(e, slotId).requestId) == Marketplace.RequestState.Failed;
+    Marketplace.RequestState requestAfter = currentContract.requestState(e, currentContract.slots(e, slotId).requestId);
 
-    assert currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed ||
-        currentContract.slotState(e, slotId) == Marketplace.SlotState.Free;
+    assert requestStateBefore != Marketplace.RequestState.Failed && requestAfter == Marketplace.RequestState.Failed => currentContract.slotState(e, slotId) == Marketplace.SlotState.Failed || currentContract.slotState(e, slotId) == Marketplace.SlotState.Free;
 }
 
 
