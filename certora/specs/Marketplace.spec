@@ -4,6 +4,7 @@ methods {
     function Token.balanceOf(address) external returns (uint256) envfree;
     function Token.totalSupply() external returns (uint256) envfree;
     function publicPeriodEnd(Periods.Period) external returns (uint256) envfree;
+    function generateSlotId(Marketplace.RequestId, uint256) external returns (Marketplace.SlotId) envfree;
 }
 
 /*--------------------------------------------
@@ -160,6 +161,22 @@ function canFailRequest(method f) returns bool {
         f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
+function canMakeSlotPaid(method f) returns bool {
+    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
+        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+}
+
+function canFillSlot(method f) returns bool {
+    return f.selector == sig:fillSlot(Marketplace.RequestId, uint256, Marketplace.Groth16Proof).selector;
+}
+
+// The slot identified by `slotId` must have requestId and slotIndex set to 0,
+// or to values that satisfied slotId == keccak(requestId, slotIndex)
+function slotAttributesAreConsistent(env e, Marketplace.SlotId slotId) {
+    require (currentContract.slots(e, slotId).requestId == to_bytes32(0) && currentContract.slots(e, slotId).slotIndex == 0) ||
+        slotId == currentContract.generateSlotId(e, currentContract.slots(e, slotId).requestId, currentContract.slots(e, slotId).slotIndex);
+}
+
 /*--------------------------------------------
 |                 Invariants                 |
 --------------------------------------------*/
@@ -274,7 +291,7 @@ rule allowedRequestStateChanges(env e, method f) {
 
     Marketplace.RequestId requestId = slotIdToRequestId[slotId];
 
-    // needed, otherwise it finds counter examples where 
+    // needed, otherwise it finds counter examples where
     // `SlotState.Cancelled` and `RequestState.New`
     requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
     // needed, otherwise it finds counter example where
@@ -286,11 +303,11 @@ rule allowedRequestStateChanges(env e, method f) {
     // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
     // which ultimately results in counter examples where we have a state change
     // RequestState.Cancelled -> RequestState.Finished, which is forbidden.
-    // 
+    //
     // COUNTER EXAMPLE: https://prover.certora.com/output/6199/3a4f410e6367422ba60b218a08c04fae?anonymousKey=0d7003af4ee9bc18c0da0c80a216a6815d397370
-    // 
-    // The `require` below is a hack to ensure we exclude such cases as the code 
-    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't 
+    //
+    // The `require` below is a hack to ensure we exclude such cases as the code
+    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
     // sufficient here)
     require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
 
@@ -339,6 +356,25 @@ rule functionsCausingRequestStateChanges(env e, method f) {
 
     // RequestState.Started -> RequestState.Failed
     assert requestStateBefore == Marketplace.RequestState.Started && requestStateAfter == Marketplace.RequestState.Failed => canFailRequest(f);
+}
+
+rule functionsCausingSlotStateChanges(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+
+    slotAttributesAreConsistent(e, slotId);
+
+    Marketplace.Slot slot = currentContract.slots(e, slotId);
+    Marketplace.SlotState slotStateBefore = currentContract.slotState(e, slotId);
+    f(e, args);
+    Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
+
+    // SlotState.Finished -> SlotState.Paid
+    assert slotStateBefore == Marketplace.SlotState.Finished && slotStateAfter == Marketplace.SlotState.Paid => canMakeSlotPaid(f);
+
+    // SlotState.Free -> SlotState.Filled
+    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
+    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => slotStateBefore == Marketplace.SlotState.Free;
 }
 
 rule cancelledRequestsStayCancelled(env e, method f) {
