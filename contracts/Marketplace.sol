@@ -7,11 +7,12 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
+import "./SlotReservations.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
 
-contract Marketplace is Proofs, StateRetrieval, Endian {
+contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
