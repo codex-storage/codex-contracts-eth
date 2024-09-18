@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const { exampleRequest, exampleAddress } = require("./examples")
+const { exampleRequest } = require("./examples")
 const { requestId, slotId } = require("./ids")
 
 describe("SlotReservations", function () {
@@ -10,16 +10,13 @@ describe("SlotReservations", function () {
   let slot
 
   beforeEach(async function () {
-    let SlotReservations = await ethers.getContractFactory("SlotReservations")
+    let SlotReservations = await ethers.getContractFactory(
+      "TestSlotReservations"
+    )
     reservations = await SlotReservations.deploy()
-
-    provider = exampleAddress()
-    address1 = exampleAddress()
-    address2 = exampleAddress()
-    address3 = exampleAddress()
+    ;[provider, address1, address2, address3] = await ethers.getSigners()
 
     request = await exampleRequest()
-    request.client = exampleAddress()
 
     slot = {
       request: requestId(request),
@@ -27,47 +24,80 @@ describe("SlotReservations", function () {
     }
   })
 
+  function switchAccount(account) {
+    reservations = reservations.connect(account)
+  }
+
   it("allows a slot to be reserved", async function () {
-    let reserved = await reservations.callStatic.reserveSlot(
-      slotId(slot),
-      provider
-    )
+    let id = slotId(slot)
+    let reserved = await reservations.callStatic.reserveSlot(id)
     expect(reserved).to.be.true
   })
 
+  it("contains the correct addresses after reservation", async function () {
+    let id = slotId(slot)
+    await reservations.reserveSlot(id)
+    expect(await reservations.contains(id, provider.address)).to.be.true
+
+    switchAccount(address1)
+    await reservations.reserveSlot(id)
+    expect(await reservations.contains(id, address1.address)).to.be.true
+  })
+
+  it("has the correct number of addresses after reservation", async function () {
+    let id = slotId(slot)
+    await reservations.reserveSlot(id)
+    expect(await reservations.length(id)).to.equal(1)
+
+    switchAccount(address1)
+    await reservations.reserveSlot(id)
+    expect(await reservations.length(id)).to.equal(2)
+  })
+
   it("reports a slot can be reserved", async function () {
-    expect(await reservations.canReserveSlot(slotId(slot), provider)).to.be.true
+    expect(await reservations.canReserveSlot(slotId(slot))).to.be.true
   })
 
   it("cannot reserve a slot more than once", async function () {
     let id = slotId(slot)
-    await reservations.reserveSlot(id, provider)
-    await expect(reservations.reserveSlot(id, provider)).to.be.revertedWith(
+    await reservations.reserveSlot(id)
+    await expect(reservations.reserveSlot(id)).to.be.revertedWith(
       "Reservation not allowed"
     )
+    expect(await reservations.length(id)).to.equal(1)
   })
 
   it("reports a slot cannot be reserved if already reserved", async function () {
     let id = slotId(slot)
-    await reservations.reserveSlot(id, provider)
-    expect(await reservations.canReserveSlot(id, provider)).to.be.false
+    await reservations.reserveSlot(id)
+    expect(await reservations.canReserveSlot(id)).to.be.false
   })
 
   it("cannot reserve a slot if reservations are at capacity", async function () {
     let id = slotId(slot)
-    await reservations.reserveSlot(id, address1)
-    await reservations.reserveSlot(id, address2)
-    await reservations.reserveSlot(id, address3)
-    await expect(reservations.reserveSlot(id, provider)).to.be.revertedWith(
+    switchAccount(address1)
+    await reservations.reserveSlot(id)
+    switchAccount(address2)
+    await reservations.reserveSlot(id)
+    switchAccount(address3)
+    await reservations.reserveSlot(id)
+    switchAccount(provider)
+    await expect(reservations.reserveSlot(id)).to.be.revertedWith(
       "Reservation not allowed"
     )
+    expect(await reservations.length(id)).to.equal(3)
+    expect(await reservations.contains(id, provider.address)).to.be.false
   })
 
   it("reports a slot cannot be reserved if reservations are at capacity", async function () {
     let id = slotId(slot)
-    await reservations.reserveSlot(id, address1)
-    await reservations.reserveSlot(id, address2)
-    await reservations.reserveSlot(id, address3)
-    expect(await reservations.canReserveSlot(id, provider)).to.be.false
+    switchAccount(address1)
+    await reservations.reserveSlot(id)
+    switchAccount(address2)
+    await reservations.reserveSlot(id)
+    switchAccount(address3)
+    await reservations.reserveSlot(id)
+    switchAccount(provider)
+    expect(await reservations.canReserveSlot(id)).to.be.false
   })
 })

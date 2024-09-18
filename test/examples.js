@@ -51,12 +51,9 @@ const invalidProof = () => ({
   c: { x: 0, y: 0 },
 })
 
-const exampleAddress = () => hexlify(randomBytes(20))
-
 module.exports = {
   exampleConfiguration,
   exampleRequest,
   exampleProof,
   invalidProof,
-  exampleAddress,
 }
