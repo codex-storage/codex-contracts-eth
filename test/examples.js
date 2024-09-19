@@ -29,6 +29,7 @@ const exampleRequest = async () => {
       reward: 84,
       maxSlotLoss: 2,
       collateral: 200,
+      expansion: 60,
     },
     content: {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",

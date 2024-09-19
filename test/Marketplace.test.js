@@ -225,6 +225,18 @@ describe("Marketplace", function () {
       )
     })
 
+    it("is rejected when expansion is out of bounds", async function () {
+      request.ask.expansion = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "expansion must be [1, 100]"
+      )
+
+      request.ask.expansion = 101
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "expansion must be [1, 100]"
+      )
+    })
+
     it("rejects resubmission of request", async function () {
       await token.approve(marketplace.address, price(request) * 2)
       await marketplace.requestStorage(request)

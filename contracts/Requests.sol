@@ -20,6 +20,7 @@ struct Ask {
   uint256 reward; // amount of tokens paid per second per slot to hosts
   uint256 collateral; // amount of tokens required to be deposited by the hosts in order to fill the slot
   uint64 maxSlotLoss; // Max slots that can be lost without data considered to be lost
+  uint8 expansion; // Percentage of addresses eligible to reserve a slot halfway between request creation and when all network addresses are eligible to participate. [1-100].
 }
 
 struct Content {
