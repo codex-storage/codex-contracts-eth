@@ -14,7 +14,10 @@ const CONFIGURATION = {
     // `downtime` needs to be larger than `period` when running hardhat
     // in automine mode, because it can produce a block every second
     downtime: 64,
-    downtimeProduct: 67
+    downtimeProduct: 67,
+    // saturate addresses eligible to reserve slots 20% of the total time before
+    // expiry
+    saturation: 20
   },
 }
 

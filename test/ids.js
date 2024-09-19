@@ -2,7 +2,8 @@ const { ethers } = require("hardhat")
 const { keccak256, defaultAbiCoder } = ethers.utils
 
 function requestId(request) {
-  const Ask = "tuple(int64, uint256, uint256, uint256, uint256, uint256, uint64)"
+  const Ask =
+    "tuple(int64, uint256, uint256, uint256, uint256, uint256, uint64)"
   const Content = "tuple(string, bytes32)"
   const Request =
     "tuple(address, " + Ask + ", " + Content + ", uint256, bytes32, uint8)"
@@ -33,7 +34,7 @@ function requestToArray(request) {
       contentToArray(request.content),
       request.expiry,
       request.nonce,
-      request.expansion
+      request.expansion,
     ],
   ]
 }

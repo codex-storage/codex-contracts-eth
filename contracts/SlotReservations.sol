@@ -2,14 +2,21 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./Configuration.sol";
 import "./Requests.sol";
 
 contract SlotReservations {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   mapping(SlotId => EnumerableSet.AddressSet) internal _reservations;
+  SlotReservationsConfig private _config;
 
   uint8 private constant _MAX_RESERVATIONS = 3;
+
+  constructor(SlotReservationsConfig memory config) {
+    require(config.saturation <= 100, "saturation must be [0, 100]");
+    _config = config;
+  }
 
   function reserveSlot(SlotId slotId) public {
     address host = msg.sender;

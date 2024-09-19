@@ -59,7 +59,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     MarketplaceConfig memory configuration,
     IERC20 token_,
     IGroth16Verifier verifier
-  ) Proofs(configuration.proofs, verifier) {
+  )
+    SlotReservations(configuration.reservations)
+    Proofs(configuration.proofs, verifier)
+  {
     _token = token_;
 
     require(

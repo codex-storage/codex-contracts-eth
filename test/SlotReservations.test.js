@@ -4,6 +4,7 @@ const { exampleRequest } = require("./examples")
 const { requestId, slotId } = require("./ids")
 
 describe("SlotReservations", function () {
+  const saturation = 20
   let reservations
   let provider, address1, address2, address3
   let request
@@ -14,7 +15,7 @@ describe("SlotReservations", function () {
     let SlotReservations = await ethers.getContractFactory(
       "TestSlotReservations"
     )
-    reservations = await SlotReservations.deploy()
+    reservations = await SlotReservations.deploy({ saturation })
     ;[provider, address1, address2, address3] = await ethers.getSigners()
 
     request = await exampleRequest()

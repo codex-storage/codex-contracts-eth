@@ -10,7 +10,10 @@ struct Request {
   Content content;
   uint256 expiry; // amount of seconds since start of the request at which this request expires
   bytes32 nonce; // random nonce to differentiate between similar requests
-  uint8 expansion; // Percentage of addresses eligible to reserve a slot halfway between request creation and when all network addresses are eligible to participate. [1-100].
+  // Percentage of addresses eligible to reserve a slot halfway between request
+  // creation and when all network addresses are eligible to participate
+  // (saturation). Acceptable range is [1-100].
+  uint8 expansion;
 }
 
 struct Ask {
