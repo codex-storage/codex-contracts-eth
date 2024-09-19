@@ -8,6 +8,7 @@ describe("SlotReservations", function () {
   let provider, address1, address2, address3
   let request
   let slot
+  let id // can't use slotId because it'll shadow the function slotId
 
   beforeEach(async function () {
     let SlotReservations = await ethers.getContractFactory(
@@ -22,6 +23,8 @@ describe("SlotReservations", function () {
       request: requestId(request),
       index: request.ask.slots / 2,
     }
+
+    id = slotId(slot)
   })
 
   function switchAccount(account) {
@@ -29,13 +32,10 @@ describe("SlotReservations", function () {
   }
 
   it("allows a slot to be reserved", async function () {
-    let id = slotId(slot)
-    let reserved = await reservations.callStatic.reserveSlot(id)
-    expect(reserved).to.be.true
+    expect(reservations.reserveSlot(id)).to.not.be.reverted
   })
 
   it("contains the correct addresses after reservation", async function () {
-    let id = slotId(slot)
     await reservations.reserveSlot(id)
     expect(await reservations.contains(id, provider.address)).to.be.true
 
@@ -45,7 +45,6 @@ describe("SlotReservations", function () {
   })
 
   it("has the correct number of addresses after reservation", async function () {
-    let id = slotId(slot)
     await reservations.reserveSlot(id)
     expect(await reservations.length(id)).to.equal(1)
 
@@ -59,7 +58,6 @@ describe("SlotReservations", function () {
   })
 
   it("cannot reserve a slot more than once", async function () {
-    let id = slotId(slot)
     await reservations.reserveSlot(id)
     await expect(reservations.reserveSlot(id)).to.be.revertedWith(
       "Reservation not allowed"
@@ -68,13 +66,11 @@ describe("SlotReservations", function () {
   })
 
   it("reports a slot cannot be reserved if already reserved", async function () {
-    let id = slotId(slot)
     await reservations.reserveSlot(id)
     expect(await reservations.canReserveSlot(id)).to.be.false
   })
 
   it("cannot reserve a slot if reservations are at capacity", async function () {
-    let id = slotId(slot)
     switchAccount(address1)
     await reservations.reserveSlot(id)
     switchAccount(address2)
@@ -90,7 +86,6 @@ describe("SlotReservations", function () {
   })
 
   it("reports a slot cannot be reserved if reservations are at capacity", async function () {
-    let id = slotId(slot)
     switchAccount(address1)
     await reservations.reserveSlot(id)
     switchAccount(address2)
