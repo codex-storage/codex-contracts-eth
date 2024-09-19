@@ -11,11 +11,10 @@ contract SlotReservations {
 
   uint8 private constant _MAX_RESERVATIONS = 3;
 
-  function reserveSlot(SlotId slotId) public returns (bool) {
+  function reserveSlot(SlotId slotId) public {
     address host = msg.sender;
     require(canReserveSlot(slotId), "Reservation not allowed");
-    // returns false if set already contains address
-    return _reservations[slotId].add(host);
+    _reservations[slotId].add(host);
   }
 
   function canReserveSlot(SlotId slotId) public view returns (bool) {
