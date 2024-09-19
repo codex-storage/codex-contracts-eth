@@ -102,7 +102,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       "maxSlotLoss exceeds slots"
     );
     require(
-      request.ask.expansion > 0 && request.ask.expansion <= 100,
+      request.expansion > 0 && request.expansion <= 100,
       "expansion must be [1, 100]"
     );
 

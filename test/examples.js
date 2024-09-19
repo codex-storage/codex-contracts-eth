@@ -29,7 +29,6 @@ const exampleRequest = async () => {
       reward: 84,
       maxSlotLoss: 2,
       collateral: 200,
-      expansion: 60,
     },
     content: {
       cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
@@ -37,6 +36,7 @@ const exampleRequest = async () => {
     },
     expiry: hours(1),
     nonce: hexlify(randomBytes(32)),
+    expansion: 60, // 60% of nodes are eligible halfway to when all addresses eligible
   }
 }
 
