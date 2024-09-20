@@ -34,7 +34,7 @@ function requestToArray(request) {
       contentToArray(request.content),
       request.expiry,
       request.nonce,
-      request.expansion,
+      request.expansionRate,
     ],
   ]
 }

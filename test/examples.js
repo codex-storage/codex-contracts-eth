@@ -39,7 +39,9 @@ const exampleRequest = async () => {
     },
     expiry: hours(1),
     nonce: hexlify(randomBytes(32)),
-    expansion: 60, // 60% of nodes are eligible halfway to when all addresses eligible
+    // 60% of the time before expiry, all addresses will be eligible to reserve
+    // slots
+    expansionRate: 60,
   }
 }
 

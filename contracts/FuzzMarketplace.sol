@@ -10,8 +10,7 @@ contract FuzzMarketplace is Marketplace {
     Marketplace(
       MarketplaceConfig(
         CollateralConfig(10, 5, 3, 10),
-        ProofConfig(10, 5, 64, "", 67),
-        SlotReservationsConfig(20)
+        ProofConfig(10, 5, 64, "", 67)
       ),
       new TestToken(),
       new TestVerifier()

@@ -59,10 +59,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     MarketplaceConfig memory configuration,
     IERC20 token_,
     IGroth16Verifier verifier
-  )
-    SlotReservations(configuration.reservations)
-    Proofs(configuration.proofs, verifier)
-  {
+  ) Proofs(configuration.proofs, verifier) {
     _token = token_;
 
     require(
@@ -105,8 +102,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       "maxSlotLoss exceeds slots"
     );
     require(
-      request.expansion > 0 && request.expansion <= 100,
-      "expansion must be [1, 100]"
+      request.expansionRate >= 0 && request.expansionRate <= 100,
+      "expansionRate must be [0, 100]"
     );
 
     _requests[id] = request;

@@ -225,15 +225,10 @@ describe("Marketplace", function () {
       )
     })
 
-    it("is rejected when expansion is out of bounds", async function () {
-      request.expansion = 0
+    it("is rejected when expansionRate is out of bounds", async function () {
+      request.expansionRate = 101
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "expansion must be [1, 100]"
-      )
-
-      request.expansion = 101
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "expansion must be [1, 100]"
+        "expansionRate must be [0, 100]"
       )
     })
 

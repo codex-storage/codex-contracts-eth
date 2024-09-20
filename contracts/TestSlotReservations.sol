@@ -6,9 +6,6 @@ import "./SlotReservations.sol";
 contract TestSlotReservations is SlotReservations {
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  // solhint-disable-next-line no-empty-blocks
-  constructor(SlotReservationsConfig memory config) SlotReservations(config) {}
-
   function contains(SlotId slotId, address host) public view returns (bool) {
     return _reservations[slotId].contains(host);
   }
