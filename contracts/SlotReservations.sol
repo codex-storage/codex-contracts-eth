@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./Configuration.sol";
 import "./Requests.sol";
 
 contract SlotReservations {
