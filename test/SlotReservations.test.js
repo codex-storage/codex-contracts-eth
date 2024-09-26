@@ -98,4 +98,19 @@ describe("SlotReservations", function () {
     switchAccount(provider)
     expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.false
   })
+
+  it("should emit an event when slot reservations are full", async function () {
+    await reservations.reserveSlot(id)
+    switchAccount(address1)
+    await reservations.reserveSlot(id)
+    switchAccount(address2)
+    await expect(reservations.reserveSlot(id))
+      .to.emit(reservations, "SlotReservationsFull")
+      .withArgs(id)
+  })
+
+  it("should not emit an event when reservations are not full", async function () {
+    await expect(reservations.reserveSlot(id))
+      .to.not.emit(reservations, "SlotReservationsFull")
+  })
 })
