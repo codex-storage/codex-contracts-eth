@@ -22,7 +22,7 @@ contract SlotReservations {
     _reservations[slotId].add(msg.sender);
 
     if (_reservations[slotId].length() == _MAX_RESERVATIONS) {
-      emit SlotReservationsFull(slotId);
+      emit SlotReservationsFull(requestId, slotIndex);
     }
   }
 
@@ -38,5 +38,5 @@ contract SlotReservations {
       (!_reservations[slotId].contains(host));
   }
 
-  event SlotReservationsFull(SlotId indexed slotId);
+  event SlotReservationsFull(RequestId indexed requestId, uint256 slotIndex);
 }
