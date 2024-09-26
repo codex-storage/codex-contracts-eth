@@ -21,7 +21,7 @@ contract SlotReservations {
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     _reservations[slotId].add(msg.sender);
 
-    if (_reservations[slotId].length() == _MAX_RESERVATIONS) {
+    if (_reservations[slotId].length() == _config.maxReservations) {
       emit SlotReservationsFull(requestId, slotIndex);
     }
   }
