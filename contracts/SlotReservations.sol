@@ -11,14 +11,16 @@ contract SlotReservations {
 
   uint8 private constant _MAX_RESERVATIONS = 3;
 
-  function reserveSlot(SlotId slotId) public {
-    address host = msg.sender;
-    require(canReserveSlot(slotId), "Reservation not allowed");
-    _reservations[slotId].add(host);
+  function reserveSlot(RequestId requestId, uint256 slotIndex) public {
+    require(canReserveSlot(requestId, slotIndex), "Reservation not allowed");
+
+    SlotId slotId = Requests.slotId(requestId, slotIndex);
+    _reservations[slotId].add(msg.sender);
   }
 
-  function canReserveSlot(SlotId slotId) public view returns (bool) {
+  function canReserveSlot(RequestId requestId, uint256 slotIndex) public view returns (bool) {
     address host = msg.sender;
+    SlotId slotId = Requests.slotId(requestId, slotIndex);
     return
       // TODO: add in check for address inside of expanding window
       (_reservations[slotId].length() < _MAX_RESERVATIONS) &&
