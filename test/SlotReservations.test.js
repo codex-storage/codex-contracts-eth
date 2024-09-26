@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const { exampleRequest } = require("./examples")
+const { exampleRequest, exampleConfiguration } = require("./examples")
 const { requestId, slotId } = require("./ids")
 
 describe("SlotReservations", function () {
@@ -11,12 +11,13 @@ describe("SlotReservations", function () {
   let slot
   let slotIndex
   let id // can't use slotId because it'll shadow the function slotId
+  const config = exampleConfiguration()
 
   beforeEach(async function () {
     let SlotReservations = await ethers.getContractFactory(
       "TestSlotReservations"
     )
-    reservations = await SlotReservations.deploy()
+    reservations = await SlotReservations.deploy(config.reservations)
     ;[provider, address1, address2, address3] = await ethers.getSigners()
 
     request = await exampleRequest()

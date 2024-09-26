@@ -16,6 +16,9 @@ const CONFIGURATION = {
     downtime: 64,
     downtimeProduct: 67
   },
+  reservations: {
+    maxReservations: 3
+  }
 }
 
 async function mine256blocks({ network, ethers }) {

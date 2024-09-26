@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 struct MarketplaceConfig {
   CollateralConfig collateral;
   ProofConfig proofs;
+  SlotReservationsConfig reservations;
 }
 
 struct CollateralConfig {
@@ -28,4 +29,9 @@ struct ProofConfig {
   // periods. For each period increase, move the pointer `pointerProduct`
   // blocks. Should be a prime number to ensure there are no cycles.
   uint8 downtimeProduct;
+}
+
+struct SlotReservationsConfig {
+  // Number of allowed reservations per slot
+  uint8 maxReservations;
 }
