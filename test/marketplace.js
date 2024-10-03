@@ -18,6 +18,7 @@ async function waitUntilStarted(contract, request, proof, token) {
   await token.approve(contract.address, price(request) * request.ask.slots)
 
   for (let i = 0; i < request.ask.slots; i++) {
+    await contract.reserveSlot(requestId(request), i)
     await contract.fillSlot(requestId(request), i, proof)
   }
 }

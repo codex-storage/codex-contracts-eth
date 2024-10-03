@@ -14,6 +14,7 @@ import "./Groth16.sol";
 
 contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
+  using EnumerableSet for EnumerableSet.AddressSet;
   using Requests for Request;
 
   IERC20 private immutable _token;
@@ -136,6 +137,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     require(slotIndex < request.ask.slots, "Invalid slot");
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
+    require(_reservations[slotId].contains(msg.sender), "Reservation required");
+
     Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
     slot.slotIndex = slotIndex;
