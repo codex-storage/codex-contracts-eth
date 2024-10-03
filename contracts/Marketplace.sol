@@ -7,11 +7,12 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
+import "./SlotReservations.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
 
-contract Marketplace is Proofs, StateRetrieval, Endian {
+contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using Requests for Request;
 
@@ -58,7 +59,10 @@ contract Marketplace is Proofs, StateRetrieval, Endian {
     MarketplaceConfig memory configuration,
     IERC20 token_,
     IGroth16Verifier verifier
-  ) Proofs(configuration.proofs, verifier) {
+  )
+    SlotReservations(configuration.reservations)
+    Proofs(configuration.proofs, verifier)
+  {
     _token = token_;
 
     require(

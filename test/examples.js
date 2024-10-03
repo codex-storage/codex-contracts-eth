@@ -16,6 +16,9 @@ const exampleConfiguration = () => ({
     zkeyHash: "",
     downtimeProduct: 67,
   },
+  reservations: {
+    maxReservations: 3,
+  },
 })
 
 const exampleRequest = async () => {
