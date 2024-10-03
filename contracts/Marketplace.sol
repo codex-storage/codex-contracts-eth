@@ -29,7 +29,12 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     RequestState state;
     uint256 slotsFilled;
     /// @notice Tracks how much funds should be returned to the client as not all funds might be used for hosting the request
-    /// @dev The sum starts with the full reward amount for the request and is reduced every time a host fills a slot. The reduction is calculated from the duration of time between the slot being filled and the request's end. This is the amount that will be paid out to the host when the request successfully finishes.
+    /// @dev The sum starts with the full reward amount for the request and is reduced every time a host fills a slot.
+    ///      The reduction is calculated from the duration of time between the slot being filled and the request's end.
+    ///      This is the amount that will be paid out to the host when the request successfully finishes.
+    /// @dev fundsToReturnToClient == 0 is used to signal that after request is terminated all the remaining funds were withdrawn.
+    ///      This is possible, because technically it is not possible for this variable to reach 0 in "natural" way as
+    ///      that would require all the slots to be filled at the same block as the request was created.
     uint256 fundsToReturnToClient;
     uint256 startedAt;
     uint256 endsAt;
@@ -151,7 +156,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     slot.filledAt = block.timestamp;
 
     context.slotsFilled += 1;
-    context.fundsToReturnToClient -= _payoutAmount(requestId, slot.filledAt);
+    context.fundsToReturnToClient -= _slotPayout(requestId, slot.filledAt);
 
     // Collect collateral
     uint256 collateralAmount = request.ask.collateral;
@@ -285,7 +290,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     // We need to refund the amount of payout of the current node to the `fundsToReturnToClient` so
     // we keep correctly the track of the funds that needs to be returned at the end.
-    context.fundsToReturnToClient += _payoutAmount(requestId, slot.filledAt);
+    context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
     _removeFromMySlots(slot.host, slotId);
     uint256 slotIndex = slot.slotIndex;
@@ -320,7 +325,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMyRequests(request.client, requestId);
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 payoutAmount = _payoutAmount(requestId, slot.filledAt);
+    uint256 payoutAmount = _slotPayout(requestId, slot.filledAt);
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
@@ -346,7 +351,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 payoutAmount = _payoutAmount(
+    uint256 payoutAmount = _slotPayout(
       requestId,
       slot.filledAt,
       requestExpiry(requestId)
@@ -390,6 +395,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
         state == RequestState.Finished,
       "Invalid state"
     );
+
+    // fundsToReturnToClient == 0 is used for "double-spend" protection, once the funds are withdrawn
+    // then this variable is set to 0.
     require(context.fundsToReturnToClient != 0, "Nothing to withdraw");
 
     if (state == RequestState.Cancelled) {
@@ -402,7 +410,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       // Update `fundsToReturnToClient` to reflect this.
       context.fundsToReturnToClient +=
         context.slotsFilled *
-        _payoutAmount(requestId, requestExpiry(requestId));
+        _slotPayout(requestId, requestExpiry(requestId));
     } else if (state == RequestState.Failed) {
       // For Failed requests the client is refunded whole amount.
       context.fundsToReturnToClient = request.maxPrice();
@@ -467,20 +475,20 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
    * @param startingTimestamp timestamp indicating when a host filled a slot and
    * started providing proofs.
    */
-  function _payoutAmount(
+  function _slotPayout(
     RequestId requestId,
     uint256 startingTimestamp
   ) private view returns (uint256) {
     return
-      _payoutAmount(
+      _slotPayout(
         requestId,
         startingTimestamp,
         _requestContexts[requestId].endsAt
       );
   }
 
-  /// @notice Calculates the amount that should be paid out to a host
-  function _payoutAmount(
+  /// @notice Calculates the amount that should be paid out to a host based on the specified time frame.
+  function _slotPayout(
     RequestId requestId,
     uint256 startingTimestamp,
     uint256 endingTimestamp

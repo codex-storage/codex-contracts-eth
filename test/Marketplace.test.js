@@ -503,20 +503,63 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, request.ask.collateral)
     })
 
-    it("pays the host when contract has finished for time he hosted the request and returns collateral to host collateral address", async function () {
+    it("finished request pays out reward based on time hosted", async function () {
+      // We are advancing the time because most of the slots will be filled somewhere
+      // in the "expiry window" and not at its beginning. This is more "real" setup
+      // and demonstrates the partial payout feature better.
       await advanceTimeForNextBlock(request.expiry / 2)
-      await marketplace.fillSlot(requestId(request), slot.index, proof)
-      const startTime = await currentTime()
 
-      await waitUntilStarted(marketplace, request, proof, token, [slot.index])
+      const expectedPayouts = await waitUntilStarted(
+        marketplace,
+        request,
+        proof,
+        token
+      )
+      await waitUntilFinished(marketplace, requestId(request))
+
+      const startBalanceHost = await token.balanceOf(host.address)
+      await marketplace.freeSlot(slotId(slot))
+      const endBalanceHost = await token.balanceOf(host.address)
+
+      expect(expectedPayouts[slot.index]).to.be.lt(maxPrice(request))
+      expect(endBalanceHost - startBalanceHost).to.equal(
+        expectedPayouts[slot.index] + request.ask.collateral
+      )
+    })
+
+    it("returns collateral to host collateral address if specified", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilFinished(marketplace, requestId(request))
+
+      const startBalanceHost = await token.balanceOf(host.address)
+      const startBalanceCollateral = await token.balanceOf(
+        hostCollateralRecipient.address
+      )
+
+      await marketplace.freeSlot(
+        slotId(slot),
+        hostRewardRecipient.address,
+        hostCollateralRecipient.address
+      )
+
+      const endBalanceCollateral = await token.balanceOf(
+        hostCollateralRecipient.address
+      )
+
+      const endBalanceHost = await token.balanceOf(host.address)
+      expect(endBalanceHost).to.equal(startBalanceHost)
+      expect(endBalanceCollateral - startBalanceCollateral).to.equal(
+        request.ask.collateral
+      )
+    })
+
+    it("pays reward to host reward address if specified", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
 
       const startBalanceHost = await token.balanceOf(host.address)
       const startBalanceReward = await token.balanceOf(
         hostRewardRecipient.address
-      )
-      const startBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
       )
 
       await marketplace.freeSlot(
@@ -529,21 +572,9 @@ describe("Marketplace", function () {
       const endBalanceReward = await token.balanceOf(
         hostRewardRecipient.address
       )
-      const endBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
-      )
 
-      const expectedPayout = payoutForDuration(
-        request,
-        startTime,
-        await marketplace.requestEnd(requestId(request))
-      )
-      expect(expectedPayout).to.be.lt(maxPrice(request))
       expect(endBalanceHost).to.equal(startBalanceHost)
-      expect(endBalanceCollateral - startBalanceCollateral).to.equal(
-        request.ask.collateral
-      )
-      expect(endBalanceReward - startBalanceReward).to.equal(expectedPayout)
+      expect(endBalanceReward - startBalanceReward).to.gt(0)
     })
 
     it("pays the host when contract was cancelled", async function () {
@@ -779,9 +810,13 @@ describe("Marketplace", function () {
       const endBalancePayout = await token.balanceOf(
         clientWithdrawRecipient.address
       )
-      expect(endBalanceClient).to.equal(startBalanceClient)
 
-      expect(endBalancePayout - startBalancePayout).to.be.lt(
+      expect(endBalanceClient).to.equal(startBalanceClient)
+      // As all the request's slots will get filled and request will start and successfully finishes,
+      // then the upper bound to how much the client gets returned is the cumulative reward for all the
+      // slots for expiry window. This limit is "inclusive" because it is possible that all slots are filled
+      // at the time of expiry and hence the user would get the full "expiry window" reward back.
+      expect(endBalancePayout - startBalancePayout).to.be.lte(
         request.expiry * request.ask.reward
       )
     })
@@ -853,22 +888,14 @@ describe("Marketplace", function () {
       )
     })
 
-    it.skip("when slot is freed and not filled, client will get refunded the freed slot's funds", async function () {
-      await waitUntilStarted(marketplace, request, proof, token, [slot.index])
+    it("when slot is freed and not repaired, client will get refunded the freed slot's funds", async function () {
+      const payouts = await waitUntilStarted(marketplace, request, proof, token)
 
-      await advanceTimeForNextBlock(request.expiry / 2)
-      await marketplace.fillSlot(requestId(request), slot.index, proof)
-      const id = slotId(slot)
-      const filledAt = await currentTime()
-
-      await expect(marketplace.freeSlot(id)).to.emit(marketplace, "SlotFreed")
-      await waitUntilFinished(marketplace, requestId(request))
-
-      const expectedHostPayout = payoutForDuration(
-        request,
-        filledAt,
-        (await marketplace.requestEnd(requestId(request))).toNumber()
+      await expect(marketplace.freeSlot(slotId(slot))).to.emit(
+        marketplace,
+        "SlotFreed"
       )
+      await waitUntilFinished(marketplace, requestId(request))
 
       switchAccount(client)
       await marketplace.withdrawFunds(
@@ -876,12 +903,11 @@ describe("Marketplace", function () {
         clientWithdrawRecipient.address
       )
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
-      expect(
+      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
         maxPrice(request) -
-          (ACCOUNT_STARTING_BALANCE - endBalance) -
-          (request.expiry / 2) * request.ask.reward - // we have moved one slot to mid-expiry window
-          17 * request.ask.reward // There was 17 transaction for filling/advancing etc
-      ).to.equal(expectedHostPayout)
+          payouts.reduce((a, b) => a + b, 0) + // This is the amount that user gets refunded for filling period in expiry window
+          payouts[slot.index] // This is the refunded amount for the freed slot
+      )
     })
   })
 
