@@ -378,6 +378,31 @@ rule functionsCausingSlotStateChanges(env e, method f) {
 
     // SlotState.Free -> SlotState.Filled
     assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
+}
+
+rule allowedSlotStateChanges(env e, method f) {
+    calldataarg args;
+    Marketplace.SlotId slotId;
+
+    slotAttributesAreConsistent(e, slotId);
+
+    Marketplace.Slot slot = currentContract.slots(e, slotId);
+    Marketplace.SlotState slotStateBefore = currentContract.slotState(e, slotId);
+    f(e, args);
+    Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
+
+    // Cannot change from Paid
+    assert slotStateBefore == Marketplace.SlotState.Paid => slotStateAfter == Marketplace.SlotState.Paid;
+
+    // SlotState.Cancelled -> SlotState.Cancelled || SlotState.Failed || Finished || Paid
+    assert slotStateBefore == Marketplace.SlotState.Cancelled => (
+            slotStateAfter == Marketplace.SlotState.Cancelled ||
+            slotStateAfter == Marketplace.SlotState.Failed ||
+            slotStateAfter == Marketplace.SlotState.Finished ||
+            slotStateAfter == Marketplace.SlotState.Paid
+            );
+
+    // SlotState.Filled only from Free
     assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => slotStateBefore == Marketplace.SlotState.Free;
 }
 
@@ -434,4 +459,22 @@ rule slotStateChangesOnlyOncePerFunctionCall(env e, method f) {
     mathint slotStateChangesCountAfter =slotStateChangesCount;
 
     assert slotStateChangesCountAfter <= slotStateChangesCountBefore + 1;
+}
+
+rule slotCanBeFreedAndPaidOnce {
+  env e;
+  Marketplace.SlotId slotId;
+  address rewardRecipient;
+  address collateralRecipient;
+
+  Marketplace.SlotState slotStateBefore = currentContract.slotState(e, slotId);
+  require slotStateBefore != Marketplace.SlotState.Paid;
+  freeSlot(e, slotId, rewardRecipient, collateralRecipient);
+
+  Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
+  require slotStateAfter == Marketplace.SlotState.Paid;
+
+  freeSlot@withrevert(e, slotId, rewardRecipient, collateralRecipient);
+
+  assert lastReverted;
 }
