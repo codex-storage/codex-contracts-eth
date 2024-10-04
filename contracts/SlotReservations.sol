@@ -20,6 +20,10 @@ contract SlotReservations {
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     _reservations[slotId].add(msg.sender);
+
+    if (_reservations[slotId].length() == _config.maxReservations) {
+      emit SlotReservationsFull(requestId, slotIndex);
+    }
   }
 
   function canReserveSlot(
@@ -33,4 +37,6 @@ contract SlotReservations {
       (_reservations[slotId].length() < _config.maxReservations) &&
       (!_reservations[slotId].contains(host));
   }
+
+  event SlotReservationsFull(RequestId indexed requestId, uint256 slotIndex);
 }
