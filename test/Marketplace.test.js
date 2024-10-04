@@ -344,6 +344,12 @@ describe("Marketplace", function () {
         marketplace.fillSlot(slot.request, lastSlot, proof)
       ).to.be.revertedWith("Slot is not free")
     })
+
+    it("fails if slot is not reserved first", async function () {
+      await expect(
+        marketplace.fillSlot(slot.request, slot.index, proof)
+      ).to.be.revertedWith("Reservation required")
+    })
   })
 
   describe("filling slot without collateral", function () {
