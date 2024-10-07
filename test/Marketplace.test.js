@@ -842,6 +842,7 @@ describe("Marketplace", function () {
       // then the upper bound to how much the client gets returned is the cumulative reward for all the
       // slots for expiry window. This limit is "inclusive" because it is possible that all slots are filled
       // at the time of expiry and hence the user would get the full "expiry window" reward back.
+      expect(endBalancePayout - startBalancePayout).to.be.gt(0)
       expect(endBalancePayout - startBalancePayout).to.be.lte(
         request.expiry * request.ask.reward
       )

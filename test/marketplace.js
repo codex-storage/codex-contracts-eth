@@ -33,12 +33,6 @@ async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
   return payouts
 }
 
-function slotsArrayExcept(request, ignoredIndex) {
-  return Array.from({ length: request.ask.slots }, (_, i) => i).filter(
-    (i) => i !== ignoredIndex
-  )
-}
-
 async function waitUntilStarted(contract, request, proof, token) {
   return waitUntilSlotsFilled(
     contract,
