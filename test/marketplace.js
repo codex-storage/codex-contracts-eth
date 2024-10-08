@@ -50,23 +50,62 @@ async function waitUntilSlotFailed(contract, request, slot) {
 }
 
 function patchOverloads(contract) {
-  contract.freeSlot = async (slotId, rewardRecipient, collateralRecipient) => {
-    const logicalXor = (a, b) => (a || b) && !(a && b)
+  const logicalXor = (a, b) => (a || b) && !(a && b)
+  contract.freeFinishedSlot = async (
+    slotId,
+    proof,
+    rewardRecipient,
+    collateralRecipient
+  ) => {
     if (logicalXor(rewardRecipient, collateralRecipient)) {
       // XOR, if exactly one is truthy
       throw new Error(
-        "Invalid freeSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither."
+        "Invalid freeFinishedSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither."
       )
     }
 
     if (!rewardRecipient && !collateralRecipient) {
-      // calls `freeSlot` overload without `rewardRecipient` and `collateralRecipient`
-      const fn = contract["freeSlot(bytes32)"]
-      return await fn(slotId)
+      // calls `freeFinishedSlot` overload without `rewardRecipient` and `collateralRecipient`
+      const fn =
+        contract[
+          "freeFinishedSlot(bytes32,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"
+        ]
+      return await fn(slotId, proof)
     }
 
-    const fn = contract["freeSlot(bytes32,address,address)"]
-    return await fn(slotId, rewardRecipient, collateralRecipient)
+    const fn =
+      contract[
+        "freeFinishedSlot(bytes32,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address,address)"
+      ]
+    return await fn(slotId, proof, rewardRecipient, collateralRecipient)
+  }
+  contract.freeCancelledSlot = async (
+    slotId,
+    proof,
+    rewardRecipient,
+    collateralRecipient
+  ) => {
+    if (logicalXor(rewardRecipient, collateralRecipient)) {
+      // XOR, if exactly one is truthy
+      throw new Error(
+        "Invalid freeCancelledSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither."
+      )
+    }
+
+    if (!rewardRecipient && !collateralRecipient) {
+      // calls `freeCancelledSlot` overload without `rewardRecipient` and `collateralRecipient`
+      const fn =
+        contract[
+          "freeCancelledSlot(bytes32,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)))"
+        ]
+      return await fn(slotId, proof)
+    }
+
+    const fn =
+      contract[
+        "freeCancelledSlot(bytes32,((uint256,uint256),((uint256,uint256),(uint256,uint256)),(uint256,uint256)),address,address)"
+      ]
+    return await fn(slotId, proof, rewardRecipient, collateralRecipient)
   }
   contract.withdrawFunds = async (requestId, withdrawRecipient) => {
     if (!withdrawRecipient) {

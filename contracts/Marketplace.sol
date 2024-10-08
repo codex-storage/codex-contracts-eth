@@ -125,7 +125,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
    * @param requestId RequestId identifying the request containing the slot to
      fill.
    * @param slotIndex Index of the slot in the request.
-   * @param proof Groth16 proof procing possession of the slot data.
+   * @param proof Groth16 proof proving possession of the slot data.
    */
   function fillSlot(
     RequestId requestId,
@@ -173,48 +173,101 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   /**
    * @notice Frees a slot, paying out rewards and returning collateral for
-     finished or cancelled requests to the host that has filled the slot.
-   * @param slotId id of the slot to free
-   * @dev The host that filled the slot must have initiated the transaction
-     (msg.sender). This overload allows `rewardRecipient` and
-     `collateralRecipient` to be optional.
-   */
-  function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
-    return freeSlot(slotId, msg.sender, msg.sender);
-  }
-
-  /**
-   * @notice Frees a slot, paying out rewards and returning collateral for
-     finished or cancelled requests.
+     finished requests. Requires a proof of data possesion to prevent
+     purposefully dropping data towards the end of the storage request.
    * @param slotId id of the slot to free
    * @param rewardRecipient address to send rewards to
    * @param collateralRecipient address to refund collateral to
+   * @param proof Groth16 proof proving possession of the slot data.
    */
-  function freeSlot(
+  function freeFinishedSlot(
     SlotId slotId,
+    Groth16Proof calldata proof,
     address rewardRecipient,
     address collateralRecipient
   ) public slotIsNotFree(slotId) {
     Slot storage slot = _slots[slotId];
     require(slot.host == msg.sender, "Slot filled by other host");
     SlotState state = slotState(slotId);
-    require(state != SlotState.Paid, "Already paid");
+    require(state == SlotState.Finished, "Slot not finished");
 
-    if (state == SlotState.Finished) {
-      _payoutSlot(slot.requestId, slotId, rewardRecipient, collateralRecipient);
-    } else if (state == SlotState.Cancelled) {
-      _payoutCancelledSlot(
-        slot.requestId,
-        slotId,
-        rewardRecipient,
-        collateralRecipient
-      );
-    } else if (state == SlotState.Failed) {
-      _removeFromMySlots(msg.sender, slotId);
-    } else if (state == SlotState.Filled) {
-      // free slot without returning collateral, effectively a 100% slash
-      _forciblyFreeSlot(slotId);
-    }
+    submitProof(slotId, proof);
+    _payoutSlot(slot.requestId, slotId, rewardRecipient, collateralRecipient);
+  }
+
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     finished requests to the host that has filled the slot.
+   * @param slotId id of the slot to free
+   * @param proof Groth16 proof proving possession of the slot data.
+   * @dev The host that filled the slot must have initiated the transaction
+     (msg.sender). This overload allows `rewardRecipient` and
+     `collateralRecipient` to be optional.
+   */
+  function freeFinishedSlot(
+    SlotId slotId,
+    Groth16Proof calldata proof
+  ) public slotIsNotFree(slotId) {
+    return freeFinishedSlot(slotId, proof, msg.sender, msg.sender);
+  }
+
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     cancelled requests. Requires a proof of data possesion to prevent
+     purposefully dropping data towards the end of the storage request.
+   * @param slotId id of the slot to free
+   * @param rewardRecipient address to send rewards to
+   * @param collateralRecipient address to refund collateral to
+   * @param proof Groth16 proof proving possession of the slot data.
+   */
+  function freeCancelledSlot(
+    SlotId slotId,
+    Groth16Proof calldata proof,
+    address rewardRecipient,
+    address collateralRecipient
+  ) public slotIsNotFree(slotId) {
+    Slot storage slot = _slots[slotId];
+    require(slot.host == msg.sender, "Slot filled by other host");
+    SlotState state = slotState(slotId);
+    require(state == SlotState.Cancelled, "Slot not cancelled");
+
+    // require a proof at the end of the
+    submitProof(slotId, proof);
+    _payoutCancelledSlot(
+      slot.requestId,
+      slotId,
+      rewardRecipient,
+      collateralRecipient
+    );
+  }
+
+  /**
+   * @notice Frees a slot, paying out rewards and returning collateral for
+     cancelled requests to the host that has filled the slot.
+   * @param slotId id of the slot to free
+   * @param proof Groth16 proof proving possession of the slot data.
+   * @dev The host that filled the slot must have initiated the transaction
+     (msg.sender). This overload allows `rewardRecipient` and
+     `collateralRecipient` to be optional.
+   */
+  function freeCancelledSlot(
+    SlotId slotId,
+    Groth16Proof calldata proof
+  ) public slotIsNotFree(slotId) {
+    return freeCancelledSlot(slotId, proof, msg.sender, msg.sender);
+  }
+
+  /**
+   * @notice Removes failed slot from "my slots".
+   * @param slotId id of the slot to free
+   */
+  function freeFailedSlot(SlotId slotId) public slotIsNotFree(slotId) {
+    Slot storage slot = _slots[slotId];
+    require(slot.host == msg.sender, "Slot filled by other host");
+    SlotState state = slotState(slotId);
+    require(state == SlotState.Failed, "Slot not failed");
+
+    _removeFromMySlots(msg.sender, slotId);
   }
 
   function _challengeToFieldElement(
