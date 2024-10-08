@@ -1,9 +1,9 @@
-function price(request) {
-  return request.ask.slots * pricePerSlot(request)
+function maxPrice(request) {
+  return request.ask.slots * request.ask.duration * request.ask.reward
 }
 
-function pricePerSlot(request) {
-  return request.ask.duration * request.ask.reward
+function payoutForDuration(request, start, end) {
+  return (end - start) * request.ask.reward
 }
 
-module.exports = { price, pricePerSlot }
+module.exports = { maxPrice, payoutForDuration }

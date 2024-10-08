@@ -1,6 +1,6 @@
 const { advanceTimeToForNextBlock, currentTime } = require("./evm")
 const { slotId, requestId } = require("./ids")
-const { price } = require("./price")
+const { maxPrice, payoutForDuration } = require("./price")
 
 /**
  * @dev This will not advance the time right on the "expiry threshold" but will most probably "overshoot it"
@@ -14,13 +14,33 @@ async function waitUntilCancelled(request) {
   await advanceTimeToForNextBlock((await currentTime()) + request.expiry + 1)
 }
 
-async function waitUntilStarted(contract, request, proof, token) {
-  await token.approve(contract.address, price(request) * request.ask.slots)
+async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
+  await token.approve(contract.address, request.ask.collateral * slots.length)
 
-  for (let i = 0; i < request.ask.slots; i++) {
-    await contract.reserveSlot(requestId(request), i)
-    await contract.fillSlot(requestId(request), i, proof)
+  let requestEnd = (await contract.requestEnd(requestId(request))).toNumber()
+  const payouts = []
+  for (let slotIndex of slots) {
+    await contract.reserveSlot(requestId(request), slotIndex)
+    await contract.fillSlot(requestId(request), slotIndex, proof)
+
+    payouts[slotIndex] = payoutForDuration(
+      request,
+      await currentTime(),
+      requestEnd
+    )
   }
+
+  return payouts
+}
+
+async function waitUntilStarted(contract, request, proof, token) {
+  return waitUntilSlotsFilled(
+    contract,
+    request,
+    proof,
+    token,
+    Array.from({ length: request.ask.slots }, (_, i) => i)
+  )
 }
 
 async function waitUntilFinished(contract, requestId) {
@@ -83,6 +103,7 @@ function patchOverloads(contract) {
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
+  waitUntilSlotsFilled,
   waitUntilFinished,
   waitUntilFailed,
   waitUntilSlotFailed,

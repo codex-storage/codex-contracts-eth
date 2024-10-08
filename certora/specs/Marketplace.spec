@@ -142,6 +142,22 @@ hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt 
 |              Helper functions              |
 --------------------------------------------*/
 
+function ensureValidRequestId(Marketplace.RequestId requestId) {
+    // Without this, the prover will find counter examples with `requestId == 0`,
+    // which are unlikely in practice as `requestId` is a hash from a request object.
+    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
+    // which ultimately results in counter examples where we have a state change
+    // RequestState.Finished -> RequestState.Started, which is forbidden.
+    //
+    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/81939b2b12d74a5cae5e84ceadb901c0?anonymousKey=a4ad6268598a1077ecfce75493b0c0f9bc3b17a0
+    //
+    // The `require` below is a hack to ensure we exclude such cases as the code
+    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
+    // sufficient here)
+    // require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
+    require requestId != to_bytes32(0) && currentContract._requests[requestId].client != 0;
+}
+
 function canCancelRequest(method f) returns bool {
     return f.selector == sig:withdrawFunds(Marketplace.RequestId).selector;
 }
@@ -298,19 +314,7 @@ rule allowedRequestStateChanges(env e, method f) {
     // `SlotState.Finished` and `RequestState.New`
     requireInvariant finishedSlotAlwaysHasFinishedRequest(e, slotId);
 
-    // Without this, the prover will find counter examples with `requestId == 0`,
-    // which are unlikely in practice as `requestId` is a hash from a request object.
-    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
-    // which ultimately results in counter examples where we have a state change
-    // RequestState.Cancelled -> RequestState.Finished, which is forbidden.
-    //
-    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/3a4f410e6367422ba60b218a08c04fae?anonymousKey=0d7003af4ee9bc18c0da0c80a216a6815d397370
-    //
-    // The `require` below is a hack to ensure we exclude such cases as the code
-    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
-    // sufficient here)
-    require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
-
+    ensureValidRequestId(requestId);
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
 
@@ -387,6 +391,8 @@ rule cancelledRequestsStayCancelled(env e, method f) {
     require requestStateBefore == Marketplace.RequestState.Cancelled;
     requireInvariant cancelledRequestAlwaysExpired(e, requestId);
 
+    ensureValidRequestId(requestId);
+
     f(e, args);
     Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
 
@@ -398,18 +404,7 @@ rule finishedRequestsStayFinished(env e, method f) {
     calldataarg args;
     Marketplace.RequestId requestId;
 
-    // Without this, the prover will find counter examples with `requestId == 0`,
-    // which are unlikely in practice as `requestId` is a hash from a request object.
-    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
-    // which ultimately results in counter examples where we have a state change
-    // RequestState.Finished -> RequestState.Started, which is forbidden.
-    //
-    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/81939b2b12d74a5cae5e84ceadb901c0?anonymousKey=a4ad6268598a1077ecfce75493b0c0f9bc3b17a0
-    //
-    // The `require` below is a hack to ensure we exclude such cases as the code
-    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
-    // sufficient here)
-    require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
+    ensureValidRequestId(requestId);
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
     require requestStateBefore == Marketplace.RequestState.Finished;
