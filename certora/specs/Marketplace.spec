@@ -151,19 +151,19 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof, address, address).selector ||
+        f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof).selector;
 }
 
 function canFailRequest(method f) returns bool {
-    return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector;
 }
 
 function canMakeSlotPaid(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof, address, address).selector ||
+        f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof).selector ||
+        f.selector == sig:freeCancelledSlot(Marketplace.SlotId, Marketplace.Groth16Proof, address, address).selector ||
+        f.selector == sig:freeCancelledSlot(Marketplace.SlotId, Marketplace.Groth16Proof).selector;
 }
 
 function canFillSlot(method f) returns bool {
@@ -288,6 +288,7 @@ rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
 rule allowedRequestStateChanges(env e, method f) {
     calldataarg args;
     Marketplace.SlotId slotId;
+    Marketplace.Groth16Proof proof;
 
     Marketplace.RequestId requestId = slotIdToRequestId[slotId];
 
@@ -317,8 +318,12 @@ rule allowedRequestStateChanges(env e, method f) {
     // we need to check for `freeSlot(slotId)` here to ensure it's being called with
     // the slotId we're interested in and not any other slotId (that may not pass the
     // required invariants)
-    if (f.selector == sig:freeSlot(Marketplace.SlotId).selector || f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector) {
-        freeSlot(e, slotId);
+    if (f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof).selector || f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof, address, address).selector) {
+        freeFinishedSlot(e, slotId, proof);
+    } else if (f.selector == sig:freeCancelledSlot(Marketplace.SlotId, Marketplace.Groth16Proof).selector || f.selector == sig:freeFinishedSlot(Marketplace.SlotId, Marketplace.Groth16Proof, address, address).selector) {
+        freeCancelledSlot(e, slotId, proof);
+    } else if (f.selector == sig:freeFailedSlot(Marketplace.SlotId).selector) {
+        freeFailedSlot(e, slotId);
     } else {
         f(e, args);
     }
@@ -371,6 +376,9 @@ rule functionsCausingSlotStateChanges(env e, method f) {
 
     // SlotState.Finished -> SlotState.Paid
     assert slotStateBefore == Marketplace.SlotState.Finished && slotStateAfter == Marketplace.SlotState.Paid => canMakeSlotPaid(f);
+
+    // SlotState.Cancelled -> SlotState.Paid
+    assert slotStateBefore == Marketplace.SlotState.Cancelled && slotStateAfter == Marketplace.SlotState.Paid => canMakeSlotPaid(f);
 
     // SlotState.Free -> SlotState.Filled
     assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
