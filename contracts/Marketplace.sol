@@ -149,28 +149,47 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     slot.slotIndex = slotIndex;
     RequestContext storage context = _requestContexts[requestId];
 
-    require(slotState(slotId) == SlotState.Free, "Slot is not free");
+    require(
+      slotState(slotId) == SlotState.Free ||
+        slotState(slotId) == SlotState.Repair,
+      "Slot is not free"
+    );
 
     _startRequiringProofs(slotId, request.ask.proofProbability);
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
-    slot.state = SlotState.Filled;
     slot.filledAt = block.timestamp;
 
     context.slotsFilled += 1;
     context.fundsToReturnToClient -= _slotPayout(requestId, slot.filledAt);
 
     // Collect collateral
-    uint256 collateralAmount = request.ask.collateral;
+    uint256 collateralAmount;
+    if (slotState(slotId) == SlotState.Repair) {
+      // Host is repairing a slot and is entitled for repair reward, so he gets "discounted collateral"
+      // in this way he gets "physically" the reward at the end of the request when the full amount of collateral
+      // is returned to him.
+      collateralAmount =
+        request.ask.collateral -
+        ((request.ask.collateral * _config.collateral.repairRewardPercentage) /
+          100);
+    } else {
+      collateralAmount = request.ask.collateral;
+    }
     _transferFrom(msg.sender, collateralAmount);
     _marketplaceTotals.received += collateralAmount;
-    slot.currentCollateral = collateralAmount;
+    slot.currentCollateral = request.ask.collateral; // Even if he has collateral discounted, he is operating with full collateral
 
     _addToMySlots(slot.host, slotId);
 
+    slot.state = SlotState.Filled;
     emit SlotFilled(requestId, slotIndex);
-    if (context.slotsFilled == request.ask.slots) {
+
+    if (
+      context.slotsFilled == request.ask.slots &&
+      context.state != RequestState.Started // In case of repair, we already have the request started, so we prevent from "restarting it"
+    ) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
       emit RequestFulfilled(requestId);
@@ -298,6 +317,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMySlots(slot.host, slotId);
     uint256 slotIndex = slot.slotIndex;
     delete _slots[slotId];
+    delete _reservations[slotId]; // We purge all the reservations for the slot
+    slot.state = SlotState.Repair;
+    slot.requestId = requestId;
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slotIndex);
     _resetMissingProofs(slotId);
