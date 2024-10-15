@@ -1,3 +1,5 @@
+import "./shared.spec";
+
 using ERC20A as Token;
 
 methods {
@@ -108,16 +110,6 @@ hook Sstore _slots[KEY Marketplace.SlotId slotId].state Marketplace.SlotState ne
     }
 }
 
-ghost mapping(MarketplaceHarness.SlotId => MarketplaceHarness.RequestId) slotIdToRequestId;
-
-hook Sload Marketplace.RequestId defaultValue _slots[KEY MarketplaceHarness.SlotId SlotId].requestId {
-    require slotIdToRequestId[SlotId] == defaultValue;
-}
-
-hook Sstore _slots[KEY MarketplaceHarness.SlotId SlotId].requestId Marketplace.RequestId defaultValue {
-    slotIdToRequestId[SlotId] = defaultValue;
-}
-
 ghost mapping(MarketplaceHarness.RequestId => uint256) slotsFilledGhost;
 
 hook Sload uint256 defaultValue _requestContexts[KEY MarketplaceHarness.RequestId RequestId].slotsFilled {
@@ -141,22 +133,6 @@ hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt 
 /*--------------------------------------------
 |              Helper functions              |
 --------------------------------------------*/
-
-function ensureValidRequestId(Marketplace.RequestId requestId) {
-    // Without this, the prover will find counter examples with `requestId == 0`,
-    // which are unlikely in practice as `requestId` is a hash from a request object.
-    // However, `requestId == 0` enforces `SlotState.Free` in the `fillSlot` function regardless,
-    // which ultimately results in counter examples where we have a state change
-    // RequestState.Finished -> RequestState.Started, which is forbidden.
-    //
-    // COUNTER EXAMPLE: https://prover.certora.com/output/6199/81939b2b12d74a5cae5e84ceadb901c0?anonymousKey=a4ad6268598a1077ecfce75493b0c0f9bc3b17a0
-    //
-    // The `require` below is a hack to ensure we exclude such cases as the code
-    // reverts in `requestIsKnown()` modifier (simply `require requestId != 0` isn't
-    // sufficient here)
-    // require requestId == to_bytes32(0) => currentContract._requests[requestId].client == 0;
-    require requestId != to_bytes32(0) && currentContract._requests[requestId].client != 0;
-}
 
 function canCancelRequest(method f) returns bool {
     return f.selector == sig:withdrawFunds(Marketplace.RequestId).selector;
@@ -229,13 +205,6 @@ invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
         endsAtGhost[requestId] < lastBlockTimestampGhost;
 
 // STATUS - verified
-// finished slot always has finished request
-// https://prover.certora.com/output/6199/3371ee4f80354ac9b05b1c84c53b6154?anonymousKey=eab83785acb61ccd31ed0c9d5a2e9e2b24099156
-invariant finishedSlotAlwaysHasFinishedRequest(env e, Marketplace.SlotId slotId)
-    currentContract.slotState(e, slotId) == Marketplace.SlotState.Finished =>
-        currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Finished;
-
-// STATUS - verified
 // paid slot always has finished or cancelled request
 // https://prover.certora.com/output/6199/d0e165ed5d594f9fb477602af06cfeb1?anonymousKey=01ffaad46027786c38d78e5a41c03ce002032200
 invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId slotId)
@@ -246,12 +215,6 @@ invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId 
       }
     }
 
-// STATUS - verified
-// cancelled slot always belongs to cancelled request
-// https://prover.certora.com/output/6199/80d5dc73d406436db166071e277283f1?anonymousKey=d5d175960dc40f72e22ba8e31c6904a488277e57
-invariant cancelledSlotAlwaysHasCancelledRequest(env e, Marketplace.SlotId slotId)
-    currentContract.slotState(e, slotId) == Marketplace.SlotState.Cancelled =>
-        currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Cancelled;
 
 /*--------------------------------------------
 |                 Properties                 |
@@ -301,45 +264,6 @@ rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
 }
 
 
-rule allowedRequestStateChanges(env e, method f) {
-    calldataarg args;
-    Marketplace.SlotId slotId;
-
-    Marketplace.RequestId requestId = slotIdToRequestId[slotId];
-
-    // needed, otherwise it finds counter examples where
-    // `SlotState.Cancelled` and `RequestState.New`
-    requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
-    // needed, otherwise it finds counter example where
-    // `SlotState.Finished` and `RequestState.New`
-    requireInvariant finishedSlotAlwaysHasFinishedRequest(e, slotId);
-
-    ensureValidRequestId(requestId);
-
-    Marketplace.RequestState requestStateBefore = currentContract.requestState(e, requestId);
-
-    // we need to check for `freeSlot(slotId)` here to ensure it's being called with
-    // the slotId we're interested in and not any other slotId (that may not pass the
-    // required invariants)
-    if (f.selector == sig:freeSlot(Marketplace.SlotId).selector || f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector) {
-        freeSlot(e, slotId);
-    } else {
-        f(e, args);
-    }
-    Marketplace.RequestState requestStateAfter = currentContract.requestState(e, requestId);
-
-    // RequestState.New -> RequestState.Started
-    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Started => requestStateBefore == Marketplace.RequestState.New;
-
-    // RequestState.Started -> RequestState.Finished
-    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Finished => requestStateBefore == Marketplace.RequestState.Started;
-
-    // RequestState.Started -> RequestState.Failed
-    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Failed => requestStateBefore == Marketplace.RequestState.Started;
-
-    // RequestState.New -> RequestState.Cancelled
-    assert requestStateBefore != requestStateAfter && requestStateAfter == Marketplace.RequestState.Cancelled => requestStateBefore == Marketplace.RequestState.New;
-}
 
 rule functionsCausingRequestStateChanges(env e, method f) {
     calldataarg args;
