@@ -70,10 +70,16 @@ jobs:
         run: npm install
 
       - name: Verify rules
-        run: npm run verify
+        run: |
+          npm run ${{matrix.rule}}
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
 
     strategy:
       fail-fast: false
       max-parallel: 16
+      matrix:
+        rule:
+          - verify:marketplace
+          - verify:state_changes
+
