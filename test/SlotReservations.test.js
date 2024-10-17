@@ -2,6 +2,7 @@ const { expect } = require("chai")
 const { ethers } = require("hardhat")
 const { exampleRequest, exampleConfiguration } = require("./examples")
 const { requestId, slotId } = require("./ids")
+const { SlotState } = require("./requests")
 
 describe("SlotReservations", function () {
   let reservations
@@ -28,6 +29,8 @@ describe("SlotReservations", function () {
       index: slotIndex,
     }
     id = slotId(slot)
+
+    await reservations.setSlotState(id, SlotState.Free)
   })
 
   function switchAccount(account) {
@@ -96,6 +99,19 @@ describe("SlotReservations", function () {
     switchAccount(address3)
     await reservations.reserveSlot(reqId, slotIndex)
     switchAccount(provider)
+    expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.false
+  })
+
+  it("cannot reserve a slot if not free", async function () {
+    await reservations.setSlotState(id, SlotState.Filled)
+    await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
+      "Reservation not allowed"
+    )
+    expect(await reservations.length(id)).to.equal(0)
+  })
+
+  it("reports a slot cannot be reserved if not free", async function () {
+    await reservations.setSlotState(id, SlotState.Filled)
     expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.false
   })
 
