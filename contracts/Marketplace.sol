@@ -457,6 +457,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _;
   }
 
+  function _slotIsFree(SlotId slotId) internal view override returns (bool) {
+    return _slots[slotId].state == SlotState.Free;
+  }
+
   function requestEnd(RequestId requestId) public view returns (uint256) {
     uint256 end = _requestContexts[requestId].endsAt;
     RequestState state = requestState(requestId);
