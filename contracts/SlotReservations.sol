@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Requests.sol";
 import "./Configuration.sol";
 
-contract SlotReservations {
+abstract contract SlotReservations {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   mapping(SlotId => EnumerableSet.AddressSet) internal _reservations;
@@ -14,6 +14,8 @@ contract SlotReservations {
   constructor(SlotReservationsConfig memory config) {
     _config = config;
   }
+
+  function _slotIsFree(SlotId slotId) internal view virtual returns (bool);
 
   function reserveSlot(RequestId requestId, uint256 slotIndex) public {
     require(canReserveSlot(requestId, slotIndex), "Reservation not allowed");
@@ -34,6 +36,7 @@ contract SlotReservations {
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     return
       // TODO: add in check for address inside of expanding window
+      _slotIsFree(slotId) &&
       (_reservations[slotId].length() < _config.maxReservations) &&
       (!_reservations[slotId].contains(host));
   }
