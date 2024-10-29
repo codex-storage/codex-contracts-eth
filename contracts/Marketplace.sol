@@ -88,7 +88,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _config = configuration;
   }
 
-  function config() public view returns (MarketplaceConfig memory) {
+  function configuration() public view returns (MarketplaceConfig memory) {
     return _config;
   }
 
