@@ -1,25 +1,5 @@
 const { loadZkeyHash } = require("../verifier/verifier.js")
-
-// marketplace configuration
-const CONFIGURATION = {
-  collateral: {
-    repairRewardPercentage: 10,
-    maxNumberOfSlashes: 2,
-    slashCriterion: 2,
-    slashPercentage: 20,
-  },
-  proofs: {
-    period: 60,
-    timeout: 30,
-    // `downtime` needs to be larger than `period` when running hardhat
-    // in automine mode, because it can produce a block every second
-    downtime: 64,
-    downtimeProduct: 67
-  },
-  reservations: {
-    maxReservations: 3
-  }
-}
+const { loadConfiguration } = require("../configuration/configuration.js")
 
 async function mine256blocks({ network, ethers }) {
   if (network.tags.local) {
@@ -32,7 +12,7 @@ async function deployMarketplace({ deployments, getNamedAccounts }) {
   const token = await deployments.get("TestToken")
   const verifier = await deployments.get("Groth16Verifier")
   const zkeyHash = loadZkeyHash(network.name)
-  let configuration = CONFIGURATION
+  let configuration = loadConfiguration(network.name)
   configuration.proofs.zkeyHash = zkeyHash
   const args = [configuration, token.address, verifier.address]
   const { deployer: from } = await getNamedAccounts()
@@ -52,7 +32,7 @@ async function deployTestMarketplace({
     const token = await deployments.get("TestToken")
     const verifier = await deployments.get("TestVerifier")
     const zkeyHash = loadZkeyHash(network.name)
-    let configuration = CONFIGURATION
+    let configuration = loadConfiguration(network.name)
     configuration.proofs.zkeyHash = zkeyHash
     const args = [configuration, token.address, verifier.address]
     const { deployer: from } = await getNamedAccounts()
