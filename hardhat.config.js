@@ -24,6 +24,11 @@ module.exports = {
   networks: {
     hardhat: {
       tags: ["local"],
+      mining: {
+        auto: true,
+        // Workaround for https://github.com/NomicFoundation/hardhat/issues/2053
+        interval: 4 * 60 * 1000
+      }
     },
     codexdisttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
