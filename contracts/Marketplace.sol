@@ -188,7 +188,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     if (
       context.slotsFilled == request.ask.slots &&
-      context.state != RequestState.Started // In case of repair, we already have the request started, so we prevent from "restarting it"
+      context.state == RequestState.New // Only New requests can "start" the requests
     ) {
       context.state = RequestState.Started;
       context.startedAt = block.timestamp;
