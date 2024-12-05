@@ -126,7 +126,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Fills a slot. Reverts if an invalid proof of the slot data is
+     * @notice Fills a slot. Reverts if an invalid proof of the slot data is
      provided.
    * @param requestId RequestId identifying the request containing the slot to
      fill.
@@ -197,7 +197,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Frees a slot, paying out rewards and returning collateral for
+     * @notice Frees a slot, paying out rewards and returning collateral for
      finished or cancelled requests to the host that has filled the slot.
    * @param slotId id of the slot to free
    * @dev The host that filled the slot must have initiated the transaction
@@ -209,7 +209,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Frees a slot, paying out rewards and returning collateral for
+     * @notice Frees a slot, paying out rewards and returning collateral for
      finished or cancelled requests.
    * @param slotId id of the slot to free
    * @param rewardRecipient address to send rewards to
@@ -299,7 +299,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Abandons the slot without returning collateral, effectively slashing the
+     * @notice Abandons the slot without returning collateral, effectively slashing the
      entire collateral.
    * @param slotId SlotId of the slot to free.
    * @dev _slots[slotId] is deleted, resetting _slots[slotId].currentCollateral
@@ -315,13 +315,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
     _removeFromMySlots(slot.host, slotId);
-    uint256 slotIndex = slot.slotIndex;
-    delete _slots[slotId];
     delete _reservations[slotId]; // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
-    slot.requestId = requestId;
+    slot.filledAt = 0;
+    slot.currentCollateral = 0;
+    slot.host = address(0);
     context.slotsFilled -= 1;
-    emit SlotFreed(requestId, slotIndex);
+    emit SlotFreed(requestId, slot.slotIndex);
     _resetMissingProofs(slotId);
 
     Request storage request = _requests[requestId];
@@ -359,7 +359,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Pays out a host for duration of time that the slot was filled, and
+     * @notice Pays out a host for duration of time that the slot was filled, and
      returns the collateral.
    * @dev The payouts are sent to the rewardRecipient, and collateral is returned
      to the host address.
@@ -389,7 +389,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Withdraws remaining storage request funds back to the client that
+     * @notice Withdraws remaining storage request funds back to the client that
      deposited them.
    * @dev Request must be cancelled, failed or finished, and the
      transaction must originate from the depositor address.
@@ -400,7 +400,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   /**
-   * @notice Withdraws storage request funds to the provided address.
+     * @notice Withdraws storage request funds to the provided address.
    * @dev Request must be expired, must be in RequestState.New, and the
      transaction must originate from the depositer address.
    * @param requestId the id of the request
