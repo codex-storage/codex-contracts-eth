@@ -330,7 +330,7 @@ rule allowedSlotStateChanges(env e, method f) {
             );
 
     // SlotState.Filled only from Free
-    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => slotStateBefore == Marketplace.SlotState.Free;
+    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => (slotStateBefore == Marketplace.SlotState.Free || slotStateBefore == Marketplace.SlotState.Repair);
 }
 
 rule cancelledRequestsStayCancelled(env e, method f) {
