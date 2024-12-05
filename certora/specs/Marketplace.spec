@@ -301,7 +301,10 @@ rule functionsCausingSlotStateChanges(env e, method f) {
     assert slotStateBefore == Marketplace.SlotState.Finished && slotStateAfter == Marketplace.SlotState.Paid => canMakeSlotPaid(f);
 
     // SlotState.Free -> SlotState.Filled
-    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
+    assert slotStateBefore != Marketplace.SlotState.Free && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
+
+    // SlotState.Repair -> SlotState.Filled
+    assert slotStateBefore != Marketplace.SlotState.Repair && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
 }
 
 rule allowedSlotStateChanges(env e, method f) {
@@ -327,7 +330,7 @@ rule allowedSlotStateChanges(env e, method f) {
             );
 
     // SlotState.Filled only from Free
-    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => slotStateBefore == Marketplace.SlotState.Free;
+    assert slotStateBefore != Marketplace.SlotState.Filled && slotStateAfter == Marketplace.SlotState.Filled => (slotStateBefore == Marketplace.SlotState.Free || slotStateBefore == Marketplace.SlotState.Repair);
 }
 
 rule cancelledRequestsStayCancelled(env e, method f) {
