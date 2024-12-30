@@ -131,8 +131,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     RequestId id = request.id();
 
     if (request.client != msg.sender) revert Marketplace_InvalidClientAddress();
-    if (_requests[id].client != address(0))
+    if (_requests[id].client != address(0)) {
       revert Marketplace_RequestAlreadyExists();
+    }
+    require(
+      request.ask.duration <= _config.requestDurationLimit,
+      "Duration exceeds limit"
+    );
     if (request.expiry == 0 || request.expiry >= request.ask.duration)
       revert Marketplace_InvalidExpiry();
     if (request.ask.slots == 0) revert Marketplace_InsufficientSlots();
