@@ -220,7 +220,7 @@ describe("Marketplace", function () {
     it("is rejected with insufficient slots ", async function () {
       request.ask.slots = 0
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Insufficient slots"
+        "Marketplace_InsufficientSlots"
       )
     })
 
@@ -381,7 +381,7 @@ describe("Marketplace", function () {
     it("fails if slot is not reserved first", async function () {
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Reservation required")
+      ).to.be.revertedWith("Marketplace_ReservationRequired")
     })
   })
 
@@ -824,7 +824,7 @@ describe("Marketplace", function () {
       switchAccount(client)
       await expect(
         marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Marketplace_InvalidClientAddress")
+      ).to.be.revertedWith("Marketplace_InvalidState")
     })
 
     it("rejects withdraw when already withdrawn", async function () {
@@ -838,7 +838,7 @@ describe("Marketplace", function () {
       )
       await expect(
         marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Nothing to withdraw")
+      ).to.be.revertedWith("Marketplace_NothingToWithdraw")
     })
 
     it("emits event once request is cancelled", async function () {

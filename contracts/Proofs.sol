@@ -201,13 +201,8 @@ abstract contract Proofs is Periods {
     Groth16Proof calldata proof,
     uint[] memory pubSignals
   ) internal {
-    if (_received[id][_blockPeriod()]) {
-      revert Proofs_ProofAlreadySubmitted();
-    }
-
-    if (!_verifier.verify(proof, pubSignals)) {
-      revert Proofs_InvalidProof();
-    }
+    if (_received[id][_blockPeriod()]) revert Proofs_ProofAlreadySubmitted();
+    if (!_verifier.verify(proof, pubSignals)) revert Proofs_InvalidProof();
 
     _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id);
@@ -227,25 +222,11 @@ abstract contract Proofs is Periods {
    */
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 end = _periodEnd(missedPeriod);
-    if (end >= block.timestamp) {
-      revert Proofs_PeriodNotEnded();
-    }
-
-    if (block.timestamp >= end + _config.timeout) {
-      revert Proofs_ValidationTimedOut();
-    }
-
-    if (_received[id][missedPeriod]) {
-      revert Proofs_ProofNotMissing();
-    }
-
-    if (!_isProofRequired(id, missedPeriod)) {
-      revert Proofs_ProofNotRequired();
-    }
-
-    if (_missing[id][missedPeriod]) {
-      revert Proofs_ProofAlreadyMarkedMissing();
-    }
+    if (end >= block.timestamp) revert Proofs_PeriodNotEnded();
+    if (block.timestamp >= end + _config.timeout) revert Proofs_ValidationTimedOut();
+    if (_received[id][missedPeriod]) revert Proofs_ProofNotMissing();
+    if (!_isProofRequired(id, missedPeriod)) revert Proofs_ProofNotRequired();
+    if (_missing[id][missedPeriod]) revert Proofs_ProofAlreadyMarkedMissing();
 
     _missing[id][missedPeriod] = true;
     _missed[id] += 1;
