@@ -422,7 +422,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   function withdrawFunds(
     RequestId requestId,
     address withdrawRecipient
-  ) public {
+  ) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
     RequestContext storage context = _requestContexts[requestId];
 
