@@ -87,17 +87,19 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     IERC20 token_,
     IGroth16Verifier verifier
   )
-  SlotReservations(configuration.reservations)
-  Proofs(configuration.proofs, verifier)
+    SlotReservations(configuration.reservations)
+    Proofs(configuration.proofs, verifier)
   {
     _token = token_;
 
-    if (configuration.collateral.repairRewardPercentage > 100) revert Marketplace_RepairRewardPercentageTooHigh();
-    if (configuration.collateral.slashPercentage > 100) revert Marketplace_SlashPercentageTooHigh();
+    if (configuration.collateral.repairRewardPercentage > 100)
+      revert Marketplace_RepairRewardPercentageTooHigh();
+    if (configuration.collateral.slashPercentage > 100)
+      revert Marketplace_SlashPercentageTooHigh();
 
     if (
       configuration.collateral.maxNumberOfSlashes *
-      configuration.collateral.slashPercentage >
+        configuration.collateral.slashPercentage >
       100
     ) {
       revert Marketplace_MaximumSlashingTooHigh();
@@ -117,10 +119,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     RequestId id = request.id();
 
     if (request.client != msg.sender) revert Marketplace_InvalidClientAddress();
-    if (_requests[id].client != address(0)) revert Marketplace_RequestAlreadyExists();
-    if (request.expiry == 0 || request.expiry >= request.ask.duration) revert Marketplace_InvalidExpiry();
+    if (_requests[id].client != address(0))
+      revert Marketplace_RequestAlreadyExists();
+    if (request.expiry == 0 || request.expiry >= request.ask.duration)
+      revert Marketplace_InvalidExpiry();
     if (request.ask.slots == 0) revert Marketplace_InsufficientSlots();
-    if (request.ask.maxSlotLoss > request.ask.slots) revert Marketplace_InvalidMaxSlotLoss();
+    if (request.ask.maxSlotLoss > request.ask.slots)
+      revert Marketplace_InvalidMaxSlotLoss();
 
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
@@ -154,15 +159,18 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
 
-    if(!_reservations[slotId].contains(msg.sender)) revert Marketplace_ReservationRequired();
+    if (!_reservations[slotId].contains(msg.sender))
+      revert Marketplace_ReservationRequired();
 
     Slot storage slot = _slots[slotId];
     slot.requestId = requestId;
     slot.slotIndex = slotIndex;
     RequestContext storage context = _requestContexts[requestId];
 
-    if (slotState(slotId) != SlotState.Free &&
-      slotState(slotId) != SlotState.Repair) {
+    if (
+      slotState(slotId) != SlotState.Free &&
+      slotState(slotId) != SlotState.Repair
+    ) {
       revert Marketplace_SlotNotFree();
     }
 
@@ -288,7 +296,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   function markProofAsMissing(SlotId slotId, Period period) public {
-    if (slotState(slotId) != SlotState.Filled) revert Marketplace_SlotNotAcceptingProofs();
+    if (slotState(slotId) != SlotState.Filled)
+      revert Marketplace_SlotNotAcceptingProofs();
 
     _markProofAsMissing(slotId, period);
     Slot storage slot = _slots[slotId];
@@ -429,15 +438,18 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (request.client != msg.sender) revert Marketplace_InvalidClientAddress();
 
     RequestState state = requestState(requestId);
-    if (state != RequestState.Cancelled &&
-    state != RequestState.Failed &&
-      state != RequestState.Finished) {
+    if (
+      state != RequestState.Cancelled &&
+      state != RequestState.Failed &&
+      state != RequestState.Finished
+    ) {
       revert Marketplace_InvalidState();
     }
 
     // fundsToReturnToClient == 0 is used for "double-spend" protection, once the funds are withdrawn
     // then this variable is set to 0.
-    if (context.fundsToReturnToClient == 0) revert Marketplace_NothingToWithdraw();
+    if (context.fundsToReturnToClient == 0)
+      revert Marketplace_NothingToWithdraw();
 
     if (state == RequestState.Cancelled) {
       context.state = RequestState.Cancelled;
@@ -478,7 +490,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   modifier requestIsKnown(RequestId requestId) {
-    if (_requests[requestId].client == address(0)) revert Marketplace_UnknownRequest();
+    if (_requests[requestId].client == address(0))
+      revert Marketplace_UnknownRequest();
 
     _;
   }
@@ -525,10 +538,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   ) private view returns (uint256) {
     return
       _slotPayout(
-      requestId,
-      startingTimestamp,
-      _requestContexts[requestId].endsAt
-    );
+        requestId,
+        startingTimestamp,
+        _requestContexts[requestId].endsAt
+      );
   }
 
   /// @notice Calculates the amount that should be paid out to a host based on the specified time frame.
@@ -538,7 +551,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 endingTimestamp
   ) private view returns (uint256) {
     Request storage request = _requests[requestId];
-    if (startingTimestamp >= endingTimestamp) revert Marketplace_StartNotBeforeExpiry();
+    if (startingTimestamp >= endingTimestamp)
+      revert Marketplace_StartNotBeforeExpiry();
     return (endingTimestamp - startingTimestamp) * request.ask.reward;
   }
 
@@ -588,7 +602,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    if (!_token.transferFrom(sender, receiver, amount)) revert Marketplace_TransferFailed();
+    if (!_token.transferFrom(sender, receiver, amount))
+      revert Marketplace_TransferFailed();
   }
 
   event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);

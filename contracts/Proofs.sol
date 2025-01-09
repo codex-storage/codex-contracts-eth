@@ -223,7 +223,8 @@ abstract contract Proofs is Periods {
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 end = _periodEnd(missedPeriod);
     if (end >= block.timestamp) revert Proofs_PeriodNotEnded();
-    if (block.timestamp >= end + _config.timeout) revert Proofs_ValidationTimedOut();
+    if (block.timestamp >= end + _config.timeout)
+      revert Proofs_ValidationTimedOut();
     if (_received[id][missedPeriod]) revert Proofs_ProofNotMissing();
     if (!_isProofRequired(id, missedPeriod)) revert Proofs_ProofNotRequired();
     if (_missing[id][missedPeriod]) revert Proofs_ProofAlreadyMarkedMissing();

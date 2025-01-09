@@ -19,7 +19,8 @@ abstract contract SlotReservations {
   function _slotIsFree(SlotId slotId) internal view virtual returns (bool);
 
   function reserveSlot(RequestId requestId, uint256 slotIndex) public {
-    if (!canReserveSlot(requestId, slotIndex)) revert SlotReservations_ReservationNotAllowed();
+    if (!canReserveSlot(requestId, slotIndex))
+      revert SlotReservations_ReservationNotAllowed();
 
     SlotId slotId = Requests.slotId(requestId, slotIndex);
     _reservations[slotId].add(msg.sender);
