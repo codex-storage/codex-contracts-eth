@@ -586,7 +586,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[requestId];
     if (startingTimestamp >= endingTimestamp)
       revert Marketplace_StartNotBeforeExpiry();
-    return (endingTimestamp - startingTimestamp) * request.ask.reward;
+    return
+      (endingTimestamp - startingTimestamp) *
+      request.ask.pricePerByte *
+      request.ask.slotSize;
   }
 
   function getHost(SlotId slotId) public view returns (address) {
