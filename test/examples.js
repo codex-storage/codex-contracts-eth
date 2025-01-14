@@ -8,6 +8,7 @@ const exampleConfiguration = () => ({
     maxNumberOfSlashes: 5,
     slashCriterion: 3,
     slashPercentage: 10,
+    validatorRewardPercentage: 20,
   },
   proofs: {
     period: 10,
