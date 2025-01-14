@@ -283,18 +283,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     // TODO: Reward for validator that calls this function
 
-    if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (request.ask.collateral *
-        _config.collateral.slashPercentage) / 100;
-      slot.currentCollateral -= slashedAmount;
-      if (
-        missingProofs(slotId) / _config.collateral.slashCriterion >=
-        _config.collateral.maxNumberOfSlashes
-      ) {
-        // When the number of slashings is at or above the allowed amount,
-        // free the slot.
-        _forciblyFreeSlot(slotId);
-      }
+    uint256 slashedAmount = (request.ask.collateral *
+      _config.collateral.slashPercentage) / 100;
+    slot.currentCollateral -= slashedAmount;
+    if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
+      // When the number of slashings is at or above the allowed amount,
+      // free the slot.
+      _forciblyFreeSlot(slotId);
     }
   }
 

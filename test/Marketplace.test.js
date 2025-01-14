@@ -1260,17 +1260,17 @@ describe("Marketplace", function () {
     })
 
     describe("slashing when missing proofs", function () {
-      it("reduces collateral when too many proofs are missing", async function () {
+      it("reduces collateral when a proof is missing", async function () {
         const id = slotId(slot)
-        const { slashCriterion, slashPercentage } = config.collateral
+        const { slashPercentage } = config.collateral
         await marketplace.reserveSlot(slot.request, slot.index)
         await marketplace.fillSlot(slot.request, slot.index, proof)
-        for (let i = 0; i < slashCriterion; i++) {
-          await waitUntilProofIsRequired(id)
-          let missedPeriod = periodOf(await currentTime())
-          await advanceTimeForNextBlock(period + 1)
-          await marketplace.markProofAsMissing(id, missedPeriod)
-        }
+
+        await waitUntilProofIsRequired(id)
+        let missedPeriod = periodOf(await currentTime())
+        await advanceTimeForNextBlock(period + 1)
+        await marketplace.markProofAsMissing(id, missedPeriod)
+
         const expectedBalance =
           (request.ask.collateral * (100 - slashPercentage)) / 100
 
