@@ -66,7 +66,7 @@ describe("SlotReservations", function () {
   it("cannot reserve a slot more than once", async function () {
     await reservations.reserveSlot(reqId, slotIndex)
     await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "Reservation not allowed"
+      "SlotReservations_ReservationNotAllowed"
     )
     expect(await reservations.length(id)).to.equal(1)
   })
@@ -85,7 +85,7 @@ describe("SlotReservations", function () {
     await reservations.reserveSlot(reqId, slotIndex)
     switchAccount(provider)
     await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "Reservation not allowed"
+      "SlotReservations_ReservationNotAllowed"
     )
     expect(await reservations.length(id)).to.equal(3)
     expect(await reservations.contains(id, provider.address)).to.be.false
@@ -105,7 +105,7 @@ describe("SlotReservations", function () {
   it("cannot reserve a slot if not free", async function () {
     await reservations.setSlotState(id, SlotState.Filled)
     await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "Reservation not allowed"
+      "SlotReservations_ReservationNotAllowed"
     )
     expect(await reservations.length(id)).to.equal(0)
   })
