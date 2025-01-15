@@ -8,22 +8,23 @@ const DEFAULT_CONFIGURATION = {
     maxNumberOfSlashes: 2,
     slashCriterion: 2,
     slashPercentage: 20,
+    validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
   },
   proofs: {
     // period has to be less than downtime * blocktime
     period: 120, // seconds
     timeout: 30, // seconds
     downtime: 64, // number of blocks
-    downtimeProduct: 67 // number of blocks
+    downtimeProduct: 67, // number of blocks
   },
   reservations: {
-    maxReservations: 3
-  }
+    maxReservations: 3,
+  },
 }
 
 function loadConfiguration(name) {
   const path = `${BASE_PATH}/${name}/configuration.js`
-  if(fs.existsSync(path)) {
+  if (fs.existsSync(path)) {
     return require(path)
   } else {
     return DEFAULT_CONFIGURATION
