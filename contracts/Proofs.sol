@@ -57,6 +57,7 @@ abstract contract Proofs is Periods {
    *     and saves the required probability.
    */
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
+    require(probability > 0, "Invalid probability");
     _slotStarts[id] = block.timestamp;
     _probabilities[id] = probability;
   }
