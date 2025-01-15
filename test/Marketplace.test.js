@@ -232,6 +232,44 @@ describe("Marketplace", function () {
         "Request already exists"
       )
     })
+
+    it("is rejected when insufficient duration", async function () {
+      request.ask.duration = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        // request.expiry has to be > 0 and
+        // request.expiry < request.ask.duration
+        // so request.ask.duration will trigger "Expiry not in range"
+        "Expiry not in range"
+      )
+    })
+
+    it("is rejected when insufficient proofProbability", async function () {
+      request.ask.proofProbability = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Insufficient proofProbability"
+      )
+    })
+
+    it("is rejected when insufficient collateral", async function () {
+      request.ask.collateral = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Insufficient collateral"
+      )
+    })
+
+    it("is rejected when insufficient reward", async function () {
+      request.ask.reward = 0
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Insufficient reward"
+      )
+    })
+
+    it("is rejected when cid is missing", async function () {
+      request.content.cid = ""
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Invalid cid"
+      )
+    })
   })
 
   describe("filling a slot with collateral", function () {
