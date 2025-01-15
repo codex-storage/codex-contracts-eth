@@ -22,7 +22,7 @@ function askToArray(ask) {
 }
 
 function contentToArray(content) {
-  return [content.cid, content.merkleRoot]
+  return [content.cid.toString(), content.merkleRoot]
 }
 
 function requestToArray(request) {
