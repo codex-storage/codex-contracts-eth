@@ -6,7 +6,6 @@ const exampleConfiguration = () => ({
   collateral: {
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 5,
-    slashCriterion: 3,
     slashPercentage: 10,
   },
   proofs: {

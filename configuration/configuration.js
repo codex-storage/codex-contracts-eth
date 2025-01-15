@@ -6,7 +6,6 @@ const DEFAULT_CONFIGURATION = {
   collateral: {
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 2,
-    slashCriterion: 2,
     slashPercentage: 20,
   },
   proofs: {
@@ -14,16 +13,16 @@ const DEFAULT_CONFIGURATION = {
     period: 120, // seconds
     timeout: 30, // seconds
     downtime: 64, // number of blocks
-    downtimeProduct: 67 // number of blocks
+    downtimeProduct: 67, // number of blocks
   },
   reservations: {
-    maxReservations: 3
-  }
+    maxReservations: 3,
+  },
 }
 
 function loadConfiguration(name) {
   const path = `${BASE_PATH}/${name}/configuration.js`
-  if(fs.existsSync(path)) {
+  if (fs.existsSync(path)) {
     return require(path)
   } else {
     return DEFAULT_CONFIGURATION

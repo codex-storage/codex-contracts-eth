@@ -9,7 +9,7 @@ contract FuzzMarketplace is Marketplace {
   constructor()
     Marketplace(
       MarketplaceConfig(
-        CollateralConfig(10, 5, 3, 10),
+        CollateralConfig(10, 5, 10),
         ProofConfig(10, 5, 64, "", 67),
         SlotReservationsConfig(20)
       ),
