@@ -7,6 +7,7 @@ contract Periods {
   uint256 internal immutable _secondsPerPeriod;
 
   constructor(uint256 secondsPerPeriod) {
+    assert(secondsPerPeriod > 0);
     _secondsPerPeriod = secondsPerPeriod;
   }
 
