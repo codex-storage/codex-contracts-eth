@@ -127,6 +127,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     return _token;
   }
 
+  function currentCollateral(SlotId slotId) public view returns (uint256) {
+    return _slots[slotId].currentCollateral;
+  }
+
   function requestStorage(Request calldata request) public {
     RequestId id = request.id();
 
