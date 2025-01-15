@@ -45,7 +45,19 @@ enum SlotState {
   Repair // when slot slot was forcible freed (host was kicked out from hosting the slot because of too many missed proofs) and needs to be repaired
 }
 
+library AskHelpers {
+  function collateral(Ask memory ask) internal pure returns (uint256) {
+    return ask.collateralPerByte * ask.slotSize;
+  }
+
+  function price(Ask memory ask) internal pure returns (uint256) {
+    return ask.pricePerByte * ask.slotSize;
+  }
+}
+
 library Requests {
+  using AskHelpers for Ask;
+
   function id(Request memory request) internal pure returns (RequestId) {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
@@ -76,10 +88,6 @@ library Requests {
   }
 
   function maxPrice(Request memory request) internal pure returns (uint256) {
-    return
-      request.ask.slots *
-      request.ask.duration *
-      request.ask.pricePerByte *
-      request.ask.slotSize;
+    return request.ask.slots * request.ask.duration * request.ask.price();
   }
 }
