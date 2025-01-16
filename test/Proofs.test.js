@@ -304,7 +304,7 @@ describe("Proofs", function () {
       const probability = 0
       await expect(
         proofs.startRequiringProofs(slotId, probability)
-      ).to.be.revertedWith("Invalid probability")
+      ).to.be.revertedWith("Proofs_InvalidProbability")
     })
   })
 })
