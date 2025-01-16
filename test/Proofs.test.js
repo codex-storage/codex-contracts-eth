@@ -299,5 +299,12 @@ describe("Proofs", function () {
       await proofs.setSlotState(slotId, SlotState.Finished)
       expect(await proofs.isProofRequired(slotId)).to.be.false
     })
+
+    it("is rejected when probability is 0", async function () {
+      const probability = 0
+      await expect(
+        proofs.startRequiringProofs(slotId, probability)
+      ).to.be.revertedWith("Proofs_InvalidProbability")
+    })
   })
 })

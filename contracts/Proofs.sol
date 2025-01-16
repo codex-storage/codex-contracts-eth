@@ -19,6 +19,7 @@ abstract contract Proofs is Periods {
   error Proofs_ProofNotMissing();
   error Proofs_ProofNotRequired();
   error Proofs_ProofAlreadyMarkedMissing();
+  error Proofs_InvalidProbability();
 
   ProofConfig private _config;
   IGroth16Verifier private _verifier;
@@ -69,6 +70,9 @@ abstract contract Proofs is Periods {
    *     and saves the required probability.
    */
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
+    if (probability == 0) {
+      revert Proofs_InvalidProbability();
+    }
     _slotStarts[id] = block.timestamp;
     _probabilities[id] = probability;
   }
