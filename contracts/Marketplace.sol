@@ -19,9 +19,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_InvalidExpiry();
   error Marketplace_InvalidMaxSlotLoss();
   error Marketplace_InsufficientSlots();
+  error Marketplace_InsufficientDuration();
+  error Marketplace_InsufficientProofProbability();
+  error Marketplace_InsufficientCollateral();
+  error Marketplace_InsufficientReward();
   error Marketplace_InvalidClientAddress();
   error Marketplace_RequestAlreadyExists();
   error Marketplace_InvalidSlot();
+  error Marketplace_InvalidCid();
   error Marketplace_SlotNotFree();
   error Marketplace_InvalidSlotHost();
   error Marketplace_AlreadyPaid();
@@ -126,11 +131,21 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (request.ask.slots == 0) revert Marketplace_InsufficientSlots();
     if (request.ask.maxSlotLoss > request.ask.slots)
       revert Marketplace_InvalidMaxSlotLoss();
-    require(request.ask.duration > 0, "Insufficient duration");
-    require(request.ask.proofProbability > 0, "Insufficient proofProbability");
-    require(request.ask.collateral > 0, "Insufficient collateral");
-    require(bytes(request.content.cid).length > 0, "Invalid cid");
-    require(request.ask.reward > 0, "Insufficient reward");
+    if (request.ask.duration == 0) {
+      revert Marketplace_InsufficientDuration();
+    }
+    if (request.ask.proofProbability == 0) {
+      revert Marketplace_InsufficientProofProbability();
+    }
+    if (request.ask.collateral == 0) {
+      revert Marketplace_InsufficientCollateral();
+    }
+    if (request.ask.reward == 0) {
+      revert Marketplace_InsufficientReward();
+    }
+    if (bytes(request.content.cid).length == 0) {
+      revert Marketplace_InvalidCid();
+    }
 
     _requests[id] = request;
     _requestContexts[id].endsAt = block.timestamp + request.ask.duration;
