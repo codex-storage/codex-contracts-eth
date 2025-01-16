@@ -34,7 +34,7 @@ const exampleRequest = async () => {
       collateral: 200,
     },
     content: {
-      cid: "zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob",
+      cid: Buffer.from("zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob"),
       merkleRoot: Array.from(randomBytes(32)),
     },
     expiry: hours(1),
