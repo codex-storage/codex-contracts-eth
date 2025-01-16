@@ -2,11 +2,16 @@
 pragma solidity 0.8.23;
 
 contract Periods {
+  error Periods_InvalidSecondsPerPeriod();
+
   type Period is uint256;
 
   uint256 internal immutable _secondsPerPeriod;
 
   constructor(uint256 secondsPerPeriod) {
+    if (secondsPerPeriod == 0) {
+      revert Periods_InvalidSecondsPerPeriod();
+    }
     _secondsPerPeriod = secondsPerPeriod;
   }
 
