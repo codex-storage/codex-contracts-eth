@@ -414,6 +414,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (!_token.transfer(rewardRecipient, payoutAmount)) {
       revert Marketplace_TransferFailed();
     }
+
     if (!_token.transfer(collateralRecipient, collateralAmount)) {
       revert Marketplace_TransferFailed();
     }
