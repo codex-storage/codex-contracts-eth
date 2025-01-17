@@ -29,7 +29,7 @@ const exampleRequest = async () => {
       slotSize: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
       duration: hours(10),
       proofProbability: 4, // require a proof roughly once every 4 periods
-      pricePerByte: 1,
+      pricePerBytePerSecond: 1,
       maxSlotLoss: 2,
       collateralPerByte: 1,
     },

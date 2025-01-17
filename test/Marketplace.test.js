@@ -23,7 +23,10 @@ const {
   waitUntilSlotFailed,
   patchOverloads,
 } = require("./marketplace")
-const { maxPrice, payoutForDuration } = require("./price")
+const { maxPrice,
+  pricePerSlotPerSecond,
+  payoutForDuration
+} = require("./price")
 const {
   snapshot,
   revert,
@@ -696,7 +699,7 @@ describe("Marketplace", function () {
       await marketplace.freeSlot(slotId(slot))
 
       const expectedPartialPayout =
-        (expiresAt - filledAt) * request.ask.pricePerByte * request.ask.slotSize
+        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
       const endBalance = await token.balanceOf(host.address)
       expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
         expectedPartialPayout
@@ -728,7 +731,7 @@ describe("Marketplace", function () {
       )
 
       const expectedPartialPayout =
-        (expiresAt - filledAt) * request.ask.pricePerByte * request.ask.slotSize
+        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
 
       const endBalanceReward = await token.balanceOf(
         hostRewardRecipient.address
@@ -937,7 +940,7 @@ describe("Marketplace", function () {
       // at the time of expiry and hence the user would get the full "expiry window" reward back.
       expect(endBalancePayout - startBalancePayout).to.be.gt(0)
       expect(endBalancePayout - startBalancePayout).to.be.lte(
-        request.expiry * request.ask.pricePerByte * request.ask.slotSize
+        request.expiry * pricePerSlotPerSecond(request)
       )
     })
 
@@ -996,7 +999,7 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(request)
       const expectedPartialhostRewardRecipient =
-        (expiresAt - filledAt) * request.ask.pricePerByte * request.ask.slotSize
+        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
 
       switchAccount(client)
       await marketplace.withdrawFunds(

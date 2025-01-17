@@ -81,7 +81,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     ///         to be payed out at the end of Slot's lifespan.
     /// @dev    When Slot is filled, the collateral is collected in amount
     ///         of request.ask.collateralPerByte * request.ask.slotSize
-    ///         (or request.ask.collateral() when using the AskHelpers library)
+    ///         (== request.ask.collateralPerSlot() when using the AskHelpers library)
     /// @dev    When Host is slashed for missing a proof the slashed amount is
     ///         reflected in this variable
     uint256 currentCollateral;
@@ -216,20 +216,20 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     // Collect collateral
     uint256 collateralAmount;
-    uint256 collateral = request.ask.collateral();
+    uint256 collateralPerSlot = request.ask.collateralPerSlot();
     if (slotState(slotId) == SlotState.Repair) {
       // Host is repairing a slot and is entitled for repair reward, so he gets "discounted collateral"
       // in this way he gets "physically" the reward at the end of the request when the full amount of collateral
       // is returned to him.
       collateralAmount =
-        collateral -
-        ((collateral * _config.collateral.repairRewardPercentage) / 100);
+        collateralPerSlot -
+        ((collateralPerSlot * _config.collateral.repairRewardPercentage) / 100);
     } else {
-      collateralAmount = collateral;
+      collateralAmount = collateralPerSlot;
     }
     _transferFrom(msg.sender, collateralAmount);
     _marketplaceTotals.received += collateralAmount;
-    slot.currentCollateral = collateral; // Even if he has collateral discounted, he is operating with full collateral
+    slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
     _addToMySlots(slot.host, slotId);
 
@@ -337,7 +337,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     // TODO: Reward for validator that calls this function
 
     if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (request.ask.collateral() *
+      uint256 slashedAmount = (request.ask.collateralPerSlot() *
         _config.collateral.slashPercentage) / 100;
       slot.currentCollateral -= slashedAmount;
       if (
@@ -597,7 +597,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[requestId];
     if (startingTimestamp >= endingTimestamp)
       revert Marketplace_StartNotBeforeExpiry();
-    return (endingTimestamp - startingTimestamp) * request.ask.price();
+    return (endingTimestamp - startingTimestamp) *
+      request.ask.pricePerSlotPerSecond();
   }
 
   function getHost(SlotId slotId) public view returns (address) {

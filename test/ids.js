@@ -15,7 +15,7 @@ function askToArray(ask) {
     ask.slotSize,
     ask.duration,
     ask.proofProbability,
-    ask.pricePerByte,
+    ask.pricePerBytePerSecond,
     ask.collateralPerByte,
     ask.maxSlotLoss,
   ]
