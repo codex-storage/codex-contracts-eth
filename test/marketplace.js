@@ -1,6 +1,7 @@
 const { advanceTimeToForNextBlock, currentTime } = require("./evm")
 const { slotId, requestId } = require("./ids")
 const { maxPrice, payoutForDuration } = require("./price")
+const { collateralPerSlot } = require("./collateral")
 
 /**
  * @dev This will not advance the time right on the "expiry threshold" but will most probably "overshoot it"
@@ -15,7 +16,8 @@ async function waitUntilCancelled(request) {
 }
 
 async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
-  await token.approve(contract.address, request.ask.collateral * slots.length)
+  let collateral = collateralPerSlot(request)
+  await token.approve(contract.address, collateral * slots.length)
 
   let requestEnd = (await contract.requestEnd(requestId(request))).toNumber()
   const payouts = []

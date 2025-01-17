@@ -1,9 +1,15 @@
+function pricePerSlotPerSecond(request) {
+  return request.ask.pricePerBytePerSecond * request.ask.slotSize
+}
+
 function maxPrice(request) {
-  return request.ask.slots * request.ask.duration * request.ask.reward
+  return (
+    request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
+  )
 }
 
 function payoutForDuration(request, start, end) {
-  return (end - start) * request.ask.reward
+  return (end - start) * pricePerSlotPerSecond(request)
 }
 
-module.exports = { maxPrice, payoutForDuration }
+module.exports = { maxPrice, pricePerSlotPerSecond, payoutForDuration }
