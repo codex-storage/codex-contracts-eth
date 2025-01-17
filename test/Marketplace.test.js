@@ -644,6 +644,9 @@ describe("Marketplace", function () {
         hostCollateralRecipient.address
       )
 
+      const collateralToBeReturned =
+        await marketplace.currentCollateral(slotId(slot))
+
       await marketplace.freeSlot(
         slotId(slot),
         hostRewardRecipient.address,
@@ -659,6 +662,7 @@ describe("Marketplace", function () {
       expect(endBalanceCollateral - startBalanceCollateral).to.equal(
         collateralPerSlot(request)
       )
+      expect(collateralToBeReturned).to.equal(collateralPerSlot(request))
     })
 
     it("pays reward to host reward address if specified", async function () {
@@ -724,6 +728,10 @@ describe("Marketplace", function () {
       const startBalanceCollateral = await token.balanceOf(
         hostCollateralRecipient.address
       )
+
+      const collateralToBeReturned =
+        await marketplace.currentCollateral(slotId(slot))
+
       await marketplace.freeSlot(
         slotId(slot),
         hostRewardRecipient.address,
@@ -747,6 +755,10 @@ describe("Marketplace", function () {
         hostCollateralRecipient.address
       )
       expect(endBalanceCollateral - startBalanceCollateral).to.be.equal(
+        collateralPerSlot(request)
+      )
+
+      expect(collateralToBeReturned).to.be.equal(
         collateralPerSlot(request)
       )
     })
