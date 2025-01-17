@@ -50,7 +50,9 @@ library AskHelpers {
     return ask.collateralPerByte * ask.slotSize;
   }
 
-  function pricePerSlotPerSecond(Ask memory ask) internal pure returns (uint256) {
+  function pricePerSlotPerSecond(
+    Ask memory ask
+  ) internal pure returns (uint256) {
     return ask.pricePerBytePerSecond * ask.slotSize;
   }
 }
@@ -88,7 +90,9 @@ library Requests {
   }
 
   function maxPrice(Request memory request) internal pure returns (uint256) {
-    return request.ask.slots * request.ask.duration *
+    return
+      request.ask.slots *
+      request.ask.duration *
       request.ask.pricePerSlotPerSecond();
   }
 }

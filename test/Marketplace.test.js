@@ -23,9 +23,10 @@ const {
   waitUntilSlotFailed,
   patchOverloads,
 } = require("./marketplace")
-const { maxPrice,
+const {
+  maxPrice,
   pricePerSlotPerSecond,
-  payoutForDuration
+  payoutForDuration,
 } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 const {
@@ -288,10 +289,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(
-        marketplace.address,
-        collateralPerSlot(request)
-      )
+      await token.approve(marketplace.address, collateralPerSlot(request))
     })
 
     it("emits event when slot is filled", async function () {
@@ -450,17 +448,12 @@ describe("Marketplace", function () {
     })
 
     it("collects only requested collateral and not more", async function () {
-      await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * 2
-      )
+      await token.approve(marketplace.address, collateralPerSlot(request) * 2)
       const startBalance = await token.balanceOf(host.address)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const endBalance = await token.balanceOf(host.address)
-      expect(startBalance - endBalance).to.eq(
-        collateralPerSlot(request)
-      )
+      expect(startBalance - endBalance).to.eq(collateralPerSlot(request))
     })
   })
 
@@ -644,8 +637,9 @@ describe("Marketplace", function () {
         hostCollateralRecipient.address
       )
 
-      const collateralToBeReturned =
-        await marketplace.currentCollateral(slotId(slot))
+      const collateralToBeReturned = await marketplace.currentCollateral(
+        slotId(slot)
+      )
 
       await marketplace.freeSlot(
         slotId(slot),
@@ -729,8 +723,9 @@ describe("Marketplace", function () {
         hostCollateralRecipient.address
       )
 
-      const collateralToBeReturned =
-        await marketplace.currentCollateral(slotId(slot))
+      const collateralToBeReturned = await marketplace.currentCollateral(
+        slotId(slot)
+      )
 
       await marketplace.freeSlot(
         slotId(slot),
@@ -758,9 +753,7 @@ describe("Marketplace", function () {
         collateralPerSlot(request)
       )
 
-      expect(collateralToBeReturned).to.be.equal(
-        collateralPerSlot(request)
-      )
+      expect(collateralToBeReturned).to.be.equal(collateralPerSlot(request))
     })
 
     it("does not pay when the contract hasn't ended", async function () {

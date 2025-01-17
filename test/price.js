@@ -4,9 +4,7 @@ function pricePerSlotPerSecond(request) {
 
 function maxPrice(request) {
   return (
-    request.ask.slots *
-    request.ask.duration *
-    pricePerSlotPerSecond(request)
+    request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
   )
 }
 
