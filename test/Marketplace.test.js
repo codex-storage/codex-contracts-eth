@@ -27,6 +27,7 @@ const { maxPrice,
   pricePerSlotPerSecond,
   payoutForDuration
 } = require("./price")
+const { collateralPerSlot } = require("./collateral")
 const {
   snapshot,
   revert,
@@ -251,7 +252,7 @@ describe("Marketplace", function () {
       switchAccount(host)
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize
+        collateralPerSlot(request)
       )
     })
 
@@ -283,7 +284,7 @@ describe("Marketplace", function () {
       await advanceTimeForNextBlock(config.proofs.period + 1)
 
       const startBalance = await token.balanceOf(host.address)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       const discountedCollateral =
         collateral -
         Math.round(
@@ -374,7 +375,7 @@ describe("Marketplace", function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize * lastSlot
+        collateralPerSlot(request) * lastSlot
       )
       await token.approve(marketplace.address, maxPrice(request) * lastSlot)
       for (let i = 0; i <= lastSlot; i++) {
@@ -402,8 +403,7 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when approved collateral is insufficient", async function () {
-      let insufficient =
-        request.ask.collateralPerByte * request.ask.slotSize - 1
+      let insufficient = collateralPerSlot(request) - 1
       await token.approve(marketplace.address, insufficient)
       await marketplace.reserveSlot(slot.request, slot.index)
       await expect(
@@ -414,14 +414,14 @@ describe("Marketplace", function () {
     it("collects only requested collateral and not more", async function () {
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize * 2
+        collateralPerSlot(request) * 2
       )
       const startBalance = await token.balanceOf(host.address)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const endBalance = await token.balanceOf(host.address)
       expect(startBalance - endBalance).to.eq(
-        request.ask.collateralPerByte * request.ask.slotSize
+        collateralPerSlot(request)
       )
     })
   })
@@ -432,7 +432,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -471,7 +471,7 @@ describe("Marketplace", function () {
       await marketplace.requestStorage(request)
       requestTime = await currentTime()
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -529,7 +529,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -568,7 +568,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -591,7 +591,7 @@ describe("Marketplace", function () {
       const endBalanceHost = await token.balanceOf(host.address)
 
       expect(expectedPayouts[slot.index]).to.be.lt(maxPrice(request))
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       expect(endBalanceHost - startBalanceHost).to.equal(
         expectedPayouts[slot.index] + collateral
       )
@@ -619,7 +619,7 @@ describe("Marketplace", function () {
       const endBalanceHost = await token.balanceOf(host.address)
       expect(endBalanceHost).to.equal(startBalanceHost)
       expect(endBalanceCollateral - startBalanceCollateral).to.equal(
-        request.ask.collateralPerByte * request.ask.slotSize
+        collateralPerSlot(request)
       )
     })
 
@@ -709,7 +709,7 @@ describe("Marketplace", function () {
         hostCollateralRecipient.address
       )
       expect(endBalanceCollateral - startBalanceCollateral).to.be.equal(
-        request.ask.collateralPerByte * request.ask.slotSize
+        collateralPerSlot(request)
       )
     })
 
@@ -760,7 +760,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -768,14 +768,14 @@ describe("Marketplace", function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize * lastSlot
+        collateralPerSlot(request) * lastSlot
       )
       for (let i = 0; i < lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
         await marketplace.fillSlot(slot.request, i, proof)
       }
 
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       await marketplace.reserveSlot(slot.request, lastSlot)
       await expect(marketplace.fillSlot(slot.request, lastSlot, proof))
@@ -784,7 +784,7 @@ describe("Marketplace", function () {
     })
     it("sets state when all slots are filled", async function () {
       const slots = request.ask.slots
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral * slots)
       for (let i = 0; i < slots; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -798,7 +798,7 @@ describe("Marketplace", function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize * (lastSlot + 1)
+        collateralPerSlot(request) * (lastSlot + 1)
       )
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -816,7 +816,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -839,7 +839,7 @@ describe("Marketplace", function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte * request.ask.slotSize * (lastSlot + 1)
+        collateralPerSlot(request) * (lastSlot + 1)
       )
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -1005,7 +1005,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -1044,9 +1044,7 @@ describe("Marketplace", function () {
     it("does not change to 'Failed' before it is started", async function () {
       await token.approve(
         marketplace.address,
-        request.ask.collateralPerByte *
-          request.ask.slotSize *
-          (request.ask.maxSlotLoss + 1)
+        collateralPerSlot(request) * (request.ask.maxSlotLoss + 1)
       )
       for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -1088,7 +1086,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -1176,7 +1174,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -1268,7 +1266,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -1308,7 +1306,7 @@ describe("Marketplace", function () {
           await advanceTimeForNextBlock(period + 1)
           await marketplace.markProofAsMissing(id, missedPeriod)
         }
-        const collateral = request.ask.collateralPerByte * request.ask.slotSize
+        const collateral = collateralPerSlot(request)
         const expectedBalance = Math.round(
           (collateral * (100 - slashPercentage)) / 100
         )
@@ -1322,7 +1320,7 @@ describe("Marketplace", function () {
     })
 
     it("frees slot when collateral slashed below minimum threshold", async function () {
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       const minimum =
         collateral -
         (collateral *
@@ -1348,7 +1346,7 @@ describe("Marketplace", function () {
     })
 
     it("free slot when minimum reached and resets missed proof counter", async function () {
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       const minimum =
         collateral -
         (collateral *
@@ -1383,7 +1381,7 @@ describe("Marketplace", function () {
   describe("list of active requests", function () {
     beforeEach(async function () {
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       switchAccount(client)
       await token.approve(marketplace.address, maxPrice(request))
@@ -1438,7 +1436,7 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -1446,7 +1444,7 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
@@ -1460,7 +1458,7 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
@@ -1474,7 +1472,7 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
 
-      const collateral = request.ask.collateralPerByte * request.ask.slotSize
+      const collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
