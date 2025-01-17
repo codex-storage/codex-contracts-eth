@@ -1136,6 +1136,28 @@ describe("Marketplace", function () {
     })
   })
 
+  describe("slot probability", function () {
+    beforeEach(async function () {
+      switchAccount(client)
+      await token.approve(marketplace.address, maxPrice(request))
+      await marketplace.requestStorage(request)
+      switchAccount(host)
+      await token.approve(marketplace.address, request.ask.collateral)
+    })
+
+    it("calculates correctly the slot probability", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+
+      // request.ask.proofProbability  = 4
+      // config.proofs.downtime = 64
+      // 4 * (256 - 64) / 256
+      const expectedProbability = 3
+      expect(await marketplace.slotProbability(slotId(slot))).to.equal(
+        expectedProbability
+      )
+    })
+  })
+
   describe("proof requirements", function () {
     let period, periodOf, periodEnd
 
