@@ -262,14 +262,14 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when insufficient collateral", async function () {
-      request.ask.collateral = 0
+      request.ask.collateralPerByte = 0
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Marketplace_InsufficientCollateral"
       )
     })
 
     it("is rejected when insufficient reward", async function () {
-      request.ask.reward = 0
+      request.ask.pricePerBytePerSecond = 0
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Marketplace_InsufficientReward"
       )

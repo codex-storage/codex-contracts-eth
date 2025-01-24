@@ -148,10 +148,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (request.ask.proofProbability == 0) {
       revert Marketplace_InsufficientProofProbability();
     }
-    if (request.ask.collateral == 0) {
+    if (request.ask.collateralPerByte == 0) {
       revert Marketplace_InsufficientCollateral();
     }
-    if (request.ask.reward == 0) {
+    if (request.ask.pricePerBytePerSecond == 0) {
       revert Marketplace_InsufficientReward();
     }
     if (bytes(request.content.cid).length == 0) {
