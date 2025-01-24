@@ -371,8 +371,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(rewardRecipient, payoutAmount));
-    assert(_token.transfer(collateralRecipient, collateralAmount));
+    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+      revert Marketplace_TransferFailed();
+    }
+
+    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+      revert Marketplace_TransferFailed();
+    }
   }
 
   /**
@@ -401,8 +406,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    assert(_token.transfer(rewardRecipient, payoutAmount));
-    assert(_token.transfer(collateralRecipient, collateralAmount));
+    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+      revert Marketplace_TransferFailed();
+    }
+
+    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+      revert Marketplace_TransferFailed();
+    }
   }
 
   /**
@@ -468,7 +478,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
-    assert(_token.transfer(withdrawRecipient, amount));
+
+    if (!_token.transfer(withdrawRecipient, amount)) {
+      revert Marketplace_TransferFailed();
+    }
 
     // We zero out the funds tracking in order to prevent double-spends
     context.fundsToReturnToClient = 0;
