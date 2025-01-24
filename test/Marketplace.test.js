@@ -1146,7 +1146,8 @@ describe("Marketplace", function () {
     })
 
     it("calculates correctly the slot probability", async function () {
-      await waitUntilStarted(marketplace, request, proof, token)
+      await marketplace.reserveSlot(slot.request, slot.index)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
 
       // request.ask.proofProbability  = 4
       // config.proofs.downtime = 64
