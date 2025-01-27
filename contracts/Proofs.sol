@@ -11,6 +11,16 @@ import "./Groth16.sol";
  * @notice Abstract contract that handles proofs tracking, validation and reporting functionality
  */
 abstract contract Proofs is Periods {
+  error Proofs_InsufficientBlockHeight();
+  error Proofs_InvalidProof();
+  error Proofs_ProofAlreadySubmitted();
+  error Proofs_PeriodNotEnded();
+  error Proofs_ValidationTimedOut();
+  error Proofs_ProofNotMissing();
+  error Proofs_ProofNotRequired();
+  error Proofs_ProofAlreadyMarkedMissing();
+  error Proofs_InvalidProbability();
+
   ProofConfig private _config;
   IGroth16Verifier private _verifier;
 
@@ -22,7 +32,10 @@ abstract contract Proofs is Periods {
     ProofConfig memory config,
     IGroth16Verifier verifier
   ) Periods(config.period) {
-    require(block.number > 256, "Insufficient block height");
+    if (block.number <= 256) {
+      revert Proofs_InsufficientBlockHeight();
+    }
+
     _config = config;
     _verifier = verifier;
   }
@@ -57,6 +70,9 @@ abstract contract Proofs is Periods {
    *     and saves the required probability.
    */
   function _startRequiringProofs(SlotId id, uint256 probability) internal {
+    if (probability == 0) {
+      revert Proofs_InvalidProbability();
+    }
     _slotStarts[id] = block.timestamp;
     _probabilities[id] = probability;
   }
@@ -189,8 +205,9 @@ abstract contract Proofs is Periods {
     Groth16Proof calldata proof,
     uint[] memory pubSignals
   ) internal {
-    require(!_received[id][_blockPeriod()], "Proof already submitted");
-    require(_verifier.verify(proof, pubSignals), "Invalid proof");
+    if (_received[id][_blockPeriod()]) revert Proofs_ProofAlreadySubmitted();
+    if (!_verifier.verify(proof, pubSignals)) revert Proofs_InvalidProof();
+
     _received[id][_blockPeriod()] = true;
     emit ProofSubmitted(id);
   }
@@ -209,11 +226,13 @@ abstract contract Proofs is Periods {
    */
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
     uint256 end = _periodEnd(missedPeriod);
-    require(end < block.timestamp, "Period has not ended yet");
-    require(block.timestamp < end + _config.timeout, "Validation timed out");
-    require(!_received[id][missedPeriod], "Proof was submitted, not missing");
-    require(_isProofRequired(id, missedPeriod), "Proof was not required");
-    require(!_missing[id][missedPeriod], "Proof already marked as missing");
+    if (end >= block.timestamp) revert Proofs_PeriodNotEnded();
+    if (block.timestamp >= end + _config.timeout)
+      revert Proofs_ValidationTimedOut();
+    if (_received[id][missedPeriod]) revert Proofs_ProofNotMissing();
+    if (!_isProofRequired(id, missedPeriod)) revert Proofs_ProofNotRequired();
+    if (_missing[id][missedPeriod]) revert Proofs_ProofAlreadyMarkedMissing();
+
     _missing[id][missedPeriod] = true;
     _missed[id] += 1;
   }
