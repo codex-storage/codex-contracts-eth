@@ -334,10 +334,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
-    // TODO: Reward for validator that calls this function
-
     uint256 slashedAmount = (request.ask.collateralPerSlot() *
       _config.collateral.slashPercentage) / 100;
+
+    uint256 validatorRewardAmount = (slashedAmount *
+      _config.collateral.validatorRewardPercentage) / 100;
+    _marketplaceTotals.sent += validatorRewardAmount;
+    assert(_token.transfer(msg.sender, validatorRewardAmount));
+
     slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
       // When the number of slashings is at or above the allowed amount,

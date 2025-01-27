@@ -7,6 +7,7 @@ const exampleConfiguration = () => ({
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 5,
     slashPercentage: 10,
+    validatorRewardPercentage: 20,
   },
   proofs: {
     period: 10,

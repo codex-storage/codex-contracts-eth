@@ -106,7 +106,8 @@ describe("Marketplace", function () {
     host2,
     host3,
     hostRewardRecipient,
-    hostCollateralRecipient
+    hostCollateralRecipient,
+    validatorRecipient
   let request
   let slot
 
@@ -123,6 +124,7 @@ describe("Marketplace", function () {
       host3,
       hostRewardRecipient,
       hostCollateralRecipient,
+      validatorRecipient,
     ] = await ethers.getSigners()
     host = host1
 
@@ -136,6 +138,7 @@ describe("Marketplace", function () {
       host3,
       hostRewardRecipient,
       hostCollateralRecipient,
+      validatorRecipient,
     ]) {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
@@ -1382,6 +1385,36 @@ describe("Marketplace", function () {
           BigNumber.from(expectedBalance).eq(
             await marketplace.getSlotCollateral(id)
           )
+        )
+      })
+
+      it("rewards validator when marking proof as missing", async function () {
+        const id = slotId(slot)
+        const { slashCriterion, slashPercentage, validatorRewardPercentage } =
+          config.collateral
+        await marketplace.reserveSlot(slot.request, slot.index)
+        await marketplace.fillSlot(slot.request, slot.index, proof)
+
+        switchAccount(validatorRecipient)
+
+        const startBalance = await token.balanceOf(validatorRecipient.address)
+
+        await waitUntilProofIsRequired(id)
+        let missedPeriod = periodOf(await currentTime())
+        await advanceTimeForNextBlock(period + 1)
+        await marketplace.markProofAsMissing(id, missedPeriod)
+
+        const endBalance = await token.balanceOf(validatorRecipient.address)
+
+        const collateral = collateralPerSlot(request)
+        const slashedAmount = (collateral * slashPercentage) / 100
+
+        const expectedReward = Math.round(
+          (slashedAmount * validatorRewardPercentage) / 100
+        )
+
+        expect(endBalance.toNumber()).to.equal(
+          startBalance.toNumber() + expectedReward
         )
       })
     })

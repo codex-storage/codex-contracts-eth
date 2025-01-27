@@ -14,6 +14,7 @@ struct CollateralConfig {
   uint8 repairRewardPercentage;
   uint8 maxNumberOfSlashes; // frees slot when the number of slashing reaches this value
   uint8 slashPercentage; // percentage of the collateral that is slashed
+  uint8 validatorRewardPercentage; // percentage of the slashed amount going to the validators
 }
 
 struct ProofConfig {

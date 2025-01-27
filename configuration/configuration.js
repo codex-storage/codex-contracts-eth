@@ -7,6 +7,7 @@ const DEFAULT_CONFIGURATION = {
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 2,
     slashPercentage: 20,
+    validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
   },
   proofs: {
     // period has to be less than downtime * blocktime
