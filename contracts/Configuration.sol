@@ -13,7 +13,6 @@ struct CollateralConfig {
   /// @dev percentage of collateral that is used as repair reward
   uint8 repairRewardPercentage;
   uint8 maxNumberOfSlashes; // frees slot when the number of slashing reaches this value
-  uint16 slashCriterion; // amount of proofs missed that lead to slashing
   uint8 slashPercentage; // percentage of the collateral that is slashed
 }
 
