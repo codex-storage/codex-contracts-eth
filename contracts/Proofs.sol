@@ -19,7 +19,6 @@ abstract contract Proofs is Periods {
   error Proofs_ProofNotMissing();
   error Proofs_ProofNotRequired();
   error Proofs_ProofAlreadyMarkedMissing();
-  error Proofs_InvalidProbability();
 
   ProofConfig private _config;
   IGroth16Verifier private _verifier;
