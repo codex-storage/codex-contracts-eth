@@ -205,7 +205,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       revert Marketplace_SlotNotFree();
     }
 
-    _startRequiringProofs(slotId, request.ask.proofProbability);
+    _startRequiringProofs(slotId);
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
@@ -644,6 +644,15 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       return SlotState.Failed;
     }
     return slot.state;
+  }
+
+  function slotProbability(
+    SlotId slotId
+  ) public view override returns (uint256) {
+    Slot storage slot = _slots[slotId];
+    Request storage request = _requests[slot.requestId];
+    return
+      (request.ask.proofProbability * (256 - _config.proofs.downtime)) / 256;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {
