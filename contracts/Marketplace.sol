@@ -205,7 +205,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       revert Marketplace_SlotNotFree();
     }
 
-    _startRequiringProofs(slotId, request.ask.proofProbability);
+    _startRequiringProofs(slotId);
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
@@ -333,24 +333,20 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _markProofAsMissing(slotId, period);
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
-    if (missingProofs(slotId) % _config.collateral.slashCriterion == 0) {
-      uint256 slashedAmount = (request.ask.collateralPerSlot() *
-        _config.collateral.slashPercentage) / 100;
 
-      uint256 validatorRewardAmount = (slashedAmount *
-        _config.collateral.validatorRewardPercentage) / 100;
-      _marketplaceTotals.sent += validatorRewardAmount;
-      assert(_token.transfer(msg.sender, validatorRewardAmount));
+    uint256 slashedAmount = (request.ask.collateralPerSlot() *
+      _config.collateral.slashPercentage) / 100;
 
-      slot.currentCollateral -= slashedAmount;
-      if (
-        missingProofs(slotId) / _config.collateral.slashCriterion >=
-        _config.collateral.maxNumberOfSlashes
-      ) {
-        // When the number of slashings is at or above the allowed amount,
-        // free the slot.
-        _forciblyFreeSlot(slotId);
-      }
+    uint256 validatorRewardAmount = (slashedAmount *
+      _config.collateral.validatorRewardPercentage) / 100;
+    _marketplaceTotals.sent += validatorRewardAmount;
+    assert(_token.transfer(msg.sender, validatorRewardAmount));
+
+    slot.currentCollateral -= slashedAmount;
+    if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
+      // When the number of slashings is at or above the allowed amount,
+      // free the slot.
+      _forciblyFreeSlot(slotId);
     }
   }
 
@@ -647,6 +643,15 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       return SlotState.Failed;
     }
     return slot.state;
+  }
+
+  function slotProbability(
+    SlotId slotId
+  ) public view override returns (uint256) {
+    Slot storage slot = _slots[slotId];
+    Request storage request = _requests[slot.requestId];
+    return
+      (request.ask.proofProbability * (256 - _config.proofs.downtime)) / 256;
   }
 
   function _transferFrom(address sender, uint256 amount) internal {

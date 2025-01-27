@@ -6,7 +6,6 @@ const DEFAULT_CONFIGURATION = {
   collateral: {
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 2,
-    slashCriterion: 2,
     slashPercentage: 20,
     validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
   },
