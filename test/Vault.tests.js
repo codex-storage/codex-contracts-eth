@@ -418,7 +418,6 @@ describe("Vault", function () {
       return await vault.getBalance(context, recipient)
     }
 
-
     it("requires that a lock is set", async function () {
       await expect(vault.flow(context, sender, receiver, 2)).to.be.revertedWith(
         "LockRequired"
@@ -469,6 +468,28 @@ describe("Vault", function () {
         expect(await getBalance(sender)).to.equal(deposit - 12)
         expect(await getBalance(receiver)).to.equal(4)
         expect(await getBalance(receiver2)).to.equal(8)
+      })
+
+      it("can change flows over time", async function () {
+        await setAutomine(false)
+        await vault.flow(context, sender, receiver, 1)
+        await vault.flow(context, sender, receiver2, 2)
+        await mine()
+        const start = await currentTime()
+        advanceTimeTo(start + 4)
+        await vault.flow(context, receiver2, receiver, 1)
+        await mine()
+        expect(await getBalance(sender)).to.equal(deposit - 12)
+        expect(await getBalance(receiver)).to.equal(4)
+        expect(await getBalance(receiver2)).to.equal(8)
+        await advanceTimeTo(start + 8)
+        expect(await getBalance(sender)).to.equal(deposit - 24)
+        expect(await getBalance(receiver)).to.equal(12)
+        expect(await getBalance(receiver2)).to.equal(12)
+        await advanceTimeTo(start + 12)
+        expect(await getBalance(sender)).to.equal(deposit - 36)
+        expect(await getBalance(receiver)).to.equal(20)
+        expect(await getBalance(receiver2)).to.equal(16)
       })
 
       it("designates tokens that flow for the recipient", async function () {
