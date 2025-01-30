@@ -1,6 +1,6 @@
-const { advanceTimeToForNextBlock, currentTime } = require("./evm")
+const { advanceTimeTo, currentTime, mine } = require("./evm")
 const { slotId, requestId } = require("./ids")
-const { maxPrice, payoutForDuration } = require("./price")
+const { payoutForDuration } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 
 /**
@@ -12,7 +12,7 @@ const { collateralPerSlot } = require("./collateral")
  */
 async function waitUntilCancelled(request) {
   // We do +1, because the expiry check in contract is done as `>` and not `>=`.
-  await advanceTimeToForNextBlock((await currentTime()) + request.expiry + 1)
+  await advanceTimeTo((await currentTime()) + request.expiry + 1)
 }
 
 async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
@@ -48,7 +48,7 @@ async function waitUntilStarted(contract, request, proof, token) {
 async function waitUntilFinished(contract, requestId) {
   const end = (await contract.requestEnd(requestId)).toNumber()
   // We do +1, because the end check in contract is done as `>` and not `>=`.
-  await advanceTimeToForNextBlock(end + 1)
+  await advanceTimeTo(end + 1)
 }
 
 async function waitUntilFailed(contract, request) {
