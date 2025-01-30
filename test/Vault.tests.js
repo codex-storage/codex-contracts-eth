@@ -6,6 +6,7 @@ const {
   advanceTimeTo,
   mine,
   setAutomine,
+  setNextBlockTimestamp,
   snapshot,
   revert,
 } = require("./evm")
@@ -438,13 +439,17 @@ describe("Vault", function () {
       let maximum
 
       beforeEach(async function () {
-        expiry = (await currentTime()) + 80
-        maximum = expiry + 20
+        const beginning = (await currentTime()) + 10
+        expiry = beginning + 80
+        maximum = beginning + 100
+        await setAutomine(false)
+        await setNextBlockTimestamp(beginning)
         await vault.lock(context, expiry, maximum)
       })
 
       it("moves tokens over time", async function () {
         await vault.flow(context, sender, receiver, 2)
+        mine()
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(sender)).to.equal(deposit - 4)
@@ -455,7 +460,6 @@ describe("Vault", function () {
       })
 
       it("can move tokens to several different recipients", async function () {
-        await setAutomine(false)
         await vault.flow(context, sender, receiver, 1)
         await vault.flow(context, sender, receiver2, 2)
         await mine()
@@ -471,7 +475,6 @@ describe("Vault", function () {
       })
 
       it("allows flows to be diverted to other recipient", async function () {
-        await setAutomine(false)
         await vault.flow(context, sender, receiver, 3)
         await vault.flow(context, receiver, receiver2, 1)
         await mine()
@@ -487,7 +490,6 @@ describe("Vault", function () {
       })
 
       it("allows flow to be reversed back to the sender", async function () {
-        await setAutomine(false)
         await vault.flow(context, sender, receiver, 3)
         await vault.flow(context, receiver, sender, 3)
         await mine()
@@ -501,12 +503,11 @@ describe("Vault", function () {
       })
 
       it("can change flows over time", async function () {
-        await setAutomine(false)
         await vault.flow(context, sender, receiver, 1)
         await vault.flow(context, sender, receiver2, 2)
         await mine()
         const start = await currentTime()
-        advanceTimeTo(start + 4)
+        setNextBlockTimestamp(start + 4)
         await vault.flow(context, receiver2, receiver, 1)
         await mine()
         expect(await getBalance(sender)).to.equal(deposit - 12)
@@ -524,6 +525,7 @@ describe("Vault", function () {
 
       it("designates tokens that flow for the recipient", async function () {
         await vault.flow(context, sender, receiver, 3)
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 7)
         expect(await vault.getDesignatedBalance(context, receiver)).to.equal(21)
@@ -531,6 +533,7 @@ describe("Vault", function () {
 
       it("stops flowing when lock expires", async function () {
         await vault.flow(context, sender, receiver, 2)
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(expiry)
         const total = (expiry - start) * 2
@@ -543,8 +546,10 @@ describe("Vault", function () {
 
       it("flows longer when lock is extended", async function () {
         await vault.flow(context, sender, receiver, 2)
+        await mine()
         const start = await currentTime()
         await vault.extendLock(context, maximum)
+        await mine()
         await advanceTimeTo(maximum)
         const total = (maximum - start) * 2
         expect(await getBalance(sender)).to.equal(deposit - total)
@@ -555,12 +560,14 @@ describe("Vault", function () {
       })
 
       it("rejects negative flows", async function () {
+        setAutomine(true)
         await expect(
           vault.flow(context, sender, receiver, -1)
         ).to.be.revertedWith("NegativeFlow")
       })
 
       it("rejects flow when insufficient available tokens", async function () {
+        setAutomine(true)
         await expect(
           vault.flow(context, sender, receiver, 11)
         ).to.be.revertedWith("InsufficientBalance")
@@ -568,6 +575,7 @@ describe("Vault", function () {
 
       it("rejects total flows exceeding available tokens", async function () {
         await vault.flow(context, sender, receiver, 10)
+        setAutomine(true)
         await expect(
           vault.flow(context, sender, receiver, 1)
         ).to.be.revertedWith("InsufficientBalance")
@@ -575,9 +583,8 @@ describe("Vault", function () {
 
       it("cannot flow designated tokens", async function () {
         await vault.designate(context, sender, 500)
-        await expect(
-          vault.flow(context, sender, receiver, 5)
-        ).not.to.be.reverted
+        await vault.flow(context, sender, receiver, 5)
+        setAutomine(true)
         await expect(
           vault.flow(context, sender, receiver, 1)
         ).to.be.revertedWith("InsufficientBalance")
@@ -585,9 +592,8 @@ describe("Vault", function () {
 
       it("cannot transfer tokens that are flowing", async function () {
         await vault.flow(context, sender, receiver, 5)
-        await expect(
-          vault.transfer(context, sender, receiver, 500)
-        ).not.to.be.reverted
+        setAutomine(true)
+        await vault.transfer(context, sender, receiver, 500)
         await expect(
           vault.transfer(context, sender, receiver, 1)
         ).to.be.revertedWith("InsufficientBalance")
@@ -595,15 +601,17 @@ describe("Vault", function () {
 
       it("cannot burn tokens that are flowing", async function () {
         await vault.flow(context, sender, receiver, 5)
-        await expect(
-          vault.burn(context, sender)
-        ).to.be.revertedWith("CannotBurnFlowingTokens")
-        await expect(
-          vault.burn(context, receiver)
-        ).to.be.revertedWith("CannotBurnFlowingTokens")
+        setAutomine(true)
+        await expect(vault.burn(context, sender)).to.be.revertedWith(
+          "CannotBurnFlowingTokens"
+        )
+        await expect(vault.burn(context, receiver)).to.be.revertedWith(
+          "CannotBurnFlowingTokens"
+        )
       })
 
       it("can burn tokens that are no longer flowing", async function () {
+        setAutomine(true)
         await vault.flow(context, sender, receiver, 5)
         await vault.flow(context, receiver, sender, 5)
         await expect(vault.burn(context, sender)).not.to.be.reverted
