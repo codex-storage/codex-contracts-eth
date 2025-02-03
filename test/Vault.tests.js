@@ -391,10 +391,26 @@ describe("Vault", function () {
       expect(await vault.getBalance(context, account.address)).to.equal(0)
     })
 
-    it("deletes lock when funds are withdrawn", async function () {
+    it("deletes lock when all tokens are withdrawn/burned", async function () {
       await vault.lock(context, expiry, expiry)
+      await vault.transfer(context, account.address, account2.address, 20)
+      await vault.transfer(context, account2.address, account3.address, 10)
+
+      // part of the tokens are burned
+      await vault.burn(context, account2.address)
       await advanceTimeTo(expiry)
+      expect((await vault.getLock(context))[0]).not.to.equal(0)
+      expect((await vault.getLock(context))[1]).not.to.equal(0)
+
+      // part of the tokens are withdrawn
       await vault.withdraw(context, account.address)
+      expect((await vault.getLock(context))[0]).not.to.equal(0)
+      expect((await vault.getLock(context))[1]).not.to.equal(0)
+
+      // remainder of the tokens are withdrawn by recipient
+      await vault
+        .connect(account3)
+        .withdrawByRecipient(controller.address, context)
       expect((await vault.getLock(context))[0]).to.equal(0)
       expect((await vault.getLock(context))[1]).to.equal(0)
     })
