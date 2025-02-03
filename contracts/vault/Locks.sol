@@ -6,6 +6,7 @@ import "./Timestamps.sol";
 struct Lock {
   Timestamp expiry;
   Timestamp maximum;
+  uint128 value;
 }
 
 library Locks {
