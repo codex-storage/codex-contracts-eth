@@ -73,132 +73,7 @@ abstract contract VaultBase {
     return _locks[controller][context];
   }
 
-  function _deposit(
-    Controller controller,
-    Context context,
-    address from,
-    uint128 amount
-  ) internal {
-    Lock memory lock = _locks[controller][context];
-    require(lock.isLocked(), LockRequired());
-
-    Recipient recipient = Recipient.wrap(from);
-    Balance memory balance = _balances[controller][context][recipient];
-
-    balance.available += amount;
-    lock.value += amount;
-
-    _balances[controller][context][recipient] = balance;
-    _locks[controller][context] = lock;
-
-    _token.safeTransferFrom(from, address(this), amount);
-  }
-
-  function _delete(
-    Controller controller,
-    Context context,
-    Recipient recipient
-  ) private {
-    delete _balances[controller][context][recipient];
-    delete _flows[controller][context][recipient];
-  }
-
-  function _withdraw(
-    Controller controller,
-    Context context,
-    Recipient recipient
-  ) internal {
-    Lock memory lock = _locks[controller][context];
-    require(!lock.isLocked(), Locked());
-
-    Balance memory balance = _getBalance(controller, context, recipient);
-    uint128 amount = balance.available + balance.designated;
-
-    lock.value -= amount;
-
-    if (lock.value == 0) {
-      delete _locks[controller][context];
-    } else {
-      _locks[controller][context] = lock;
-    }
-
-    _delete(controller, context, recipient);
-    _token.safeTransfer(Recipient.unwrap(recipient), amount);
-  }
-
-  function _burn(
-    Controller controller,
-    Context context,
-    Recipient recipient
-  ) internal {
-    Lock memory lock = _locks[controller][context];
-    require(lock.isLocked(), LockRequired());
-
-    Flow memory flow = _flows[controller][context][recipient];
-    require(flow.rate == TokensPerSecond.wrap(0), CannotBurnFlowingTokens());
-
-    Balance memory balance = _getBalance(controller, context, recipient);
-    uint128 amount = balance.available + balance.designated;
-
-    lock.value -= amount;
-
-    if (lock.value == 0) {
-      delete _locks[controller][context];
-    } else {
-      _locks[controller][context] = lock;
-    }
-
-    _delete(controller, context, recipient);
-
-    _token.safeTransfer(address(0xdead), amount);
-  }
-
-  function _transfer(
-    Controller controller,
-    Context context,
-    Recipient from,
-    Recipient to,
-    uint128 amount
-  ) internal {
-    Lock memory lock = _locks[controller][context];
-    require(lock.isLocked(), LockRequired());
-
-    Balance memory senderBalance = _getBalance(controller, context, from);
-    Balance memory receiverBalance = _getBalance(controller, context, to);
-    require(amount <= senderBalance.available, InsufficientBalance());
-
-    senderBalance.available -= amount;
-    receiverBalance.available += amount;
-
-    Flow memory senderFlow = _flows[controller][context][from];
-    _checkFlowInvariant(senderBalance, lock, senderFlow);
-
-    _balances[controller][context][from] = senderBalance;
-    _balances[controller][context][to] = receiverBalance;
-  }
-
-  function _designate(
-    Controller controller,
-    Context context,
-    Recipient recipient,
-    uint128 amount
-  ) internal {
-    Lock memory lock = _locks[controller][context];
-    require(lock.isLocked(), LockRequired());
-
-    Balance memory balance = _balances[controller][context][recipient];
-    require(amount <= balance.available, InsufficientBalance());
-
-    balance.available -= amount;
-    balance.designated += amount;
-
-    Flow memory flow = _flows[controller][context][recipient];
-    _checkFlowInvariant(balance, lock, flow);
-
-    _balances[controller][context][recipient] = balance;
-  }
-
-  function _lockup(
+  function _lock(
     Controller controller,
     Context context,
     Timestamp expiry,
@@ -223,6 +98,72 @@ abstract contract VaultBase {
     lock.expiry = expiry;
     _checkLockInvariant(lock);
     _locks[controller][context] = lock;
+  }
+
+  function _deposit(
+    Controller controller,
+    Context context,
+    address from,
+    uint128 amount
+  ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
+    Recipient recipient = Recipient.wrap(from);
+    Balance memory balance = _balances[controller][context][recipient];
+
+    balance.available += amount;
+    lock.value += amount;
+
+    _balances[controller][context][recipient] = balance;
+    _locks[controller][context] = lock;
+
+    _token.safeTransferFrom(from, address(this), amount);
+  }
+
+  function _designate(
+    Controller controller,
+    Context context,
+    Recipient recipient,
+    uint128 amount
+  ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
+    Balance memory balance = _balances[controller][context][recipient];
+    require(amount <= balance.available, InsufficientBalance());
+
+    balance.available -= amount;
+    balance.designated += amount;
+
+    Flow memory flow = _flows[controller][context][recipient];
+    _checkFlowInvariant(balance, lock, flow);
+
+    _balances[controller][context][recipient] = balance;
+  }
+
+  function _transfer(
+    Controller controller,
+    Context context,
+    Recipient from,
+    Recipient to,
+    uint128 amount
+  ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
+    Balance memory senderBalance = _getBalance(controller, context, from);
+    Balance memory receiverBalance = _getBalance(controller, context, to);
+    require(amount <= senderBalance.available, InsufficientBalance());
+
+    senderBalance.available -= amount;
+    receiverBalance.available += amount;
+
+    Flow memory senderFlow = _flows[controller][context][from];
+    _checkFlowInvariant(senderBalance, lock, senderFlow);
+
+    _balances[controller][context][from] = senderBalance;
+    _balances[controller][context][to] = receiverBalance;
   }
 
   function _flow(
@@ -254,6 +195,65 @@ abstract contract VaultBase {
     _balances[controller][context][to] = receiverBalance;
     _flows[controller][context][from] = senderFlow;
     _flows[controller][context][to] = receiverFlow;
+  }
+
+  function _burn(
+    Controller controller,
+    Context context,
+    Recipient recipient
+  ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
+    Flow memory flow = _flows[controller][context][recipient];
+    require(flow.rate == TokensPerSecond.wrap(0), CannotBurnFlowingTokens());
+
+    Balance memory balance = _getBalance(controller, context, recipient);
+    uint128 amount = balance.available + balance.designated;
+
+    lock.value -= amount;
+
+    if (lock.value == 0) {
+      delete _locks[controller][context];
+    } else {
+      _locks[controller][context] = lock;
+    }
+
+    _delete(controller, context, recipient);
+
+    _token.safeTransfer(address(0xdead), amount);
+  }
+
+  function _withdraw(
+    Controller controller,
+    Context context,
+    Recipient recipient
+  ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(!lock.isLocked(), Locked());
+
+    Balance memory balance = _getBalance(controller, context, recipient);
+    uint128 amount = balance.available + balance.designated;
+
+    lock.value -= amount;
+
+    if (lock.value == 0) {
+      delete _locks[controller][context];
+    } else {
+      _locks[controller][context] = lock;
+    }
+
+    _delete(controller, context, recipient);
+    _token.safeTransfer(Recipient.unwrap(recipient), amount);
+  }
+
+  function _delete(
+    Controller controller,
+    Context context,
+    Recipient recipient
+  ) private {
+    delete _balances[controller][context][recipient];
+    delete _flows[controller][context][recipient];
   }
 
   function _checkLockInvariant(Lock memory lock) private pure {
