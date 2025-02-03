@@ -56,12 +56,37 @@ describe("Vault", function () {
       ).to.be.revertedWith("LockRequired")
     })
 
+    it("does not allow depositing of tokens", async function () {
+      const amount = 1000
+      await token.connect(account).approve(vault.address, amount)
+      await expect(
+        vault.deposit(context, account.address, amount)
+      ).to.be.revertedWith("LockRequired")
+    })
+
+    it("does not allow designating tokens", async function () {
+      await expect(
+        vault.designate(context, account.address, 0)
+      ).to.be.revertedWith("LockRequired")
+    })
+
+    it("does not allow transfer of tokens", async function () {
+      await expect(
+        vault.transfer(context, account.address, account2.address, 0)
+      ).to.be.revertedWith("LockRequired")
+    })
+
     it("does not allow flowing of tokens", async function () {
       await expect(
         vault.flow(context, account.address, account2.address, 0)
       ).to.be.revertedWith("LockRequired")
     })
 
+    it("does not allow burning of tokens", async function () {
+      await expect(vault.burn(context, account.address)).to.be.revertedWith(
+        "LockRequired"
+      )
+    })
   })
 
   describe("when lock is locked", function () {
@@ -143,6 +168,8 @@ describe("Vault", function () {
       it("separates deposits from different contexts", async function () {
         const context1 = randomBytes(32)
         const context2 = randomBytes(32)
+        await vault.lock(context1, expiry, maximum)
+        await vault.lock(context2, expiry, maximum)
         await token.connect(account).approve(vault.address, 3)
         await vault.deposit(context1, account.address, 1)
         await vault.deposit(context2, account.address, 2)
@@ -154,6 +181,8 @@ describe("Vault", function () {
         const [, , controller1, controller2] = await ethers.getSigners()
         const vault1 = vault.connect(controller1)
         const vault2 = vault.connect(controller2)
+        await vault1.lock(context, expiry, maximum)
+        await vault2.lock(context, expiry, maximum)
         await token.connect(account).approve(vault.address, 3)
         await vault1.deposit(context, account.address, 1)
         await vault2.deposit(context, account.address, 2)
@@ -688,6 +717,40 @@ describe("Vault", function () {
         const after = await token.balanceOf(account.address)
         expect(after).to.equal(before)
       })
+    })
+
+    it("does not allow depositing of tokens", async function () {
+      setAutomine(true)
+      await expire()
+      const amount = 1000
+      await token.connect(account).approve(vault.address, amount)
+      await expect(
+        vault.deposit(context, account.address, amount)
+      ).to.be.revertedWith("LockRequired")
+    })
+
+    it("does not allow designating tokens", async function () {
+      setAutomine(true)
+      await expire()
+      await expect(
+        vault.designate(context, account.address, 0)
+      ).to.be.revertedWith("LockRequired")
+    })
+
+    it("does not allow transfer of tokens", async function () {
+      setAutomine(true)
+      await expire()
+      await expect(
+        vault.transfer(context, account.address, account2.address, 0)
+      ).to.be.revertedWith("LockRequired")
+    })
+
+    it("does not allow burning of tokens", async function () {
+      setAutomine(true)
+      await expire()
+      await expect(vault.burn(context, account.address)).to.be.revertedWith(
+        "LockRequired"
+      )
     })
   })
 })
