@@ -79,9 +79,18 @@ abstract contract VaultBase {
     address from,
     uint128 amount
   ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
     Recipient recipient = Recipient.wrap(from);
-    _balances[controller][context][recipient].available += amount;
-    _locks[controller][context].value += amount;
+    Balance memory balance = _balances[controller][context][recipient];
+
+    balance.available += amount;
+    lock.value += amount;
+
+    _balances[controller][context][recipient] = balance;
+    _locks[controller][context] = lock;
+
     _token.safeTransferFrom(from, address(this), amount);
   }
 
@@ -123,6 +132,7 @@ abstract contract VaultBase {
     Recipient recipient
   ) internal {
     Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
 
     Flow memory flow = _flows[controller][context][recipient];
     require(flow.rate == TokensPerSecond.wrap(0), CannotBurnFlowingTokens());
@@ -150,6 +160,9 @@ abstract contract VaultBase {
     Recipient to,
     uint128 amount
   ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
     Balance memory senderBalance = _getBalance(controller, context, from);
     Balance memory receiverBalance = _getBalance(controller, context, to);
     require(amount <= senderBalance.available, InsufficientBalance());
@@ -158,7 +171,6 @@ abstract contract VaultBase {
     receiverBalance.available += amount;
 
     Flow memory senderFlow = _flows[controller][context][from];
-    Lock memory lock = _locks[controller][context];
     _checkFlowInvariant(senderBalance, lock, senderFlow);
 
     _balances[controller][context][from] = senderBalance;
@@ -171,6 +183,9 @@ abstract contract VaultBase {
     Recipient recipient,
     uint128 amount
   ) internal {
+    Lock memory lock = _locks[controller][context];
+    require(lock.isLocked(), LockRequired());
+
     Balance memory balance = _balances[controller][context][recipient];
     require(amount <= balance.available, InsufficientBalance());
 
@@ -178,7 +193,6 @@ abstract contract VaultBase {
     balance.designated += amount;
 
     Flow memory flow = _flows[controller][context][recipient];
-    Lock memory lock = _locks[controller][context];
     _checkFlowInvariant(balance, lock, flow);
 
     _balances[controller][context][recipient] = balance;
