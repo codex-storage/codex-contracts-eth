@@ -212,7 +212,6 @@ describe("Vault", function () {
     const amount = 42
 
     beforeEach(async function () {
-      ;[, , account2] = await ethers.getSigners()
       await token.connect(account).approve(vault.address, amount)
       await vault.deposit(context, account.address, amount)
     })
