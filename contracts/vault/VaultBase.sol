@@ -81,6 +81,7 @@ abstract contract VaultBase {
   ) internal {
     Recipient recipient = Recipient.wrap(from);
     _balances[controller][context][recipient].available += amount;
+    _locks[controller][context].value += amount;
     _token.safeTransferFrom(from, address(this), amount);
   }
 
@@ -98,10 +99,20 @@ abstract contract VaultBase {
     Context context,
     Recipient recipient
   ) internal {
-    require(!_locks[controller][context].isLocked(), Locked());
-    delete _locks[controller][context];
+    Lock memory lock = _locks[controller][context];
+    require(!lock.isLocked(), Locked());
+
     Balance memory balance = _getBalance(controller, context, recipient);
     uint128 amount = balance.available + balance.designated;
+
+    lock.value -= amount;
+
+    if (lock.value == 0) {
+      delete _locks[controller][context];
+    } else {
+      _locks[controller][context] = lock;
+    }
+
     _delete(controller, context, recipient);
     _token.safeTransfer(Recipient.unwrap(recipient), amount);
   }
@@ -111,11 +122,21 @@ abstract contract VaultBase {
     Context context,
     Recipient recipient
   ) internal {
+    Lock memory lock = _locks[controller][context];
+
     Flow memory flow = _flows[controller][context][recipient];
     require(flow.rate == TokensPerSecond.wrap(0), CannotBurnFlowingTokens());
 
     Balance memory balance = _getBalance(controller, context, recipient);
     uint128 amount = balance.available + balance.designated;
+
+    lock.value -= amount;
+
+    if (lock.value == 0) {
+      delete _locks[controller][context];
+    } else {
+      _locks[controller][context] = lock;
+    }
 
     _delete(controller, context, recipient);
 
