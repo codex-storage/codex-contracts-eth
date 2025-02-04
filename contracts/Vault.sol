@@ -8,84 +8,84 @@ contract Vault is VaultBase {
   constructor(IERC20 token) VaultBase(token) {}
 
   function getBalance(
-    Context context,
+    Fund fund,
     Recipient recipient
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory b = _getBalance(controller, context, recipient);
+    Balance memory b = _getBalance(controller, fund, recipient);
     return b.available + b.designated;
   }
 
   function getDesignatedBalance(
-    Context context,
+    Fund fund,
     Recipient recipient
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory b = _getBalance(controller, context, recipient);
+    Balance memory b = _getBalance(controller, fund, recipient);
     return b.designated;
   }
 
-  function getLock(Context context) public view returns (Lock memory) {
+  function getLock(Fund fund) public view returns (Lock memory) {
     Controller controller = Controller.wrap(msg.sender);
-    return _getLock(controller, context);
+    return _getLock(controller, fund);
   }
 
-  function lock(Context context, Timestamp expiry, Timestamp maximum) public {
+  function lock(Fund fund, Timestamp expiry, Timestamp maximum) public {
     Controller controller = Controller.wrap(msg.sender);
-    _lock(controller, context, expiry, maximum);
+    _lock(controller, fund, expiry, maximum);
   }
 
-  function extendLock(Context context, Timestamp expiry) public {
+  function extendLock(Fund fund, Timestamp expiry) public {
     Controller controller = Controller.wrap(msg.sender);
-    _extendLock(controller, context, expiry);
+    _extendLock(controller, fund, expiry);
   }
 
-  function deposit(Context context, address from, uint128 amount) public {
+  function deposit(Fund fund, address from, uint128 amount) public {
     Controller controller = Controller.wrap(msg.sender);
-    _deposit(controller, context, from, amount);
+    _deposit(controller, fund, from, amount);
   }
 
   function designate(
-    Context context,
+    Fund fund,
     Recipient recipient,
     uint128 amount
   ) public {
     Controller controller = Controller.wrap(msg.sender);
-    _designate(controller, context, recipient, amount);
+    _designate(controller, fund, recipient, amount);
   }
 
   function transfer(
-    Context context,
+    Fund fund,
     Recipient from,
     Recipient to,
     uint128 amount
   ) public {
     Controller controller = Controller.wrap(msg.sender);
-    _transfer(controller, context, from, to, amount);
+    _transfer(controller, fund, from, to, amount);
   }
 
   function flow(
-    Context context,
+    Fund fund,
     Recipient from,
     Recipient to,
     TokensPerSecond rate
   ) public {
     Controller controller = Controller.wrap(msg.sender);
-    _flow(controller, context, from, to, rate);
+    _flow(controller, fund, from, to, rate);
   }
 
-  function burn(Context context, Recipient recipient) public {
+  function burn(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
-    _burn(controller, context, recipient);
+    _burn(controller, fund, recipient);
   }
 
-  function withdraw(Context context, Recipient recipient) public {
+  function withdraw(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
-    _withdraw(controller, context, recipient);
+    _withdraw(controller, fund, recipient);
   }
 
-  function withdrawByRecipient(Controller controller, Context context) public {
+  function withdrawByRecipient(Controller controller, Fund fund) public {
     Recipient recipient = Recipient.wrap(msg.sender);
-    _withdraw(controller, context, recipient);
+    _withdraw(controller, fund, recipient);
   }
 }
