@@ -34,6 +34,13 @@ abstract contract VaultBase {
     _token = token;
   }
 
+  function _getLock(
+    Controller controller,
+    Fund fund
+  ) internal view returns (Lock memory) {
+    return _locks[controller][fund];
+  }
+
   function _getAccount(
     Controller controller,
     Fund fund,
@@ -53,13 +60,6 @@ abstract contract VaultBase {
     }
     account.flow.updated = timestamp;
     return account;
-  }
-
-  function _getLock(
-    Controller controller,
-    Fund fund
-  ) internal view returns (Lock memory) {
-    return _locks[controller][fund];
   }
 
   function _lock(
