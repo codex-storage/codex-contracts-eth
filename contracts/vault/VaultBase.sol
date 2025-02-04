@@ -51,7 +51,7 @@ abstract contract VaultBase {
     if (account.flow.rate != TokensPerSecond.wrap(0)) {
       Lock memory lock = _locks[controller][fund];
       Timestamp end = Timestamps.earliest(timestamp, lock.expiry);
-      int128 accumulated = account.flow._totalAt(end);
+      int128 accumulated = account.flow.totalAt(end);
       if (accumulated >= 0) {
         account.designated += uint128(accumulated);
       } else {
@@ -235,7 +235,7 @@ abstract contract VaultBase {
     Lock memory lock
   ) private pure {
     if (account.flow.rate < TokensPerSecond.wrap(0)) {
-      uint128 outgoing = uint128(-account.flow._totalAt(lock.maximum));
+      uint128 outgoing = uint128(-account.flow.totalAt(lock.maximum));
       require(outgoing <= account.available, InsufficientBalance());
     }
   }
