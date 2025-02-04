@@ -179,7 +179,7 @@ abstract contract VaultBase {
     Fund fund,
     Recipient recipient
   ) internal {
-    Lock memory lock = _locks[controller][fund];
+    Lock storage lock = _locks[controller][fund];
     require(lock.isLocked(), LockRequired());
 
     Account memory account = _getAccount(controller, fund, recipient);
@@ -189,13 +189,8 @@ abstract contract VaultBase {
     );
 
     uint128 amount = account.available + account.designated;
-    lock.value -= amount;
 
-    if (lock.value == 0) {
-      delete _locks[controller][fund];
-    } else {
-      _locks[controller][fund] = lock;
-    }
+    lock.value -= amount;
 
     delete _accounts[controller][fund][recipient];
 
