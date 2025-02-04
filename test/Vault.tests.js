@@ -129,6 +129,14 @@ describe("Vault", function () {
         const extending = vault.extendLock(fund, expiry - 1)
         await expect(extending).to.be.revertedWith("InvalidExpiry")
       })
+
+      it("does not delete lock when no tokens remain", async function () {
+        await token.connect(account).approve(vault.address, 30)
+        await vault.deposit(fund, account.address, 30)
+        await vault.burn(fund, account.address)
+        expect((await vault.getLock(fund))[0]).to.not.equal(0)
+        expect((await vault.getLock(fund))[1]).to.not.equal(0)
+      })
     })
 
     describe("depositing", function () {
