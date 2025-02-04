@@ -5,8 +5,8 @@ import "./Timestamps.sol";
 import "./TokensPerSecond.sol";
 
 struct Flow {
-  Timestamp start;
   TokensPerSecond rate;
+  Timestamp updated;
 }
 
 library Flows {
@@ -15,7 +15,7 @@ library Flows {
     Timestamp timestamp
   ) internal pure returns (int128) {
     int128 rate = TokensPerSecond.unwrap(flow.rate);
-    Timestamp start = flow.start;
+    Timestamp start = flow.updated;
     Timestamp end = timestamp;
     uint64 duration = Timestamp.unwrap(end) - Timestamp.unwrap(start);
     return rate * int128(uint128(duration));
