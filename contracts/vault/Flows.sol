@@ -10,7 +10,7 @@ struct Flow {
 }
 
 library Flows {
-  function _totalAt(
+  function totalAt(
     Flow memory flow,
     Timestamp timestamp
   ) internal pure returns (int128) {
