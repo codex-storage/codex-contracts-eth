@@ -12,7 +12,7 @@ contract Vault is VaultBase {
     Recipient recipient
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory b = _getBalance(controller, fund, recipient);
+    Account memory b = _getAccount(controller, fund, recipient);
     return b.available + b.designated;
   }
 
@@ -21,7 +21,7 @@ contract Vault is VaultBase {
     Recipient recipient
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory b = _getBalance(controller, fund, recipient);
+    Account memory b = _getAccount(controller, fund, recipient);
     return b.designated;
   }
 
