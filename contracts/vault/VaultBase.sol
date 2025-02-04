@@ -39,29 +39,20 @@ abstract contract VaultBase {
     Fund fund,
     Recipient recipient
   ) internal view returns (Account memory) {
-    Account storage account = _accounts[controller][fund][recipient];
-    Lock storage lock = _locks[controller][fund];
+    Account memory account = _accounts[controller][fund][recipient];
     Timestamp timestamp = Timestamps.currentTime();
-    return _getAccountAt(account, lock, timestamp);
-  }
-
-  function _getAccountAt(
-    Account memory account,
-    Lock storage lock,
-    Timestamp timestamp
-  ) private view returns (Account memory) {
-    Account memory result = account;
     if (account.flow.rate != TokensPerSecond.wrap(0)) {
+      Lock memory lock = _locks[controller][fund];
       Timestamp end = Timestamps.earliest(timestamp, lock.expiry);
       int128 accumulated = account.flow._totalAt(end);
       if (accumulated >= 0) {
-        result.designated += uint128(accumulated);
+        account.designated += uint128(accumulated);
       } else {
-        result.available -= uint128(-accumulated);
+        account.available -= uint128(-accumulated);
       }
     }
-    result.flow.updated = timestamp;
-    return result;
+    account.flow.updated = timestamp;
+    return account;
   }
 
   function _getLock(
