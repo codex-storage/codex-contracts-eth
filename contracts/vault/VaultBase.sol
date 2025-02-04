@@ -3,14 +3,14 @@ pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./Accounts.sol";
 import "./Timestamps.sol";
 import "./TokensPerSecond.sol";
-import "./Flows.sol";
 import "./Locks.sol";
 
 using SafeERC20 for IERC20;
 using Timestamps for Timestamp;
-using Flows for Flow;
+using Accounts for Account;
 using Locks for Lock;
 
 abstract contract VaultBase {
@@ -19,12 +19,6 @@ abstract contract VaultBase {
   type Controller is address;
   type Fund is bytes32;
   type Recipient is address;
-
-  struct Account {
-    uint128 available;
-    uint128 designated;
-    Flow flow;
-  }
 
   mapping(Controller => mapping(Fund => Lock)) private _locks;
   mapping(Controller => mapping(Fund => mapping(Recipient => Account)))
@@ -47,19 +41,12 @@ abstract contract VaultBase {
     Recipient recipient
   ) internal view returns (Account memory) {
     Account memory account = _accounts[controller][fund][recipient];
-    Timestamp timestamp = Timestamps.currentTime();
-    if (account.flow.rate != TokensPerSecond.wrap(0)) {
-      Lock memory lock = _locks[controller][fund];
-      Timestamp end = Timestamps.earliest(timestamp, lock.expiry);
-      int128 accumulated = account.flow.totalAt(end);
-      if (accumulated >= 0) {
-        account.designated += uint128(accumulated);
-      } else {
-        account.available -= uint128(-accumulated);
-      }
-    }
-    account.flow.updated = timestamp;
-    return account;
+    Lock memory lock = _locks[controller][fund];
+    Timestamp timestamp = Timestamps.earliest(
+      Timestamps.currentTime(),
+      lock.expiry
+    );
+    return account.at(timestamp);
   }
 
   function _lock(
@@ -165,8 +152,8 @@ abstract contract VaultBase {
     Account memory senderAccount = _getAccount(controller, fund, from);
     Account memory receiverAccount = _getAccount(controller, fund, to);
 
-    senderAccount.flow.rate = senderAccount.flow.rate - rate;
-    receiverAccount.flow.rate = receiverAccount.flow.rate + rate;
+    senderAccount.flow = senderAccount.flow - rate;
+    receiverAccount.flow = receiverAccount.flow + rate;
 
     _checkAccountInvariant(senderAccount, lock);
 
@@ -183,10 +170,7 @@ abstract contract VaultBase {
     require(lock.isLocked(), LockRequired());
 
     Account memory account = _getAccount(controller, fund, recipient);
-    require(
-      account.flow.rate == TokensPerSecond.wrap(0),
-      CannotBurnFlowingTokens()
-    );
+    require(account.flow == TokensPerSecond.wrap(0), CannotBurnFlowingTokens());
 
     uint128 amount = account.available + account.designated;
 
@@ -229,10 +213,7 @@ abstract contract VaultBase {
     Account memory account,
     Lock memory lock
   ) private pure {
-    if (account.flow.rate < TokensPerSecond.wrap(0)) {
-      uint128 outgoing = uint128(-account.flow.totalAt(lock.maximum));
-      require(outgoing <= account.available, InsufficientBalance());
-    }
+    require(account.isValidAt(lock.maximum), InsufficientBalance());
   }
 
   error InsufficientBalance();
