@@ -60,6 +60,7 @@ abstract contract VaultBase {
         result.available -= uint128(-accumulated);
       }
     }
+    result.flow.updated = timestamp;
     return result;
   }
 
@@ -173,10 +174,7 @@ abstract contract VaultBase {
     Account memory senderAccount = _getAccount(controller, fund, from);
     Account memory receiverAccount = _getAccount(controller, fund, to);
 
-    Timestamp start = Timestamps.currentTime();
-    senderAccount.flow.start = start;
     senderAccount.flow.rate = senderAccount.flow.rate - rate;
-    receiverAccount.flow.start = start;
     receiverAccount.flow.rate = receiverAccount.flow.rate + rate;
 
     _checkAccountInvariant(senderAccount, lock);
