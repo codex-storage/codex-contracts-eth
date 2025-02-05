@@ -420,6 +420,15 @@ describe("Vault", function () {
         expect(await vault.getDesignatedBalance(fund, address2)).to.equal(21)
       })
 
+      it("designates tokens that flow back to the sender", async function () {
+        await vault.flow(fund, address1, address1, 3)
+        await mine()
+        const start = await currentTime()
+        await advanceTimeTo(start + 7)
+        expect(await vault.getBalance(fund, address1)).to.equal(deposit)
+        expect(await vault.getDesignatedBalance(fund, address1)).to.equal(21)
+      })
+
       it("flows longer when lock is extended", async function () {
         await vault.flow(fund, address1, address2, 2)
         await mine()
@@ -433,13 +442,6 @@ describe("Vault", function () {
         await advanceTimeTo(maximum + 10)
         expect(await getBalance(address1)).to.equal(deposit - total)
         expect(await getBalance(address2)).to.equal(total)
-      })
-
-      it("rejects negative flows", async function () {
-        setAutomine(true)
-        await expect(
-          vault.flow(fund, address1, address2, -1)
-        ).to.be.revertedWith("NegativeFlow")
       })
 
       it("rejects flow when insufficient available tokens", async function () {

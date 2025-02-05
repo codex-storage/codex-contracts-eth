@@ -1,52 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "./TokensPerSecond.sol";
+import "./TokenFlows.sol";
+import "./Timestamps.sol";
 
 struct Account {
+  Balance balance;
+  Flow flow;
+}
+
+struct Balance {
   uint128 available;
   uint128 designated;
-  TokensPerSecond flow;
-  Timestamp flowUpdated;
+}
+
+struct Flow {
+  TokensPerSecond outgoing;
+  TokensPerSecond incoming;
+  Timestamp updated;
 }
 
 library Accounts {
-  function isValidAt(
+  using Accounts for Account;
+  using TokenFlows for TokensPerSecond;
+  using Timestamps for Timestamp;
+
+  function isSolventAt(
     Account memory account,
     Timestamp timestamp
   ) internal pure returns (bool) {
-    if (account.flow < TokensPerSecond.wrap(0)) {
-      return uint128(-accumulateFlow(account, timestamp)) <= account.available;
+    Duration duration = account.flow.updated.until(timestamp);
+    uint128 outgoing = account.flow.outgoing.accumulate(duration);
+    return outgoing <= account.balance.available;
+  }
+
+  function update(Account memory account, Timestamp timestamp) internal pure {
+    Duration duration = account.flow.updated.until(timestamp);
+    account.balance.available -= account.flow.outgoing.accumulate(duration);
+    account.balance.designated += account.flow.incoming.accumulate(duration);
+    account.flow.updated = timestamp;
+  }
+
+  function flowIn(Account memory account, TokensPerSecond rate) internal view {
+    account.update(Timestamps.currentTime());
+    account.flow.incoming = account.flow.incoming + rate;
+  }
+
+  function flowOut(Account memory account, TokensPerSecond rate) internal view {
+    account.update(Timestamps.currentTime());
+    if (rate <= account.flow.incoming) {
+      account.flow.incoming = account.flow.incoming - rate;
     } else {
-      return true;
+      account.flow.outgoing = account.flow.outgoing + rate;
+      account.flow.outgoing = account.flow.outgoing - account.flow.incoming;
+      account.flow.incoming = TokensPerSecond.wrap(0);
     }
-  }
-
-  function at(
-    Account memory account,
-    Timestamp timestamp
-  ) internal pure returns (Account memory) {
-    Account memory result = account;
-    if (result.flow != TokensPerSecond.wrap(0)) {
-      int128 accumulated = accumulateFlow(result, timestamp);
-      if (accumulated >= 0) {
-        result.designated += uint128(accumulated);
-      } else {
-        result.available -= uint128(-accumulated);
-      }
-    }
-    result.flowUpdated = timestamp;
-    return result;
-  }
-
-  function accumulateFlow(
-    Account memory account,
-    Timestamp timestamp
-  ) private pure returns (int128) {
-    int128 rate = TokensPerSecond.unwrap(account.flow);
-    Timestamp start = account.flowUpdated;
-    Timestamp end = timestamp;
-    uint64 duration = Timestamp.unwrap(end) - Timestamp.unwrap(start);
-    return rate * int128(uint128(duration));
   }
 }
