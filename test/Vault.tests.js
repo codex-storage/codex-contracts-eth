@@ -522,9 +522,9 @@ describe("Vault", function () {
       it("cannot burn tokens that are flowing", async function () {
         await vault.flow(fund, account.address, account2.address, 5)
         const burning1 = vault.burn(fund, account.address)
-        await expect(burning1).to.be.revertedWith("CannotBurnFlowingTokens")
+        await expect(burning1).to.be.revertedWith("FlowMustBeZero")
         const burning2 = vault.burn(fund, account2.address)
-        await expect(burning2).to.be.revertedWith("CannotBurnFlowingTokens")
+        await expect(burning2).to.be.revertedWith("FlowMustBeZero")
       })
 
       it("can burn tokens that are no longer flowing", async function () {
