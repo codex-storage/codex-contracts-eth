@@ -164,11 +164,7 @@ abstract contract VaultBase {
     require(lock.isLocked(), LockRequired());
 
     Account memory account = _accounts[controller][fund][recipient];
-    require(
-      account.flow.incoming == account.flow.outgoing,
-      CannotBurnFlowingTokens()
-    );
-
+    require(account.flow.incoming == account.flow.outgoing, FlowMustBeZero());
     uint128 amount = account.balance.available + account.balance.designated;
 
     lock.value -= amount;
@@ -220,5 +216,5 @@ abstract contract VaultBase {
   error ExpiryPastMaximum();
   error InvalidExpiry();
   error LockRequired();
-  error CannotBurnFlowingTokens();
+  error FlowMustBeZero();
 }
