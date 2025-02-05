@@ -64,6 +64,13 @@ describe("Vault", function () {
       ).to.be.revertedWith("LockRequired")
     })
 
+    it("does not have any balance", async function() {
+      const balance = await vault.getBalance(fund, account.address)
+      const designated = await vault.getDesignatedBalance(fund, account.address)
+      expect(balance).to.equal(0)
+      expect(designated).to.equal(0)
+    })
+
     it("does not allow designating tokens", async function () {
       await expect(
         vault.designate(fund, account.address, 0)
@@ -295,7 +302,7 @@ describe("Vault", function () {
       it("can transfer to self", async function () {
         await setAutomine(true)
         await vault.transfer(fund, address1, address1, amount)
-        expect(await vault.getBalance(fund, address1)).to.equal(amount);
+        expect(await vault.getBalance(fund, address1)).to.equal(amount)
       })
 
       it("does not transfer more than the balance", async function () {
@@ -633,6 +640,23 @@ describe("Vault", function () {
         balance2 = await vault.getBalance(fund, account2.address)
         expect(balance1).to.equal(deposit - total)
         expect(balance2).to.equal(total)
+      })
+
+      it("allows flowing tokens to be withdrawn", async function () {
+        await vault.flow(fund, account.address, account2.address, 2)
+        await mine()
+        const start = await currentTime()
+        const total = (expiry - start) * 2
+        await advanceTimeTo(expiry + 10)
+        balance1Before = await token.balanceOf(account.address)
+        balance2Before = await token.balanceOf(account2.address)
+        await vault.withdraw(fund, account.address)
+        await vault.withdraw(fund, account2.address)
+        await mine()
+        balance1After = await token.balanceOf(account.address)
+        balance2After = await token.balanceOf(account2.address)
+        expect(balance1After - balance1Before).to.equal(deposit - total)
+        expect(balance2After - balance2Before).to.equal(total)
       })
 
       it("does not allow new flows to start", async function () {
