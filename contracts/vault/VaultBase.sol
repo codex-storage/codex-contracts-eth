@@ -126,15 +126,13 @@ abstract contract VaultBase {
     require(lock.isLocked(), LockRequired());
 
     Account memory sender = _getAccount(controller, fund, from);
-    Account memory receiver = _getAccount(controller, fund, to);
-
     require(amount <= sender.balance.available, InsufficientBalance());
     sender.balance.available -= amount;
-    receiver.balance.available += amount;
-
     _checkAccountInvariant(sender, lock);
-
     _accounts[controller][fund][from] = sender;
+
+    Account memory receiver = _getAccount(controller, fund, to);
+    receiver.balance.available += amount;
     _accounts[controller][fund][to] = receiver;
   }
 
