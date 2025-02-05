@@ -35,19 +35,19 @@ abstract contract VaultBase {
     return _locks[controller][fund];
   }
 
-  function _getAccount(
+  function _getBalance(
     Controller controller,
     Fund fund,
     Recipient recipient
-  ) internal view returns (Account memory) {
+  ) internal view returns (Balance memory) {
     Account memory account = _accounts[controller][fund][recipient];
     Lock memory lock = _locks[controller][fund];
-    Timestamp timestamp = Timestamps.earliest(
-      Timestamps.currentTime(),
-      lock.expiry
-    );
-    account.update(timestamp);
-    return account;
+    if (lock.isLocked()) {
+      account.update(Timestamps.currentTime());
+    } else {
+      account.update(lock.expiry);
+    }
+    return account.balance;
   }
 
   function _lock(
@@ -105,11 +105,10 @@ abstract contract VaultBase {
     require(lock.isLocked(), LockRequired());
 
     Account memory account = _accounts[controller][fund][recipient];
-
     require(amount <= account.balance.available, InsufficientBalance());
+
     account.balance.available -= amount;
     account.balance.designated += amount;
-
     _checkAccountInvariant(account, lock);
 
     _accounts[controller][fund][recipient] = account;
@@ -125,15 +124,15 @@ abstract contract VaultBase {
     Lock memory lock = _locks[controller][fund];
     require(lock.isLocked(), LockRequired());
 
-    Account memory sender = _getAccount(controller, fund, from);
+    Account memory sender = _accounts[controller][fund][from];
     require(amount <= sender.balance.available, InsufficientBalance());
+
     sender.balance.available -= amount;
     _checkAccountInvariant(sender, lock);
+
     _accounts[controller][fund][from] = sender;
 
-    Account memory receiver = _getAccount(controller, fund, to);
-    receiver.balance.available += amount;
-    _accounts[controller][fund][to] = receiver;
+    _accounts[controller][fund][to].balance.available += amount;
   }
 
   function _flow(
@@ -164,7 +163,7 @@ abstract contract VaultBase {
     Lock storage lock = _locks[controller][fund];
     require(lock.isLocked(), LockRequired());
 
-    Account memory account = _getAccount(controller, fund, recipient);
+    Account memory account = _accounts[controller][fund][recipient];
     require(
       account.flow.incoming == account.flow.outgoing,
       CannotBurnFlowingTokens()
@@ -187,7 +186,8 @@ abstract contract VaultBase {
     Lock memory lock = _locks[controller][fund];
     require(!lock.isLocked(), Locked());
 
-    Account memory account = _getAccount(controller, fund, recipient);
+    Account memory account = _accounts[controller][fund][recipient];
+    account.update(lock.expiry);
     uint128 amount = account.balance.available + account.balance.designated;
 
     lock.value -= amount;

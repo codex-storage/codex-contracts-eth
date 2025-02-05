@@ -30,17 +30,6 @@ library Timestamps {
     return Timestamp.wrap(uint64(block.timestamp));
   }
 
-  function earliest(
-    Timestamp a,
-    Timestamp b
-  ) internal pure returns (Timestamp) {
-    if (a <= b) {
-      return a;
-    } else {
-      return b;
-    }
-  }
-
   function until(
     Timestamp start,
     Timestamp end
