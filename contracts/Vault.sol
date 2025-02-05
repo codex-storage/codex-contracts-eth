@@ -13,7 +13,7 @@ contract Vault is VaultBase {
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
     Account memory account = _getAccount(controller, fund, recipient);
-    return account.available + account.designated;
+    return account.balance.available + account.balance.designated;
   }
 
   function getDesignatedBalance(
@@ -22,7 +22,7 @@ contract Vault is VaultBase {
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
     Account memory account = _getAccount(controller, fund, recipient);
-    return account.designated;
+    return account.balance.designated;
   }
 
   function getLock(Fund fund) public view returns (Lock memory) {

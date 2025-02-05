@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 type Timestamp is uint64;
+type Duration is uint64;
 
 using {_timestampEquals as ==} for Timestamp global;
 using {_timestampNotEqual as !=} for Timestamp global;
@@ -38,5 +39,12 @@ library Timestamps {
     } else {
       return b;
     }
+  }
+
+  function until(
+    Timestamp start,
+    Timestamp end
+  ) internal pure returns (Duration) {
+    return Duration.wrap(Timestamp.unwrap(end) - Timestamp.unwrap(start));
   }
 }
