@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-type Timestamp is uint64;
-type Duration is uint64;
+type Timestamp is uint40;
+type Duration is uint40;
 
 using {_timestampEquals as ==} for Timestamp global;
 using {_timestampNotEqual as !=} for Timestamp global;
@@ -27,7 +27,7 @@ function _timestampAtMost(Timestamp a, Timestamp b) pure returns (bool) {
 
 library Timestamps {
   function currentTime() internal view returns (Timestamp) {
-    return Timestamp.wrap(uint64(block.timestamp));
+    return Timestamp.wrap(uint40(block.timestamp));
   }
 
   function until(
