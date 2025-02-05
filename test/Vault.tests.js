@@ -292,6 +292,12 @@ describe("Vault", function () {
         expect(await vault.getBalance(fund, address3)).to.equal(amount)
       })
 
+      it("can transfer to self", async function () {
+        await setAutomine(true)
+        await vault.transfer(fund, address1, address1, amount)
+        expect(await vault.getBalance(fund, address1)).to.equal(amount);
+      })
+
       it("does not transfer more than the balance", async function () {
         await setAutomine(true)
         await expect(
