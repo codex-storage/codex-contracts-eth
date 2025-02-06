@@ -189,10 +189,7 @@ abstract contract VaultBase {
     _token.safeTransfer(address(0xdead), amount);
   }
 
-  function _burnAll(
-    Controller controller,
-    Fund fund
-  ) internal {
+  function _burnAll(Controller controller, Fund fund) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, LockRequired());
 
