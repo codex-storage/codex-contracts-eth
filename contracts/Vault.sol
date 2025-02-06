@@ -79,6 +79,11 @@ contract Vault is VaultBase {
     _burn(controller, fund, recipient);
   }
 
+  function burnAll(Fund fund) public {
+    Controller controller = Controller.wrap(msg.sender);
+    _burnAll(controller, fund);
+  }
+
   function withdraw(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
     _withdraw(controller, fund, recipient);
