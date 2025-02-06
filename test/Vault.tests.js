@@ -56,8 +56,8 @@ describe("Vault", function () {
       await expect(locking).to.be.revertedWith("ExpiryPastMaximum")
     })
 
-    describe("unlocked fund", function () {
-      testUnlockedFund()
+    describe("fund is not locked", function () {
+      testFundThatIsNotLocked()
     })
   })
 
@@ -501,6 +501,15 @@ describe("Vault", function () {
         await vault.flow(fund, account2.address, account.address, 5)
         await expect(vault.burn(fund, account.address)).not.to.be.reverted
       })
+
+      it("can burn an entire fund", async function () {
+        await vault.transfer(fund, account.address, account2.address, 10)
+        await vault.transfer(fund, account.address, account3.address, 10)
+        await vault.burnAll(fund)
+        await expect(await vault.getBalance(fund, account.address)).to.equal(0)
+        await expect(await vault.getBalance(fund, account2.address)).to.equal(0)
+        await expect(await vault.getBalance(fund, account3.address)).to.equal(0)
+      })
     })
 
     describe("withdrawing", function () {
@@ -630,6 +639,8 @@ describe("Vault", function () {
         setAutomine(true)
         await token.connect(controller).approve(vault.address, amount)
         await vault.deposit(fund, account.address, amount)
+        await token.connect(controller).approve(vault.address, amount)
+        await vault.deposit(fund, account2.address, amount)
       })
 
       it("allows controller to withdraw for a recipient", async function () {
@@ -676,16 +687,16 @@ describe("Vault", function () {
       })
 
       it("can withdraw funds that were transfered in", async function () {
-        await vault.transfer(fund, account.address, account2.address, amount)
+        await vault.transfer(fund, account.address, account3.address, amount)
         await expire()
-        const before = await token.balanceOf(account2.address)
-        await vault.withdraw(fund, account2.address)
-        const after = await token.balanceOf(account2.address)
+        const before = await token.balanceOf(account3.address)
+        await vault.withdraw(fund, account3.address)
+        const after = await token.balanceOf(account3.address)
         expect(after - before).to.equal(amount)
       })
 
       it("cannot withdraw funds that were transfered out", async function () {
-        await vault.transfer(fund, account.address, account2.address, amount)
+        await vault.transfer(fund, account.address, account3.address, amount)
         await expire()
         const before = await token.balanceOf(account.address)
         await vault.withdraw(fund, account.address)
@@ -712,17 +723,55 @@ describe("Vault", function () {
       })
     })
 
-    describe("unlocked fund", function () {
+    describe("fund is not locked", function () {
       beforeEach(async function() {
         setAutomine(true)
         await expire()
       })
 
-      testUnlockedFund()
+      testFundThatIsNotLocked()
     })
   })
 
-  function testUnlockedFund() {
+  describe("when a fund is burned", function () {
+    const amount = 1000
+
+    let expiry
+
+    beforeEach(async function () {
+      expiry = (await currentTime()) + 100
+      await token.connect(controller).approve(vault.address, amount)
+      await vault.lock(fund, expiry, expiry)
+      await vault.deposit(fund, account.address, amount)
+      await vault.burnAll(fund)
+    })
+
+    testBurnedFund()
+
+    describe("when the lock expires", function () {
+      beforeEach(async function () {
+        await advanceTimeTo(expiry)
+      })
+
+      testBurnedFund()
+    })
+
+    function testBurnedFund() {
+      it("cannot set lock", async function () {
+        const locking = vault.lock(fund, expiry, maximum)
+        await expect(locking).to.be.revertedWith("AlreadyLocked")
+      })
+
+      it("cannot withdraw", async function () {
+        const withdrawing = vault.withdraw(fund, account.address)
+        await expect(withdrawing).to.be.revertedWith("Locked")
+      })
+
+      testFundThatIsNotLocked()
+    }
+  })
+
+  function testFundThatIsNotLocked() {
     it("does not allow extending of lock", async function () {
       await expect(
         vault.extendLock(fund, (await currentTime()) + 1)
@@ -755,10 +804,14 @@ describe("Vault", function () {
       ).to.be.revertedWith("LockRequired")
     })
 
-    it("does not allow burning of tokens", async function () {
+    it("does not allow burning of accounts", async function () {
       await expect(vault.burn(fund, account.address)).to.be.revertedWith(
         "LockRequired"
       )
+    })
+
+    it("does not allow burning an entire fund", async function () {
+      await expect(vault.burnAll(fund)).to.be.revertedWith("LockRequired")
     })
   }
 })
