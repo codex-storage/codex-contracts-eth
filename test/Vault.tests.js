@@ -506,9 +506,10 @@ describe("Vault", function () {
         await vault.transfer(fund, account.address, account2.address, 10)
         await vault.transfer(fund, account.address, account3.address, 10)
         await vault.burnAll(fund)
-        await expect(await vault.getBalance(fund, account.address)).to.equal(0)
-        await expect(await vault.getBalance(fund, account2.address)).to.equal(0)
-        await expect(await vault.getBalance(fund, account3.address)).to.equal(0)
+        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Burned)
+        expect(await vault.getBalance(fund, account.address)).to.equal(0)
+        expect(await vault.getBalance(fund, account2.address)).to.equal(0)
+        expect(await vault.getBalance(fund, account3.address)).to.equal(0)
       })
 
       it("moves all tokens in the fund to address 0xdead", async function () {
@@ -565,6 +566,14 @@ describe("Vault", function () {
     async function expire() {
       await setNextBlockTimestamp(expiry)
     }
+
+    it("unlocks the funds", async function () {
+      await mine()
+      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
+      await expire()
+      await mine()
+      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Unlocked)
+    })
 
     describe("locking", function () {
       beforeEach(async function () {
