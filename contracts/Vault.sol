@@ -25,9 +25,14 @@ contract Vault is VaultBase {
     return balance.designated;
   }
 
-  function getLock(Fund fund) public view returns (Lock memory) {
+  function getLockStatus(Fund fund) public view returns (LockStatus) {
     Controller controller = Controller.wrap(msg.sender);
-    return _getLock(controller, fund);
+    return _getLockStatus(controller, fund);
+  }
+
+  function getLockExpiry(Fund fund) public view returns (Timestamp) {
+    Controller controller = Controller.wrap(msg.sender);
+    return _getLockExpiry(controller, fund);
   }
 
   function lock(Fund fund, Timestamp expiry, Timestamp maximum) public {
