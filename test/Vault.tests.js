@@ -510,6 +510,16 @@ describe("Vault", function () {
         await expect(await vault.getBalance(fund, account2.address)).to.equal(0)
         await expect(await vault.getBalance(fund, account3.address)).to.equal(0)
       })
+
+      it("moves all tokens in the fund to address 0xdead", async function () {
+        const dead = "0x000000000000000000000000000000000000dead"
+        await vault.transfer(fund, account.address, account2.address, 10)
+        await vault.transfer(fund, account.address, account3.address, 10)
+        const before = await token.balanceOf(dead)
+        await vault.burnAll(fund)
+        const after = await token.balanceOf(dead)
+        expect(after - before).to.equal(amount)
+      })
     })
 
     describe("withdrawing", function () {

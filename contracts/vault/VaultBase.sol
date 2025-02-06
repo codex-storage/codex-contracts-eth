@@ -190,6 +190,8 @@ abstract contract VaultBase {
     require(lock.status() == LockStatus.Locked, LockRequired());
 
     lock.burned = true;
+
+    _token.safeTransfer(address(0xdead), lock.value);
   }
 
   function _withdraw(
