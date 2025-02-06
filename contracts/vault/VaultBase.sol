@@ -28,11 +28,18 @@ abstract contract VaultBase {
     _token = token;
   }
 
-  function _getLock(
+  function _getLockStatus(
     Controller controller,
     Fund fund
-  ) internal view returns (Lock memory) {
-    return _locks[controller][fund];
+  ) internal view returns (LockStatus) {
+    return _locks[controller][fund].status();
+  }
+
+  function _getLockExpiry(
+    Controller controller,
+    Fund fund
+  ) internal view returns (Timestamp) {
+    return _locks[controller][fund].expiry;
   }
 
   function _getBalance(
