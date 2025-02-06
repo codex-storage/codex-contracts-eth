@@ -34,6 +34,14 @@ describe("Vault", function () {
   })
 
   describe("when a fund has no lock set", function () {
+
+    it("does not have any balances", async function () {
+      const balance = await vault.getBalance(fund, account.address)
+      const designated = await vault.getDesignatedBalance(fund, account.address)
+      expect(balance).to.equal(0)
+      expect(designated).to.equal(0)
+    })
+
     it("allows a lock to be set", async function () {
       expiry = (await currentTime()) + 80
       maximum = (await currentTime()) + 100
@@ -48,49 +56,8 @@ describe("Vault", function () {
       await expect(locking).to.be.revertedWith("ExpiryPastMaximum")
     })
 
-    it("does not allow extending of lock", async function () {
-      await expect(
-        vault.extendLock(fund, (await currentTime()) + 1)
-      ).to.be.revertedWith("LockRequired")
-    })
-
-    it("does not allow depositing of tokens", async function () {
-      const amount = 1000
-      await token.connect(controller).approve(vault.address, amount)
-      await expect(
-        vault.deposit(fund, account.address, amount)
-      ).to.be.revertedWith("LockRequired")
-    })
-
-    it("does not have any balance", async function () {
-      const balance = await vault.getBalance(fund, account.address)
-      const designated = await vault.getDesignatedBalance(fund, account.address)
-      expect(balance).to.equal(0)
-      expect(designated).to.equal(0)
-    })
-
-    it("does not allow designating tokens", async function () {
-      await expect(
-        vault.designate(fund, account.address, 0)
-      ).to.be.revertedWith("LockRequired")
-    })
-
-    it("does not allow transfer of tokens", async function () {
-      await expect(
-        vault.transfer(fund, account.address, account2.address, 0)
-      ).to.be.revertedWith("LockRequired")
-    })
-
-    it("does not allow flowing of tokens", async function () {
-      await expect(
-        vault.flow(fund, account.address, account2.address, 0)
-      ).to.be.revertedWith("LockRequired")
-    })
-
-    it("does not allow burning of tokens", async function () {
-      await expect(vault.burn(fund, account.address)).to.be.revertedWith(
-        "LockRequired"
-      )
+    describe("unlocked fund", function () {
+      testUnlockedFund()
     })
   })
 
@@ -591,12 +558,6 @@ describe("Vault", function () {
         await expect(locking).to.be.revertedWith("AlreadyLocked")
       })
 
-      it("cannot extend an expired lock", async function () {
-        await expire()
-        const extending = vault.extendLock(fund, maximum)
-        await expect(extending).to.be.revertedWith("LockRequired")
-      })
-
       it("deletes lock when no tokens remain", async function () {
         await token.connect(controller).approve(vault.address, 30)
         await vault.deposit(fund, account.address, 30)
@@ -659,14 +620,6 @@ describe("Vault", function () {
         balance2After = await token.balanceOf(account2.address)
         expect(balance1After - balance1Before).to.equal(deposit - total)
         expect(balance2After - balance2Before).to.equal(total)
-      })
-
-      it("does not allow new flows to start", async function () {
-        await setAutomine(true)
-        await expire()
-        await expect(
-          vault.flow(fund, account.address, account2.address, 0)
-        ).to.be.revertedWith("LockRequired")
       })
     })
 
@@ -759,9 +712,24 @@ describe("Vault", function () {
       })
     })
 
+    describe("unlocked fund", function () {
+      beforeEach(async function() {
+        setAutomine(true)
+        await expire()
+      })
+
+      testUnlockedFund()
+    })
+  })
+
+  function testUnlockedFund() {
+    it("does not allow extending of lock", async function () {
+      await expect(
+        vault.extendLock(fund, (await currentTime()) + 1)
+      ).to.be.revertedWith("LockRequired")
+    })
+
     it("does not allow depositing of tokens", async function () {
-      setAutomine(true)
-      await expire()
       const amount = 1000
       await token.connect(controller).approve(vault.address, amount)
       await expect(
@@ -770,27 +738,27 @@ describe("Vault", function () {
     })
 
     it("does not allow designating tokens", async function () {
-      setAutomine(true)
-      await expire()
       await expect(
         vault.designate(fund, account.address, 0)
       ).to.be.revertedWith("LockRequired")
     })
 
     it("does not allow transfer of tokens", async function () {
-      setAutomine(true)
-      await expire()
       await expect(
         vault.transfer(fund, account.address, account2.address, 0)
       ).to.be.revertedWith("LockRequired")
     })
 
+    it("does not allow new token flows to start", async function () {
+      await expect(
+        vault.flow(fund, account.address, account2.address, 0)
+      ).to.be.revertedWith("LockRequired")
+    })
+
     it("does not allow burning of tokens", async function () {
-      setAutomine(true)
-      await expire()
       await expect(vault.burn(fund, account.address)).to.be.revertedWith(
         "LockRequired"
       )
     })
-  })
+  }
 })
