@@ -40,9 +40,9 @@ contract Vault is VaultBase {
     _extendLock(controller, fund, expiry);
   }
 
-  function deposit(Fund fund, address from, uint128 amount) public {
+  function deposit(Fund fund, Recipient recipient, uint128 amount) public {
     Controller controller = Controller.wrap(msg.sender);
-    _deposit(controller, fund, from, amount);
+    _deposit(controller, fund, recipient, amount);
   }
 
   function designate(

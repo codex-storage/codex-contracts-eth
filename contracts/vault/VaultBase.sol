@@ -80,19 +80,22 @@ abstract contract VaultBase {
   function _deposit(
     Controller controller,
     Fund fund,
-    address from,
+    Recipient recipient,
     uint128 amount
   ) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.isLocked(), LockRequired());
 
-    Recipient recipient = Recipient.wrap(from);
     Account storage account = _accounts[controller][fund][recipient];
 
     account.balance.available += amount;
     lock.value += amount;
 
-    _token.safeTransferFrom(from, address(this), amount);
+    _token.safeTransferFrom(
+      Controller.unwrap(controller),
+      address(this),
+      amount
+    );
   }
 
   function _designate(
