@@ -35,7 +35,6 @@ describe("Vault", function () {
   })
 
   describe("when a fund has no lock set", function () {
-
     it("does not have any balances", async function () {
       const balance = await vault.getBalance(fund, account.address)
       const designated = await vault.getDesignatedBalance(fund, account.address)
@@ -596,7 +595,7 @@ describe("Vault", function () {
           .withdrawByRecipient(controller.address, fund)
         expect(await vault.getLockStatus(fund)).to.equal(LockStatus.NoLock)
         expect(await vault.getLockExpiry(fund)).to.equal(0)
-        })
+      })
     })
 
     describe("flowing", function () {
@@ -735,7 +734,7 @@ describe("Vault", function () {
     })
 
     describe("fund is not locked", function () {
-      beforeEach(async function() {
+      beforeEach(async function () {
         setAutomine(true)
         await expire()
       })
