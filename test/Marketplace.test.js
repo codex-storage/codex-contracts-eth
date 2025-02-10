@@ -1398,8 +1398,7 @@ describe("Marketplace", function () {
 
       it("rewards validator when marking proof as missing", async function () {
         const id = slotId(slot)
-        const { slashCriterion, slashPercentage, validatorRewardPercentage } =
-          config.collateral
+        const { slashPercentage, validatorRewardPercentage } = config.collateral
         await marketplace.reserveSlot(slot.request, slot.index)
         await marketplace.fillSlot(slot.request, slot.index, proof)
 
