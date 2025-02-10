@@ -79,6 +79,11 @@ contract Vault is VaultBase {
     _flow(controller, fund, from, to, rate);
   }
 
+  function burnDesignated(Fund fund, Recipient recipient, uint128 amount) public {
+    Controller controller = Controller.wrap(msg.sender);
+    _burnDesignated(controller, fund, recipient, amount);
+  }
+
   function burnAccount(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
     _burnAccount(controller, fund, recipient);
