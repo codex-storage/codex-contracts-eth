@@ -79,14 +79,14 @@ contract Vault is VaultBase {
     _flow(controller, fund, from, to, rate);
   }
 
-  function burn(Fund fund, Recipient recipient) public {
+  function burnAccount(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
-    _burn(controller, fund, recipient);
+    _burnAccount(controller, fund, recipient);
   }
 
-  function burnAll(Fund fund) public {
+  function burnFund(Fund fund) public {
     Controller controller = Controller.wrap(msg.sender);
-    _burnAll(controller, fund);
+    _burnFund(controller, fund);
   }
 
   function withdraw(Fund fund, Recipient recipient) public {

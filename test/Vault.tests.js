@@ -105,7 +105,7 @@ describe("Vault", function () {
       it("does not delete lock when no tokens remain", async function () {
         await token.connect(controller).approve(vault.address, 30)
         await vault.deposit(fund, account.address, 30)
-        await vault.burn(fund, account.address)
+        await vault.burnAccount(fund, account.address)
         expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
         expect(await vault.getLockExpiry(fund)).to.not.equal(0)
       })
@@ -460,66 +460,65 @@ describe("Vault", function () {
         await vault.deposit(fund, account.address, amount)
       })
 
-      it("can burn a deposit", async function () {
-        await vault.burn(fund, account.address)
-        expect(await vault.getBalance(fund, account.address)).to.equal(0)
+      describe("burn account", function () {
+        it("can burn an account", async function () {
+          await vault.burnAccount(fund, account.address)
+          expect(await vault.getBalance(fund, account.address)).to.equal(0)
+        })
+
+        it("also burns the designated tokens", async function () {
+          await vault.designate(fund, account.address, 10)
+          await vault.burnAccount(fund, account.address)
+          expect(
+            await vault.getDesignatedBalance(fund, account.address)
+          ).to.equal(0)
+        })
+
+        it("moves account tokens to address 0xdead", async function () {
+          const dead = "0x000000000000000000000000000000000000dead"
+          await vault.designate(fund, account.address, 10)
+          const before = await token.balanceOf(dead)
+          await vault.burnAccount(fund, account.address)
+          const after = await token.balanceOf(dead)
+          expect(after - before).to.equal(amount)
+        })
+
+        it("cannot burn tokens that are flowing", async function () {
+          await vault.flow(fund, account.address, account2.address, 5)
+          const burning1 = vault.burnAccount(fund, account.address)
+          await expect(burning1).to.be.revertedWith("FlowMustBeZero")
+          const burning2 = vault.burnAccount(fund, account2.address)
+          await expect(burning2).to.be.revertedWith("FlowMustBeZero")
+        })
+
+        it("can burn tokens that are no longer flowing", async function () {
+          await vault.flow(fund, account.address, account2.address, 5)
+          await vault.flow(fund, account2.address, account.address, 5)
+          await expect(vault.burnAccount(fund, account.address)).not.to.be
+            .reverted
+        })
       })
 
-      it("moves the tokens to address 0xdead", async function () {
-        const dead = "0x000000000000000000000000000000000000dead"
-        const before = await token.balanceOf(dead)
-        await vault.burn(fund, account.address)
-        const after = await token.balanceOf(dead)
-        expect(after - before).to.equal(amount)
-      })
+      describe("burn fund", function () {
+        it("can burn an entire fund", async function () {
+          await vault.transfer(fund, account.address, account2.address, 10)
+          await vault.transfer(fund, account.address, account3.address, 10)
+          await vault.burnFund(fund)
+          expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Burned)
+          expect(await vault.getBalance(fund, account.address)).to.equal(0)
+          expect(await vault.getBalance(fund, account2.address)).to.equal(0)
+          expect(await vault.getBalance(fund, account3.address)).to.equal(0)
+        })
 
-      it("allows designated tokens to be burned", async function () {
-        await vault.designate(fund, account.address, 10)
-        await vault.burn(fund, account.address)
-        expect(await vault.getBalance(fund, account.address)).to.equal(0)
-      })
-
-      it("moves burned designated tokens to address 0xdead", async function () {
-        const dead = "0x000000000000000000000000000000000000dead"
-        await vault.designate(fund, account.address, 10)
-        const before = await token.balanceOf(dead)
-        await vault.burn(fund, account.address)
-        const after = await token.balanceOf(dead)
-        expect(after - before).to.equal(amount)
-      })
-
-      it("cannot burn tokens that are flowing", async function () {
-        await vault.flow(fund, account.address, account2.address, 5)
-        const burning1 = vault.burn(fund, account.address)
-        await expect(burning1).to.be.revertedWith("FlowMustBeZero")
-        const burning2 = vault.burn(fund, account2.address)
-        await expect(burning2).to.be.revertedWith("FlowMustBeZero")
-      })
-
-      it("can burn tokens that are no longer flowing", async function () {
-        await vault.flow(fund, account.address, account2.address, 5)
-        await vault.flow(fund, account2.address, account.address, 5)
-        await expect(vault.burn(fund, account.address)).not.to.be.reverted
-      })
-
-      it("can burn an entire fund", async function () {
-        await vault.transfer(fund, account.address, account2.address, 10)
-        await vault.transfer(fund, account.address, account3.address, 10)
-        await vault.burnAll(fund)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Burned)
-        expect(await vault.getBalance(fund, account.address)).to.equal(0)
-        expect(await vault.getBalance(fund, account2.address)).to.equal(0)
-        expect(await vault.getBalance(fund, account3.address)).to.equal(0)
-      })
-
-      it("moves all tokens in the fund to address 0xdead", async function () {
-        const dead = "0x000000000000000000000000000000000000dead"
-        await vault.transfer(fund, account.address, account2.address, 10)
-        await vault.transfer(fund, account.address, account3.address, 10)
-        const before = await token.balanceOf(dead)
-        await vault.burnAll(fund)
-        const after = await token.balanceOf(dead)
-        expect(after - before).to.equal(amount)
+        it("moves all tokens in the fund to address 0xdead", async function () {
+          const dead = "0x000000000000000000000000000000000000dead"
+          await vault.transfer(fund, account.address, account2.address, 10)
+          await vault.transfer(fund, account.address, account3.address, 10)
+          const before = await token.balanceOf(dead)
+          await vault.burnFund(fund)
+          const after = await token.balanceOf(dead)
+          expect(after - before).to.equal(amount)
+        })
       })
     })
 
@@ -592,7 +591,7 @@ describe("Vault", function () {
         await vault.transfer(fund, account.address, account2.address, 20)
         await vault.transfer(fund, account2.address, account3.address, 10)
         // some tokens are burned
-        await vault.burn(fund, account2.address)
+        await vault.burnAccount(fund, account2.address)
         await expire()
         // some tokens are withdrawn
         await vault.withdraw(fund, account.address)
@@ -733,7 +732,7 @@ describe("Vault", function () {
       })
 
       it("cannot withdraw burned tokens", async function () {
-        await vault.burn(fund, account.address)
+        await vault.burnAccount(fund, account.address)
         await expire()
         const before = await token.balanceOf(account.address)
         await vault.withdraw(fund, account.address)
@@ -762,7 +761,7 @@ describe("Vault", function () {
       await token.connect(controller).approve(vault.address, amount)
       await vault.lock(fund, expiry, expiry)
       await vault.deposit(fund, account.address, amount)
-      await vault.burnAll(fund)
+      await vault.burnFund(fund)
     })
 
     testBurnedFund()
@@ -824,13 +823,13 @@ describe("Vault", function () {
     })
 
     it("does not allow burning of accounts", async function () {
-      await expect(vault.burn(fund, account.address)).to.be.revertedWith(
+      await expect(vault.burnAccount(fund, account.address)).to.be.revertedWith(
         "FundNotLocked"
       )
     })
 
     it("does not allow burning an entire fund", async function () {
-      await expect(vault.burnAll(fund)).to.be.revertedWith("FundNotLocked")
+      await expect(vault.burnFund(fund)).to.be.revertedWith("FundNotLocked")
     })
   }
 })
