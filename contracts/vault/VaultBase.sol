@@ -170,7 +170,7 @@ abstract contract VaultBase {
     _accounts[controller][fund][to] = receiver;
   }
 
-  function _burn(
+  function _burnAccount(
     Controller controller,
     Fund fund,
     Recipient recipient
@@ -189,7 +189,7 @@ abstract contract VaultBase {
     _token.safeTransfer(address(0xdead), amount);
   }
 
-  function _burnAll(Controller controller, Fund fund) internal {
+  function _burnFund(Controller controller, Fund fund) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, FundNotLocked());
 
