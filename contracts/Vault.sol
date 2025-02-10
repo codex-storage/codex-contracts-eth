@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import "./vault/VaultBase.sol";
 
 contract Vault is VaultBase {
-  // solhint-disable-next-line no-empty-blocks
   constructor(IERC20 token) VaultBase(token) {}
 
   function getBalance(
