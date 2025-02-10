@@ -1,18 +1,12 @@
-const { advanceTimeTo, currentTime, mine } = require("./evm")
+const { advanceTimeTo, currentTime } = require("./evm")
 const { slotId, requestId } = require("./ids")
 const { payoutForDuration } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 
-/**
- * @dev This will not advance the time right on the "expiry threshold" but will most probably "overshoot it"
- *      because "currentTime" most probably is not the time at which the request is created, but it is used
- *      in the next timestamp calculation with `now + expiry`.
- * @param request
- * @returns {Promise<void>}
- */
-async function waitUntilCancelled(request) {
+async function waitUntilCancelled(contract, request) {
+  const expiry = (await contract.requestExpiry(requestId(request))).toNumber()
   // We do +1, because the expiry check in contract is done as `>` and not `>=`.
-  await advanceTimeTo((await currentTime()) + request.expiry + 1)
+  await advanceTimeTo(expiry + 1)
 }
 
 async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
