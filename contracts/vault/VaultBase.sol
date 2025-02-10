@@ -170,6 +170,23 @@ abstract contract VaultBase {
     _accounts[controller][fund][to] = receiver;
   }
 
+  function _burnDesignated(
+    Controller controller,
+    Fund fund,
+    Recipient recipient,
+    uint128 amount
+  ) internal {
+    Lock memory lock = _locks[controller][fund];
+    require(lock.status() == LockStatus.Locked, FundNotLocked());
+
+    Account storage account = _accounts[controller][fund][recipient];
+    require(account.balance.designated >= amount, InsufficientBalance());
+
+    account.balance.designated -= amount;
+
+    _token.safeTransfer(address(0xdead), amount);
+  }
+
   function _burnAccount(
     Controller controller,
     Fund fund,

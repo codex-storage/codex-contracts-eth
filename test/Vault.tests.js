@@ -452,12 +452,54 @@ describe("Vault", function () {
     })
 
     describe("burning", function () {
+      const dead = "0x000000000000000000000000000000000000dead"
       const amount = 1000
 
       beforeEach(async function () {
         await setAutomine(true)
         await token.connect(controller).approve(vault.address, amount)
         await vault.deposit(fund, account.address, amount)
+      })
+
+      describe("burn designated", function () {
+        const designated = 100
+
+        beforeEach(async function () {
+          await vault.designate(fund, account.address, designated)
+        })
+
+        it("burns a number of designated tokens", async function () {
+          await vault.burnDesignated(fund, account.address, 10)
+          expect(
+            await vault.getDesignatedBalance(fund, account.address)
+          ).to.equal(designated - 10)
+          expect(await vault.getBalance(fund, account.address)).to.equal(
+            amount - 10
+          )
+        })
+
+        it("can burn all of the designated tokens", async function () {
+          await vault.burnDesignated(fund, account.address, designated)
+          expect(
+            await vault.getDesignatedBalance(fund, account.address)
+          ).to.equal(0)
+          expect(await vault.getBalance(fund, account.address)).to.equal(
+            amount - designated
+          )
+        })
+
+        it("cannot burn more than all designated tokens", async function () {
+          await expect(
+            vault.burnDesignated(fund, account.address, designated + 1)
+          ).to.be.revertedWith("InsufficientBalance")
+        })
+
+        it("moves burned tokens to address 0xdead", async function () {
+          const before = await token.balanceOf(dead)
+          await vault.burnDesignated(fund, account.address, 10)
+          const after = await token.balanceOf(dead)
+          expect(after - before).to.equal(10)
+        })
       })
 
       describe("burn account", function () {
@@ -475,7 +517,6 @@ describe("Vault", function () {
         })
 
         it("moves account tokens to address 0xdead", async function () {
-          const dead = "0x000000000000000000000000000000000000dead"
           await vault.designate(fund, account.address, 10)
           const before = await token.balanceOf(dead)
           await vault.burnAccount(fund, account.address)
@@ -511,7 +552,6 @@ describe("Vault", function () {
         })
 
         it("moves all tokens in the fund to address 0xdead", async function () {
-          const dead = "0x000000000000000000000000000000000000dead"
           await vault.transfer(fund, account.address, account2.address, 10)
           await vault.transfer(fund, account.address, account3.address, 10)
           const before = await token.balanceOf(dead)
@@ -819,6 +859,12 @@ describe("Vault", function () {
     it("does not allow new token flows to start", async function () {
       await expect(
         vault.flow(fund, account.address, account2.address, 0)
+      ).to.be.revertedWith("FundNotLocked")
+    })
+
+    it("does not allow burning of designated tokens", async function () {
+      await expect(
+        vault.burnDesignated(fund, account.address, 1)
       ).to.be.revertedWith("FundNotLocked")
     })
 
