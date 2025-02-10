@@ -69,7 +69,7 @@ abstract contract VaultBase {
     Timestamp maximum
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.NoLock, FundAlreadyLocked());
+    require(lock.status() == LockStatus.NoLock, VaultFundAlreadyLocked());
     lock.expiry = expiry;
     lock.maximum = maximum;
     _checkLockInvariant(lock);
@@ -82,8 +82,8 @@ abstract contract VaultBase {
     Timestamp expiry
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
-    require(lock.expiry <= expiry, InvalidExpiry());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
+    require(lock.expiry <= expiry, VaultInvalidExpiry());
     lock.expiry = expiry;
     _checkLockInvariant(lock);
     _locks[controller][fund] = lock;
@@ -96,7 +96,7 @@ abstract contract VaultBase {
     uint128 amount
   ) internal {
     Lock storage lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account storage account = _accounts[controller][fund][recipient];
 
@@ -117,10 +117,10 @@ abstract contract VaultBase {
     uint128 amount
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account memory account = _accounts[controller][fund][recipient];
-    require(amount <= account.balance.available, InsufficientBalance());
+    require(amount <= account.balance.available, VaultInsufficientBalance());
 
     account.balance.available -= amount;
     account.balance.designated += amount;
@@ -137,10 +137,10 @@ abstract contract VaultBase {
     uint128 amount
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account memory sender = _accounts[controller][fund][from];
-    require(amount <= sender.balance.available, InsufficientBalance());
+    require(amount <= sender.balance.available, VaultInsufficientBalance());
 
     sender.balance.available -= amount;
     _checkAccountInvariant(sender, lock);
@@ -158,7 +158,7 @@ abstract contract VaultBase {
     TokensPerSecond rate
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account memory sender = _accounts[controller][fund][from];
     sender.flowOut(rate);
@@ -177,10 +177,10 @@ abstract contract VaultBase {
     uint128 amount
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account storage account = _accounts[controller][fund][recipient];
-    require(account.balance.designated >= amount, InsufficientBalance());
+    require(account.balance.designated >= amount, VaultInsufficientBalance());
 
     account.balance.designated -= amount;
 
@@ -193,10 +193,10 @@ abstract contract VaultBase {
     Recipient recipient
   ) internal {
     Lock storage lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account memory account = _accounts[controller][fund][recipient];
-    require(account.flow.incoming == account.flow.outgoing, FlowMustBeZero());
+    require(account.flow.incoming == account.flow.outgoing, VaultFlowNotZero());
     uint128 amount = account.balance.available + account.balance.designated;
 
     lock.value -= amount;
@@ -208,7 +208,7 @@ abstract contract VaultBase {
 
   function _burnFund(Controller controller, Fund fund) internal {
     Lock storage lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Locked, FundNotLocked());
+    require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     lock.burned = true;
 
@@ -221,7 +221,7 @@ abstract contract VaultBase {
     Recipient recipient
   ) internal {
     Lock memory lock = _locks[controller][fund];
-    require(lock.status() == LockStatus.Unlocked, FundNotUnlocked());
+    require(lock.status() == LockStatus.Unlocked, VaultFundNotUnlocked());
 
     Account memory account = _accounts[controller][fund][recipient];
     account.update(lock.expiry);
@@ -241,20 +241,20 @@ abstract contract VaultBase {
   }
 
   function _checkLockInvariant(Lock memory lock) private pure {
-    require(lock.expiry <= lock.maximum, InvalidExpiry());
+    require(lock.expiry <= lock.maximum, VaultInvalidExpiry());
   }
 
   function _checkAccountInvariant(
     Account memory account,
     Lock memory lock
   ) private pure {
-    require(account.isSolventAt(lock.maximum), InsufficientBalance());
+    require(account.isSolventAt(lock.maximum), VaultInsufficientBalance());
   }
 
-  error InsufficientBalance();
-  error InvalidExpiry();
-  error FundNotLocked();
-  error FundNotUnlocked();
-  error FundAlreadyLocked();
-  error FlowMustBeZero();
+  error VaultInsufficientBalance();
+  error VaultInvalidExpiry();
+  error VaultFundNotLocked();
+  error VaultFundNotUnlocked();
+  error VaultFundAlreadyLocked();
+  error VaultFlowNotZero();
 }
