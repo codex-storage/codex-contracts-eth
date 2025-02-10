@@ -4,16 +4,13 @@ pragma solidity 0.8.28;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Accounts.sol";
-import "./Timestamps.sol";
-import "./TokenFlows.sol";
 import "./Locks.sol";
 
-using SafeERC20 for IERC20;
-using Timestamps for Timestamp;
-using Accounts for Account;
-using Locks for Lock;
-
 abstract contract VaultBase {
+  using SafeERC20 for IERC20;
+  using Accounts for Account;
+  using Locks for Lock;
+
   IERC20 internal immutable _token;
 
   type Controller is address;
