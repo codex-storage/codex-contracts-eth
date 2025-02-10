@@ -488,17 +488,23 @@ describe("Vault", function () {
           )
         })
 
-        it("cannot burn more than all designated tokens", async function () {
-          await expect(
-            vault.burnDesignated(fund, account.address, designated + 1)
-          ).to.be.revertedWith("InsufficientBalance")
-        })
-
         it("moves burned tokens to address 0xdead", async function () {
           const before = await token.balanceOf(dead)
           await vault.burnDesignated(fund, account.address, 10)
           const after = await token.balanceOf(dead)
           expect(after - before).to.equal(10)
+        })
+
+        it("can burn designated when tokens are flowing", async function () {
+          await vault.flow(fund, account.address, account2.address, 5)
+          await expect(vault.burnDesignated(fund, account.address, designated))
+            .not.to.be.reverted
+        })
+
+        it("cannot burn more than all designated tokens", async function () {
+          await expect(
+            vault.burnDesignated(fund, account.address, designated + 1)
+          ).to.be.revertedWith("InsufficientBalance")
         })
       })
 
@@ -558,6 +564,11 @@ describe("Vault", function () {
           await vault.burnFund(fund)
           const after = await token.balanceOf(dead)
           expect(after - before).to.equal(amount)
+        })
+
+        it("can burn fund when tokens are flowing", async function () {
+          await vault.flow(fund, account.address, account2.address, 5)
+          await expect(vault.burnFund(fund)).not.to.be.reverted
         })
       })
     })
