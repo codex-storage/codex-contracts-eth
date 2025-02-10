@@ -38,6 +38,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_SlotIsFree();
   error Marketplace_ReservationRequired();
   error Marketplace_NothingToWithdraw();
+  error Marketplace_DurationExceedsLimit();
 
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -134,10 +135,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (_requests[id].client != address(0)) {
       revert Marketplace_RequestAlreadyExists();
     }
-    require(
-      request.ask.duration <= _config.requestDurationLimit,
-      "Duration exceeds limit"
-    );
     if (request.expiry == 0 || request.expiry >= request.ask.duration)
       revert Marketplace_InvalidExpiry();
     if (request.ask.slots == 0) revert Marketplace_InsufficientSlots();
@@ -157,6 +154,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
     if (bytes(request.content.cid).length == 0) {
       revert Marketplace_InvalidCid();
+    }
+    if (request.ask.duration > _config.requestDurationLimit) {
+      revert Marketplace_DurationExceedsLimit();
     }
 
     _requests[id] = request;
