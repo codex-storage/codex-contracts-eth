@@ -5,16 +5,11 @@ type Timestamp is uint40;
 type Duration is uint40;
 
 using {_timestampEquals as ==} for Timestamp global;
-using {_timestampNotEqual as !=} for Timestamp global;
 using {_timestampLessThan as <} for Timestamp global;
 using {_timestampAtMost as <=} for Timestamp global;
 
 function _timestampEquals(Timestamp a, Timestamp b) pure returns (bool) {
   return Timestamp.unwrap(a) == Timestamp.unwrap(b);
-}
-
-function _timestampNotEqual(Timestamp a, Timestamp b) pure returns (bool) {
-  return Timestamp.unwrap(a) != Timestamp.unwrap(b);
 }
 
 function _timestampLessThan(Timestamp a, Timestamp b) pure returns (bool) {
