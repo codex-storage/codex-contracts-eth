@@ -696,7 +696,7 @@ describe("Marketplace", function () {
       ).toNumber()
 
       await marketplace.reserveSlot(slot.request, slot.index)
-      await advanceTimeTo(filledAt)
+      await setNextBlockTimestamp(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
       await marketplace.freeSlot(slotId(slot))
@@ -717,7 +717,7 @@ describe("Marketplace", function () {
       ).toNumber()
 
       await marketplace.reserveSlot(slot.request, slot.index)
-      await advanceTimeTo(filledAt)
+      await setNextBlockTimestamp(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
       const startBalanceHost = await token.balanceOf(host.address)
@@ -1009,7 +1009,7 @@ describe("Marketplace", function () {
       ).toNumber()
 
       await marketplace.reserveSlot(slot.request, slot.index)
-      await advanceTimeTo(filledAt)
+      await setNextBlockTimestamp(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
       const expectedPartialhostRewardRecipient =
