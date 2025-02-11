@@ -6,6 +6,36 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Accounts.sol";
 import "./Locks.sol";
 
+/// Records account balances and token flows. Accounts are separated into funds.
+/// Funds are kept separate between controllers.
+///
+/// A fund can only be manipulated by a controller when it is locked. Tokens can
+/// only be withdrawn when a fund is unlocked.
+///
+/// The vault maintains a number of invariants to ensure its integrity.
+///
+/// The lock invariant ensures that there is a maximum time that a fund can be
+/// locked:
+///
+/// (∀ controller ∈ Controller, fund ∈ Fund:
+///   lock.expiry <= lock.maximum
+///   where lock = _locks[controller][fund])
+///
+/// The account invariant ensures that the outgoing token flow can be sustained
+/// for the maximum time that a fund can be locked:
+///
+/// (∀ controller ∈ Controller, fund ∈ Fund, recipient ∈ Recipient:
+///   account.isSolventAt(lock.maximum)
+///   where account = _accounts[controller][fund][recipient]
+///   and lock = _locks[controller][fund])
+///
+/// The flow invariant ensures that incoming and outgoing flow rates match:
+///
+/// (∀ controller ∈ Controller, fund ∈ Fund:
+///   (∑ recipient ∈ Recipient: accounts[recipient].flow.incoming) =
+///   (∑ recipient ∈ Recipient: accounts[recipient].flow.outgoing)
+///   where accounts = _accounts[controller][fund])
+///
 abstract contract VaultBase {
   using SafeERC20 for IERC20;
   using Accounts for Account;
@@ -13,11 +43,16 @@ abstract contract VaultBase {
 
   IERC20 internal immutable _token;
 
+  /// Represents a smart contract that can redistribute and burn tokens in funds
   type Controller is address;
+  /// Unique identifier for a fund, chosen by the controller
   type Fund is bytes32;
+  /// Receives the balance of an account when withdrawing
   type Recipient is address;
 
+  /// Each fund has its own time lock
   mapping(Controller => mapping(Fund => Lock)) private _locks;
+  /// Each recipient has its own account in a fund
   mapping(Controller => mapping(Fund => mapping(Recipient => Account)))
     private _accounts;
 
