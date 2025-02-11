@@ -95,6 +95,7 @@ contract Vault is VaultBase {
   /// Delays unlocking of a locked fund. The new expiry should be later than
   /// the existing expiry, but no later than the maximum timestamp that was
   /// provided when locking the fund.
+  /// Only allowed when the lock has not unlocked yet.
   function extendLock(Fund fund, Timestamp expiry) public {
     Controller controller = Controller.wrap(msg.sender);
     _extendLock(controller, fund, expiry);
@@ -137,7 +138,8 @@ contract Vault is VaultBase {
 
   /// Transfers tokens from the account of one recipient to the other over time.
   /// Every second a number of tokens are transfered, until the fund is
-  /// unlocked.
+  /// unlocked. After flowing into an account, these tokens become designated
+  /// tokens, so they cannot be transfered again.
   /// Only allowed when the fund is locked.
   /// Only allowed when the balance is sufficient to sustain the flow until the
   /// fund unlocks, even if the lock expiry time is extended to its maximum.
@@ -160,6 +162,7 @@ contract Vault is VaultBase {
 
   /// Burns all tokens from the account of the recipient.
   /// Only allowed when the fund is locked.
+  /// Only allowed when no funds are flowing into or out of the account.
   function burnAccount(Fund fund, Recipient recipient) public {
     Controller controller = Controller.wrap(msg.sender);
     _burnAccount(controller, fund, recipient);
