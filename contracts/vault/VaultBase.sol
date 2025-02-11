@@ -25,9 +25,10 @@ import "./Locks.sol";
 /// for the maximum time that a fund can be locked:
 ///
 /// (∀ controller ∈ Controller, fund ∈ Fund, recipient ∈ Recipient:
-///   account.isSolventAt(lock.maximum)
-///   where account = _accounts[controller][fund][recipient]
-///   and lock = _locks[controller][fund])
+///   flow.outgoing * (lock.maximum - flow.updated) <= balance.available
+///   where lock = _locks[controller][fund])
+///   and flow = _accounts[controller][fund][recipient].flow
+///   and balance = _accounts[controller][fund][recipient].balance
 ///
 /// The flow invariant ensures that incoming and outgoing flow rates match:
 ///
