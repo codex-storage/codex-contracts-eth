@@ -208,13 +208,15 @@ abstract contract VaultBase {
     Recipient recipient,
     uint128 amount
   ) internal {
-    Lock memory lock = _locks[controller][fund];
+    Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
     Account storage account = _accounts[controller][fund][recipient];
     require(account.balance.designated >= amount, VaultInsufficientBalance());
 
     account.balance.designated -= amount;
+
+    lock.value -= amount;
 
     _token.safeTransfer(address(0xdead), amount);
   }

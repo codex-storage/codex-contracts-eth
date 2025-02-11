@@ -641,7 +641,10 @@ describe("Vault", function () {
         await vault.deposit(fund, account.address, 30)
         await vault.transfer(fund, account.address, account2.address, 20)
         await vault.transfer(fund, account2.address, account3.address, 10)
-        // some tokens are burned
+        // some designated tokens are burned
+        await vault.designate(fund, account2.address, 10)
+        await vault.burnDesignated(fund, account2.address, 5)
+        // some account is burned
         await vault.burnAccount(fund, account2.address)
         await expire()
         // some tokens are withdrawn
