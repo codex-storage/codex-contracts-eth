@@ -12,6 +12,7 @@ module.exports = {
     timeout: 30, // seconds
     downtime: 96, // number of blocks
     downtimeProduct: 97, // number of blocks
+    zkeyHash: "",
   },
   reservations: {
     maxReservations: 3,

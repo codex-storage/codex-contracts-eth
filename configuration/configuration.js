@@ -15,6 +15,7 @@ const DEFAULT_CONFIGURATION = {
     timeout: 30, // seconds
     downtime: 64, // number of blocks
     downtimeProduct: 67, // number of blocks
+    zkeyHash: "",
   },
   reservations: {
     maxReservations: 3,
