@@ -664,7 +664,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       revert Marketplace_TransferFailed();
   }
 
-  event StorageRequested(RequestId requestId, Ask ask, uint256 expiry);
+  event StorageRequested(RequestId requestId, Ask ask, uint64 expiry);
   event RequestFulfilled(RequestId indexed requestId);
   event RequestFailed(RequestId indexed requestId);
   event SlotFilled(RequestId indexed requestId, uint64 slotIndex);
