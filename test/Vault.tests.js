@@ -894,4 +894,133 @@ describe("Vault", function () {
       await expect(vault.burnFund(fund)).to.be.revertedWith("FundNotLocked")
     })
   }
+
+  describe("pausing", function () {
+    let owner
+    let owner2
+    let other
+
+    beforeEach(async function () {
+      ;[owner, owner2, other] = await ethers.getSigners()
+    })
+
+    it("allows the vault to be paused by the owner", async function () {
+      await expect(vault.connect(owner).pause()).not.to.be.reverted
+    })
+
+    it("allows the vault to be unpaused by the owner", async function () {
+      await vault.connect(owner).pause()
+      await expect(vault.connect(owner).unpause()).not.to.be.reverted
+    })
+
+    it("does not allow pause to be called by others", async function () {
+      await expect(vault.connect(other).pause()).to.be.revertedWith(
+        "UnauthorizedAccount"
+      )
+    })
+
+    it("does not allow unpause to be called by others", async function () {
+      await vault.connect(owner).pause()
+      await expect(vault.connect(other).unpause()).to.be.revertedWith(
+        "UnauthorizedAccount"
+      )
+    })
+
+    it("allows the ownership to change", async function () {
+      await vault.connect(owner).pause()
+      await vault.connect(owner).transferOwnership(owner2.address)
+      await expect(vault.connect(owner2).unpause()).not.to.be.reverted
+    })
+
+    it("allows the ownership to be renounced", async function () {
+      await vault.connect(owner).renounceOwnership()
+      await expect(vault.connect(owner).pause()).to.be.revertedWith(
+        "UnauthorizedAccount"
+      )
+    })
+
+    describe("when the vault is paused", function () {
+      let expiry
+      let maximum
+
+      beforeEach(async function () {
+        expiry = (await currentTime()) + 80
+        maximum = (await currentTime()) + 100
+        await vault.lock(fund, expiry, maximum)
+        await token.approve(vault.address, 1000)
+        await vault.deposit(fund, account.address, 1000)
+        await vault.designate(fund, account.address, 100)
+        await vault.connect(owner).pause()
+      })
+
+      it("only allows a recipient to withdraw itself", async function () {
+        await advanceTimeTo(expiry)
+        await expect(
+          vault.connect(account).withdrawByRecipient(controller.address, fund)
+        ).not.to.be.reverted
+      })
+
+      it("does not allow funds to be locked", async function () {
+        const fund = randomBytes(32)
+        const expiry = (await currentTime()) + 100
+        await expect(vault.lock(fund, expiry, expiry)).to.be.revertedWith(
+          "EnforcedPause"
+        )
+      })
+
+      it("does not allow extending of lock", async function () {
+        await expect(vault.extendLock(fund, maximum)).to.be.revertedWith(
+          "EnforcedPause"
+        )
+      })
+
+      it("does not allow depositing of tokens", async function () {
+        await token.approve(vault.address, 100)
+        await expect(
+          vault.deposit(fund, account.address, 100)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow designating tokens", async function () {
+        await expect(
+          vault.designate(fund, account.address, 10)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow transfer of tokens", async function () {
+        await expect(
+          vault.transfer(fund, account.address, account2.address, 10)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow new token flows to start", async function () {
+        await expect(
+          vault.flow(fund, account.address, account2.address, 1)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow burning of designated tokens", async function () {
+        await expect(
+          vault.burnDesignated(fund, account.address, 10)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow burning of accounts", async function () {
+        await expect(
+          vault.burnAccount(fund, account.address)
+        ).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow burning an entire fund", async function () {
+        await expect(vault.burnFund(fund)).to.be.revertedWith("EnforcedPause")
+      })
+
+      it("does not allow a controller to withdraw for a recipient", async function () {
+        await advanceTimeTo(expiry)
+        await expect(vault.withdraw(fund, account.address)).to.be.revertedWith(
+          "EnforcedPause"
+        )
+      })
+    })
+  })
 })
