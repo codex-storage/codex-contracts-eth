@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./vault/VaultBase.sol";
 
 /// A vault provides a means for smart contracts to control allocation of ERC20
@@ -43,9 +45,8 @@ import "./vault/VaultBase.sol";
 /// - burning tokens in a fund ensures that these tokens can no longer be
 ///   extracted by an attacker
 ///
-contract Vault is VaultBase {
-
-  constructor(IERC20 token) VaultBase(token) {}
+contract Vault is VaultBase, Pausable, Ownable {
+  constructor(IERC20 token) VaultBase(token) Ownable(msg.sender) {}
 
   /// The amount of tokens that are currently assigned to a recipient in a fund.
   /// This includes available and designated tokens. Available tokens can be
@@ -87,7 +88,11 @@ contract Vault is VaultBase {
 
   /// Locks the fund until the expiry timestamp. The lock expiry can be extended
   /// later, but no more than the maximum timestamp.
-  function lock(Fund fund, Timestamp expiry, Timestamp maximum) public {
+  function lock(
+    Fund fund,
+    Timestamp expiry,
+    Timestamp maximum
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _lock(controller, fund, expiry, maximum);
   }
@@ -96,7 +101,7 @@ contract Vault is VaultBase {
   /// the existing expiry, but no later than the maximum timestamp that was
   /// provided when locking the fund.
   /// Only allowed when the lock has not unlocked yet.
-  function extendLock(Fund fund, Timestamp expiry) public {
+  function extendLock(Fund fund, Timestamp expiry) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _extendLock(controller, fund, expiry);
   }
@@ -105,7 +110,11 @@ contract Vault is VaultBase {
   /// of the recipient. ERC20 tokens are transfered from the caller to the vault
   /// contract.
   /// Only allowed when the fund is locked.
-  function deposit(Fund fund, Recipient recipient, uint128 amount) public {
+  function deposit(
+    Fund fund,
+    Recipient recipient,
+    uint128 amount
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _deposit(controller, fund, recipient, amount);
   }
@@ -118,7 +127,7 @@ contract Vault is VaultBase {
     Fund fund,
     Recipient recipient,
     uint128 amount
-  ) public {
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _designate(controller, fund, recipient, amount);
   }
@@ -131,7 +140,7 @@ contract Vault is VaultBase {
     Recipient from,
     Recipient to,
     uint128 amount
-  ) public {
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _transfer(controller, fund, from, to, amount);
   }
@@ -148,14 +157,18 @@ contract Vault is VaultBase {
     Recipient from,
     Recipient to,
     TokensPerSecond rate
-  ) public {
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _flow(controller, fund, from, to, rate);
   }
 
   /// Burns an amount of designated tokens from the account of the recipient.
   /// Only allowed when the fund is locked.
-  function burnDesignated(Fund fund, Recipient recipient, uint128 amount) public {
+  function burnDesignated(
+    Fund fund,
+    Recipient recipient,
+    uint128 amount
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _burnDesignated(controller, fund, recipient, amount);
   }
@@ -163,14 +176,14 @@ contract Vault is VaultBase {
   /// Burns all tokens from the account of the recipient.
   /// Only allowed when the fund is locked.
   /// Only allowed when no funds are flowing into or out of the account.
-  function burnAccount(Fund fund, Recipient recipient) public {
+  function burnAccount(Fund fund, Recipient recipient) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _burnAccount(controller, fund, recipient);
   }
 
   /// Burns all tokens from all accounts in a fund.
   /// Only allowed when the fund is locked.
-  function burnFund(Fund fund) public {
+  function burnFund(Fund fund) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _burnFund(controller, fund);
   }
@@ -181,7 +194,7 @@ contract Vault is VaultBase {
   /// ⚠️ The recipient can also withdraw itself, so when designing a smart
   /// contract that controls funds in the vault, don't assume that only this
   /// smart contract can initiate a withdrawal ⚠️
-  function withdraw(Fund fund, Recipient recipient) public {
+  function withdraw(Fund fund, Recipient recipient) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
     _withdraw(controller, fund, recipient);
   }
@@ -192,5 +205,13 @@ contract Vault is VaultBase {
   function withdrawByRecipient(Controller controller, Fund fund) public {
     Recipient recipient = Recipient.wrap(msg.sender);
     _withdraw(controller, fund, recipient);
+  }
+
+  function pause() public onlyOwner {
+    _pause();
+  }
+
+  function unpause() public onlyOwner {
+    _unpause();
   }
 }
