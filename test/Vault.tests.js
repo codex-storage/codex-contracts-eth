@@ -43,8 +43,8 @@ describe("Vault", function () {
     })
 
     it("allows a lock to be set", async function () {
-      expiry = (await currentTime()) + 80
-      maximum = (await currentTime()) + 100
+      const expiry = (await currentTime()) + 80
+      const maximum = (await currentTime()) + 100
       await vault.lock(fund, expiry, maximum)
       expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
       expect(await vault.getLockExpiry(fund)).to.equal(expiry)
@@ -832,7 +832,7 @@ describe("Vault", function () {
 
     function testBurnedFund() {
       it("cannot set lock", async function () {
-        const locking = vault.lock(fund, expiry, maximum)
+        const locking = vault.lock(fund, expiry, expiry)
         await expect(locking).to.be.revertedWith("FundAlreadyLocked")
       })
 
