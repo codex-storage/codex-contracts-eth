@@ -134,7 +134,9 @@ describe("Vault", function () {
       it("deposit fails when tokens cannot be transferred", async function () {
         await token.connect(controller).approve(vault.address, amount - 1)
         const depositing = vault.deposit(fund, account.address, amount)
-        await expect(depositing).to.be.revertedWith("insufficient allowance")
+        await expect(depositing).to.be.revertedWith(
+          "ERC20InsufficientAllowance"
+        )
       })
 
       it("adds multiple deposits to the balance", async function () {
