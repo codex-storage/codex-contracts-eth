@@ -17,8 +17,8 @@ struct Ask {
   uint256 slotSize; // amount of storage per slot (in number of bytes)
   uint256 duration; // how long content should be stored (in seconds)
   uint256 proofProbability; // how often storage proofs are required
-  uint256 reward; // amount of tokens paid per second per slot to hosts
-  uint256 collateral; // amount of tokens required to be deposited by the hosts in order to fill the slot
+  uint256 pricePerBytePerSecond; // amount of tokens paid per second per byte to hosts
+  uint256 collateralPerByte; // amount of tokens per byte required to be deposited by the hosts in order to fill the slot
   uint64 maxSlotLoss; // Max slots that can be lost without data considered to be lost
 }
 
@@ -45,7 +45,21 @@ enum SlotState {
   Repair // when slot slot was forcible freed (host was kicked out from hosting the slot because of too many missed proofs) and needs to be repaired
 }
 
+library AskHelpers {
+  function collateralPerSlot(Ask memory ask) internal pure returns (uint256) {
+    return ask.collateralPerByte * ask.slotSize;
+  }
+
+  function pricePerSlotPerSecond(
+    Ask memory ask
+  ) internal pure returns (uint256) {
+    return ask.pricePerBytePerSecond * ask.slotSize;
+  }
+}
+
 library Requests {
+  using AskHelpers for Ask;
+
   function id(Request memory request) internal pure returns (RequestId) {
     return RequestId.wrap(keccak256(abi.encode(request)));
   }
@@ -76,6 +90,9 @@ library Requests {
   }
 
   function maxPrice(Request memory request) internal pure returns (uint256) {
-    return request.ask.slots * request.ask.duration * request.ask.reward;
+    return
+      request.ask.slots *
+      request.ask.duration *
+      request.ask.pricePerSlotPerSecond();
   }
 }

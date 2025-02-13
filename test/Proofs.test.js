@@ -50,8 +50,8 @@ describe("Proofs", function () {
 
     it("requires proofs with an agreed upon probability", async function () {
       const samples = 256 // 256 samples avoids bias due to pointer downtime
-
-      await proofs.startRequiringProofs(slotId, probability)
+      await proofs.setSlotProbability(slotId, probability)
+      await proofs.startRequiringProofs(slotId)
       await advanceTimeForNextBlock(period)
       await mine()
       let amount = 0
@@ -71,7 +71,9 @@ describe("Proofs", function () {
     })
 
     it("supports probability 1 (proofs are always required)", async function () {
-      await proofs.startRequiringProofs(slotId, 1)
+      const probability = 1
+      await proofs.setSlotProbability(slotId, probability)
+      await proofs.startRequiringProofs(slotId)
       await advanceTimeForNextBlock(period)
       await mine()
       while ((await proofs.getPointer(slotId)) < downtime) {
@@ -83,7 +85,8 @@ describe("Proofs", function () {
     it("requires no proofs in the start period", async function () {
       const startPeriod = Math.floor((await currentTime()) / period)
       const probability = 1
-      await proofs.startRequiringProofs(slotId, probability)
+      await proofs.setSlotProbability(slotId, probability)
+      await proofs.startRequiringProofs(slotId)
       while (Math.floor((await currentTime()) / period) == startPeriod) {
         expect(await proofs.isProofRequired(slotId)).to.be.false
         await advanceTimeForNextBlock(Math.floor(period / 10))
@@ -97,7 +100,8 @@ describe("Proofs", function () {
       let id3 = hexlify(randomBytes(32))
       for (let slotId of [id1, id2, id3]) {
         await proofs.setSlotState(slotId, SlotState.Filled)
-        await proofs.startRequiringProofs(slotId, probability)
+        await proofs.setSlotProbability(slotId, probability)
+        await proofs.startRequiringProofs(slotId)
       }
       let req1, req2, req3
       while (req1 === req2 && req2 === req3) {
@@ -130,7 +134,8 @@ describe("Proofs", function () {
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
-      await proofs.startRequiringProofs(slotId, probability)
+      await proofs.setSlotProbability(slotId, probability)
+      await proofs.startRequiringProofs(slotId)
       await advanceTimeToForNextBlock(periodEnd(periodOf(await currentTime())))
       await waitUntilProofWillBeRequired()
     })
@@ -165,7 +170,8 @@ describe("Proofs", function () {
 
     beforeEach(async function () {
       await proofs.setSlotState(slotId, SlotState.Filled)
-      await proofs.startRequiringProofs(slotId, probability)
+      await proofs.setSlotProbability(slotId, probability)
+      await proofs.startRequiringProofs(slotId)
     })
 
     async function waitUntilProofIsRequired(slotId) {

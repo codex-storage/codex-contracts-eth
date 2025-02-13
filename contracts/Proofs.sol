@@ -40,12 +40,17 @@ abstract contract Proofs is Periods {
   }
 
   mapping(SlotId => uint256) private _slotStarts; // TODO: Should be smaller than uint256
-  mapping(SlotId => uint256) private _probabilities;
   mapping(SlotId => uint256) private _missed; // TODO: Should be smaller than uint256
   mapping(SlotId => mapping(Period => bool)) private _received;
   mapping(SlotId => mapping(Period => bool)) private _missing;
 
   function slotState(SlotId id) public view virtual returns (SlotState);
+
+  /**
+   * @param id  Slot's ID
+   * @return Integer which specifies the probability of how often the proofs will be required. Lower number means higher probability.
+   */
+  function slotProbability(SlotId id) public view virtual returns (uint256);
 
   /**
    * @return Number of missed proofs since Slot was Filled
@@ -64,13 +69,11 @@ abstract contract Proofs is Periods {
 
   /**
    * @param id Slot's ID for which the proofs should be started to require
-   * @param probability Integer which specifies the probability of how often the proofs will be required. Lower number means higher probability.
    * @notice Notes down the block's timestamp as Slot's starting time for requiring proofs
    *     and saves the required probability.
    */
-  function _startRequiringProofs(SlotId id, uint256 probability) internal {
+  function _startRequiringProofs(SlotId id) internal {
     _slotStarts[id] = block.timestamp;
-    _probabilities[id] = probability;
   }
 
   /**
@@ -145,7 +148,7 @@ abstract contract Proofs is Periods {
 
     /// Scaling of the probability according the downtime configuration
     /// See: https://github.com/codex-storage/codex-research/blob/41c4b4409d2092d0a5475aca0f28995034e58d14/design/storage-proof-timing.md#pointer-downtime
-    uint256 probability = (_probabilities[id] * (256 - _config.downtime)) / 256;
+    uint256 probability = slotProbability(id);
     isRequired = probability == 0 || uint256(challenge) % probability == 0;
   }
 
