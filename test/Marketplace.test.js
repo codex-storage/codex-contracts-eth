@@ -279,7 +279,7 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when cid is missing", async function () {
-      request.content.cid = ""
+      request.content.cid = []
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
         "Marketplace_InvalidCid"
       )
