@@ -95,28 +95,24 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   constructor(
-    MarketplaceConfig memory configuration,
+    MarketplaceConfig memory config,
     IERC20 token_,
     IGroth16Verifier verifier
-  )
-    SlotReservations(configuration.reservations)
-    Proofs(configuration.proofs, verifier)
-  {
+  ) SlotReservations(config.reservations) Proofs(config.proofs, verifier) {
     _token = token_;
 
-    if (configuration.collateral.repairRewardPercentage > 100)
+    if (config.collateral.repairRewardPercentage > 100)
       revert Marketplace_RepairRewardPercentageTooHigh();
-    if (configuration.collateral.slashPercentage > 100)
+    if (config.collateral.slashPercentage > 100)
       revert Marketplace_SlashPercentageTooHigh();
 
     if (
-      configuration.collateral.maxNumberOfSlashes *
-        configuration.collateral.slashPercentage >
+      config.collateral.maxNumberOfSlashes * config.collateral.slashPercentage >
       100
     ) {
       revert Marketplace_MaximumSlashingTooHigh();
     }
-    _config = configuration;
+    _config = config;
   }
 
   function configuration() public view returns (MarketplaceConfig memory) {
