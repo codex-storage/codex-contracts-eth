@@ -6,8 +6,8 @@ const exampleConfiguration = () => ({
   collateral: {
     repairRewardPercentage: 10,
     maxNumberOfSlashes: 5,
-    slashCriterion: 3,
     slashPercentage: 10,
+    validatorRewardPercentage: 20,
   },
   proofs: {
     period: 10,
@@ -29,9 +29,9 @@ const exampleRequest = async () => {
       slotSize: 1 * 1024 * 1024 * 1024, // 1 Gigabyte
       duration: hours(10),
       proofProbability: 4, // require a proof roughly once every 4 periods
-      reward: 84,
+      pricePerBytePerSecond: 1,
       maxSlotLoss: 2,
-      collateral: 200,
+      collateralPerByte: 1,
     },
     content: {
       cid: Buffer.from("zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob"),
