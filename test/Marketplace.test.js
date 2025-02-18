@@ -203,6 +203,14 @@ describe("Marketplace", function () {
       )
     })
 
+    it("rejects request with duration exceeding limit", async function () {
+      request.ask.duration = config.requestDurationLimit + 1
+      await token.approve(marketplace.address, collateralPerSlot(request))
+      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+        "Marketplace_DurationExceedsLimit"
+      )
+    })
+
     it("rejects request with insufficient payment", async function () {
       let insufficient = maxPrice(request) - 1
       await token.approve(marketplace.address, insufficient)
@@ -1390,8 +1398,7 @@ describe("Marketplace", function () {
 
       it("rewards validator when marking proof as missing", async function () {
         const id = slotId(slot)
-        const { slashCriterion, slashPercentage, validatorRewardPercentage } =
-          config.collateral
+        const { slashPercentage, validatorRewardPercentage } = config.collateral
         await marketplace.reserveSlot(slot.request, slot.index)
         await marketplace.fillSlot(slot.request, slot.index, proof)
 

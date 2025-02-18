@@ -16,4 +16,5 @@ module.exports = {
   reservations: {
     maxReservations: 3,
   },
+  requestDurationLimit: 60*60*24*30 // 30 days
 }
