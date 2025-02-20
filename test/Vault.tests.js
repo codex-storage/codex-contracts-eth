@@ -772,7 +772,7 @@ describe("Vault", function () {
         expect(after - before).to.equal(amount)
       })
 
-      it("allows recipient to withdraw for itself", async function () {
+      it("allows account holder to withdraw for itself", async function () {
         await expire()
         const before = await token.balanceOf(holder.address)
         await vault
@@ -780,6 +780,15 @@ describe("Vault", function () {
           .withdrawByRecipient(controller.address, fund, account1)
         const after = await token.balanceOf(holder.address)
         expect(after - before).to.equal(amount)
+      })
+
+      it("does not allow anyone else to withdraw for the account holder", async function () {
+        await expire()
+        await expect(
+          vault
+            .connect(holder2)
+            .withdrawByRecipient(controller.address, fund, account1)
+        ).to.be.revertedWith("OnlyAccountHolder")
       })
 
       it("empties the balance when withdrawing", async function () {
