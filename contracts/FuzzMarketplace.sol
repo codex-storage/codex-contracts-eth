@@ -10,7 +10,7 @@ contract FuzzMarketplace is Marketplace {
     Marketplace(
       MarketplaceConfig(
         CollateralConfig(10, 5, 10, 20),
-        ProofConfig(10, 5, 64, "", 67),
+        ProofConfig(10, 5, 64, 67, ""),
         SlotReservationsConfig(20),
         60 * 60 * 24 * 30 // 30 days
       ),

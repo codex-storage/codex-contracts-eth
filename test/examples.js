@@ -13,8 +13,8 @@ const exampleConfiguration = () => ({
     period: 10,
     timeout: 5,
     downtime: 64,
-    zkeyHash: "",
     downtimeProduct: 67,
+    zkeyHash: "",
   },
   reservations: {
     maxReservations: 3,
