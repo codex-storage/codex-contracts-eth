@@ -224,6 +224,7 @@ contract Vault is VaultBase, Pausable, Ownable {
     AccountId account
   ) public {
     (address holder, ) = Accounts.decodeId(account);
+    require(msg.sender == holder, VaultOnlyAccountHolder());
     _withdraw(controller, fund, account);
   }
 
@@ -234,4 +235,6 @@ contract Vault is VaultBase, Pausable, Ownable {
   function unpause() public onlyOwner {
     _unpause();
   }
+
+  error VaultOnlyAccountHolder();
 }
