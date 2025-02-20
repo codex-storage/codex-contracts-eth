@@ -24,17 +24,17 @@ import "./Locks.sol";
 /// The account invariant ensures that the outgoing token flow can be sustained
 /// for the maximum time that a fund can be locked:
 ///
-/// (∀ controller ∈ Controller, fund ∈ Fund, recipient ∈ Recipient:
+/// (∀ controller ∈ Controller, fund ∈ Fund, account ∈ AccountId:
 ///   flow.outgoing * (lock.maximum - flow.updated) <= balance.available
 ///   where lock = _locks[controller][fund])
-///   and flow = _accounts[controller][fund][recipient].flow
-///   and balance = _accounts[controller][fund][recipient].balance
+///   and flow = _accounts[controller][fund][account].flow
+///   and balance = _accounts[controller][fund][account].balance
 ///
 /// The flow invariant ensures that incoming and outgoing flow rates match:
 ///
 /// (∀ controller ∈ Controller, fund ∈ Fund:
-///   (∑ recipient ∈ Recipient: accounts[recipient].flow.incoming) =
-///   (∑ recipient ∈ Recipient: accounts[recipient].flow.outgoing)
+///   (∑ account ∈ AccountId: accounts[account].flow.incoming) =
+///   (∑ account ∈ AccountId: accounts[account].flow.outgoing)
 ///   where accounts = _accounts[controller][fund])
 ///
 abstract contract VaultBase {
@@ -48,13 +48,11 @@ abstract contract VaultBase {
   type Controller is address;
   /// Unique identifier for a fund, chosen by the controller
   type Fund is bytes32;
-  /// Receives the balance of an account when withdrawing
-  type Recipient is address;
 
   /// Each fund has its own time lock
   mapping(Controller => mapping(Fund => Lock)) private _locks;
-  /// Each recipient has its own account in a fund
-  mapping(Controller => mapping(Fund => mapping(Recipient => Account)))
+  /// Each account holder has its own set of accounts in a fund
+  mapping(Controller => mapping(Fund => mapping(AccountId => Account)))
     private _accounts;
 
   constructor(IERC20 token) {
@@ -78,17 +76,17 @@ abstract contract VaultBase {
   function _getBalance(
     Controller controller,
     Fund fund,
-    Recipient recipient
+    AccountId id
   ) internal view returns (Balance memory) {
     Lock memory lock = _locks[controller][fund];
     LockStatus lockStatus = lock.status();
     if (lockStatus == LockStatus.Locked) {
-      Account memory account = _accounts[controller][fund][recipient];
+      Account memory account = _accounts[controller][fund][id];
       account.update(Timestamps.currentTime());
       return account.balance;
     }
     if (lockStatus == LockStatus.Unlocked) {
-      Account memory account = _accounts[controller][fund][recipient];
+      Account memory account = _accounts[controller][fund][id];
       account.update(lock.expiry);
       return account.balance;
     }
@@ -125,13 +123,13 @@ abstract contract VaultBase {
   function _deposit(
     Controller controller,
     Fund fund,
-    Recipient recipient,
+    AccountId id,
     uint128 amount
   ) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
-    Account storage account = _accounts[controller][fund][recipient];
+    Account storage account = _accounts[controller][fund][id];
 
     account.balance.available += amount;
     lock.value += amount;
@@ -146,27 +144,27 @@ abstract contract VaultBase {
   function _designate(
     Controller controller,
     Fund fund,
-    Recipient recipient,
+    AccountId id,
     uint128 amount
   ) internal {
     Lock memory lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
-    Account memory account = _accounts[controller][fund][recipient];
+    Account memory account = _accounts[controller][fund][id];
     require(amount <= account.balance.available, VaultInsufficientBalance());
 
     account.balance.available -= amount;
     account.balance.designated += amount;
     _checkAccountInvariant(account, lock);
 
-    _accounts[controller][fund][recipient] = account;
+    _accounts[controller][fund][id] = account;
   }
 
   function _transfer(
     Controller controller,
     Fund fund,
-    Recipient from,
-    Recipient to,
+    AccountId from,
+    AccountId to,
     uint128 amount
   ) internal {
     Lock memory lock = _locks[controller][fund];
@@ -186,8 +184,8 @@ abstract contract VaultBase {
   function _flow(
     Controller controller,
     Fund fund,
-    Recipient from,
-    Recipient to,
+    AccountId from,
+    AccountId to,
     TokensPerSecond rate
   ) internal {
     Lock memory lock = _locks[controller][fund];
@@ -206,13 +204,13 @@ abstract contract VaultBase {
   function _burnDesignated(
     Controller controller,
     Fund fund,
-    Recipient recipient,
+    AccountId id,
     uint128 amount
   ) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
-    Account storage account = _accounts[controller][fund][recipient];
+    Account storage account = _accounts[controller][fund][id];
     require(account.balance.designated >= amount, VaultInsufficientBalance());
 
     account.balance.designated -= amount;
@@ -225,18 +223,18 @@ abstract contract VaultBase {
   function _burnAccount(
     Controller controller,
     Fund fund,
-    Recipient recipient
+    AccountId id
   ) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
-    Account memory account = _accounts[controller][fund][recipient];
+    Account memory account = _accounts[controller][fund][id];
     require(account.flow.incoming == account.flow.outgoing, VaultFlowNotZero());
     uint128 amount = account.balance.available + account.balance.designated;
 
     lock.value -= amount;
 
-    delete _accounts[controller][fund][recipient];
+    delete _accounts[controller][fund][id];
 
     _token.safeTransfer(address(0xdead), amount);
   }
@@ -250,15 +248,11 @@ abstract contract VaultBase {
     _token.safeTransfer(address(0xdead), lock.value);
   }
 
-  function _withdraw(
-    Controller controller,
-    Fund fund,
-    Recipient recipient
-  ) internal {
+  function _withdraw(Controller controller, Fund fund, AccountId id) internal {
     Lock memory lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Unlocked, VaultFundNotUnlocked());
 
-    Account memory account = _accounts[controller][fund][recipient];
+    Account memory account = _accounts[controller][fund][id];
     account.update(lock.expiry);
     uint128 amount = account.balance.available + account.balance.designated;
 
@@ -270,9 +264,10 @@ abstract contract VaultBase {
       _locks[controller][fund] = lock;
     }
 
-    delete _accounts[controller][fund][recipient];
+    delete _accounts[controller][fund][id];
 
-    _token.safeTransfer(Recipient.unwrap(recipient), amount);
+    (address owner, ) = Accounts.decodeId(id);
+    _token.safeTransfer(owner, amount);
   }
 
   function _checkLockInvariant(Lock memory lock) private pure {
