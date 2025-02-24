@@ -43,7 +43,7 @@ const { arrayify } = require("ethers/lib/utils")
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000
 
 describe("Marketplace constructor", function () {
-  let Marketplace, token, verifier, config
+  let Marketplace, token, vault, verifier, config
 
   beforeEach(async function () {
     await snapshot()
@@ -51,6 +51,9 @@ describe("Marketplace constructor", function () {
 
     const TestToken = await ethers.getContractFactory("TestToken")
     token = await TestToken.deploy()
+
+    const Vault = await ethers.getContractFactory("Vault")
+    vault = await Vault.deploy(token.address)
 
     const TestVerifier = await ethers.getContractFactory("TestVerifier")
     verifier = await TestVerifier.deploy()
@@ -68,7 +71,7 @@ describe("Marketplace constructor", function () {
       config.collateral[property] = 101
 
       await expect(
-        Marketplace.deploy(config, token.address, verifier.address)
+        Marketplace.deploy(config, vault.address, verifier.address)
       ).to.be.revertedWith(expectedError)
     })
   }
@@ -87,7 +90,7 @@ describe("Marketplace constructor", function () {
     config.collateral.maxNumberOfSlashes = 101
 
     await expect(
-      Marketplace.deploy(config, token.address, verifier.address)
+      Marketplace.deploy(config, vault.address, verifier.address)
     ).to.be.revertedWith("Marketplace_MaximumSlashingTooHigh")
   })
 })
@@ -98,6 +101,7 @@ describe("Marketplace", function () {
 
   let marketplace
   let token
+  let vault
   let verifier
   let client,
     clientWithdrawRecipient,
@@ -143,13 +147,16 @@ describe("Marketplace", function () {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
 
+    const Vault = await ethers.getContractFactory("Vault")
+    vault = await Vault.deploy(token.address)
+
     const TestVerifier = await ethers.getContractFactory("TestVerifier")
     verifier = await TestVerifier.deploy()
 
     const Marketplace = await ethers.getContractFactory("TestMarketplace")
     marketplace = await Marketplace.deploy(
       config,
-      token.address,
+      vault.address,
       verifier.address
     )
     patchOverloads(marketplace)
