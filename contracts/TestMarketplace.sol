@@ -7,10 +7,10 @@ import "./Marketplace.sol";
 contract TestMarketplace is Marketplace {
   constructor(
     MarketplaceConfig memory config,
-    IERC20 token,
+    Vault vault,
     IGroth16Verifier verifier
   )
-    Marketplace(config, token, verifier) // solhint-disable-next-line no-empty-blocks
+    Marketplace(config, vault, verifier)
   {}
 
   function forciblyFreeSlot(SlotId slotId) public {
