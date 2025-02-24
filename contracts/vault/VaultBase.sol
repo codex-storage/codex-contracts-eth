@@ -85,9 +85,9 @@ abstract contract VaultBase {
       account.update(Timestamps.currentTime());
       return account.balance;
     }
-    if (lockStatus == LockStatus.Unlocked) {
+    if (lockStatus == LockStatus.Unlocked || lockStatus == LockStatus.Frozen) {
       Account memory account = _accounts[controller][fund][id];
-      account.update(lock.expiry);
+      account.update(lock.flowEnd());
       return account.balance;
     }
     return Balance({available: 0, designated: 0});
@@ -239,13 +239,11 @@ abstract contract VaultBase {
     _token.safeTransfer(address(0xdead), amount);
   }
 
-  function _burnFund(Controller controller, Fund fund) internal {
+  function _freezeFund(Controller controller, Fund fund) internal {
     Lock storage lock = _locks[controller][fund];
     require(lock.status() == LockStatus.Locked, VaultFundNotLocked());
 
-    lock.burned = true;
-
-    _token.safeTransfer(address(0xdead), lock.value);
+    lock.frozenAt = Timestamps.currentTime();
   }
 
   function _withdraw(Controller controller, Fund fund, AccountId id) internal {
@@ -253,7 +251,7 @@ abstract contract VaultBase {
     require(lock.status() == LockStatus.Unlocked, VaultFundNotUnlocked());
 
     Account memory account = _accounts[controller][fund][id];
-    account.update(lock.expiry);
+    account.update(lock.flowEnd());
     uint128 amount = account.balance.available + account.balance.designated;
 
     lock.value -= amount;
