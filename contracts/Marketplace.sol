@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
@@ -30,7 +31,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_SlotNotFree();
   error Marketplace_InvalidSlotHost();
   error Marketplace_AlreadyPaid();
-  error Marketplace_TransferFailed();
   error Marketplace_UnknownRequest();
   error Marketplace_InvalidState();
   error Marketplace_StartNotBeforeExpiry();
@@ -41,6 +41,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_NothingToWithdraw();
   error Marketplace_DurationExceedsLimit();
 
+  using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.Bytes32Set;
   using EnumerableSet for EnumerableSet.AddressSet;
   using Requests for Request;
@@ -171,7 +172,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = request.maxPrice();
     _requestContexts[id].fundsToReturnToClient = amount;
     _marketplaceTotals.received += amount;
-    _transferFrom(msg.sender, amount);
+    _token.safeTransferFrom(msg.sender, address(this), amount);
 
     emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
@@ -231,7 +232,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     } else {
       collateralAmount = collateralPerSlot;
     }
-    _transferFrom(msg.sender, collateralAmount);
+    _token.safeTransferFrom(msg.sender, address(this), collateralAmount);
     _marketplaceTotals.received += collateralAmount;
     slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
@@ -357,10 +358,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
-
-    if (!_token.transfer(msg.sender, validatorRewardAmount)) {
-      revert Marketplace_TransferFailed();
-    }
+    _token.safeTransfer(msg.sender, validatorRewardAmount);
 
     slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
@@ -426,13 +424,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
-      revert Marketplace_TransferFailed();
-    }
-
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
-      revert Marketplace_TransferFailed();
-    }
+    _token.safeTransfer(rewardRecipient, payoutAmount);
+    _token.safeTransfer(collateralRecipient, collateralAmount);
   }
 
   /**
@@ -461,13 +454,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
-      revert Marketplace_TransferFailed();
-    }
-
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
-      revert Marketplace_TransferFailed();
-    }
+    _token.safeTransfer(rewardRecipient, payoutAmount);
+    _token.safeTransfer(collateralRecipient, collateralAmount);
   }
 
   /**
@@ -534,9 +522,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    if (!_token.transfer(withdrawRecipient, amount)) {
-      revert Marketplace_TransferFailed();
-    }
+    _token.safeTransfer(withdrawRecipient, amount);
 
     // We zero out the funds tracking in order to prevent double-spends
     context.fundsToReturnToClient = 0;
@@ -683,12 +669,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[slot.requestId];
     return
       (request.ask.proofProbability * (256 - _config.proofs.downtime)) / 256;
-  }
-
-  function _transferFrom(address sender, uint256 amount) internal {
-    address receiver = address(this);
-    if (!_token.transferFrom(sender, receiver, amount))
-      revert Marketplace_TransferFailed();
   }
 
   event StorageRequested(RequestId requestId, Ask ask, uint64 expiry);
