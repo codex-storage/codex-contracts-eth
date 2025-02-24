@@ -50,6 +50,10 @@ import "./vault/VaultBase.sol";
 contract Vault is VaultBase, Pausable, Ownable {
   constructor(IERC20 token) VaultBase(token) Ownable(msg.sender) {}
 
+  function getToken() public view returns (IERC20) {
+    return _token;
+  }
+
   /// Creates an account id that encodes the address of the account holder, and
   /// a discriminator. The discriminator can be used to create different
   /// accounts within a fund that all belong to the same account holder.

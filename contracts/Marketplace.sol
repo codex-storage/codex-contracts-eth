@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "./Vault.sol";
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Proofs.sol";
@@ -47,7 +48,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using Requests for Request;
   using AskHelpers for Ask;
 
-  IERC20 private immutable _token;
+  Vault private immutable _vault;
   MarketplaceConfig private _config;
 
   mapping(RequestId => Request) private _requests;
@@ -99,10 +100,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   constructor(
     MarketplaceConfig memory config,
-    IERC20 token_,
+    Vault vault_,
     IGroth16Verifier verifier
   ) SlotReservations(config.reservations) Proofs(config.proofs, verifier) {
-    _token = token_;
+    _vault = vault_;
 
     if (config.collateral.repairRewardPercentage > 100)
       revert Marketplace_RepairRewardPercentageTooHigh();
@@ -123,7 +124,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   function token() public view returns (IERC20) {
-    return _token;
+    return _vault.getToken();
+  }
+
+  function vault() public view returns (Vault) {
+    return _vault;
   }
 
   function currentCollateral(SlotId slotId) public view returns (uint256) {
@@ -172,7 +177,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = request.maxPrice();
     _requestContexts[id].fundsToReturnToClient = amount;
     _marketplaceTotals.received += amount;
-    _token.safeTransferFrom(msg.sender, address(this), amount);
+    token().safeTransferFrom(msg.sender, address(this), amount);
 
     emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
@@ -232,7 +237,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     } else {
       collateralAmount = collateralPerSlot;
     }
-    _token.safeTransferFrom(msg.sender, address(this), collateralAmount);
+    token().safeTransferFrom(msg.sender, address(this), collateralAmount);
     _marketplaceTotals.received += collateralAmount;
     slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
@@ -358,7 +363,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
-    _token.safeTransfer(msg.sender, validatorRewardAmount);
+    token().safeTransfer(msg.sender, validatorRewardAmount);
 
     slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
@@ -424,8 +429,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    _token.safeTransfer(rewardRecipient, payoutAmount);
-    _token.safeTransfer(collateralRecipient, collateralAmount);
+    token().safeTransfer(rewardRecipient, payoutAmount);
+    token().safeTransfer(collateralRecipient, collateralAmount);
   }
 
   /**
@@ -454,8 +459,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    _token.safeTransfer(rewardRecipient, payoutAmount);
-    _token.safeTransfer(collateralRecipient, collateralAmount);
+    token().safeTransfer(rewardRecipient, payoutAmount);
+    token().safeTransfer(collateralRecipient, collateralAmount);
   }
 
   /**
@@ -522,7 +527,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    _token.safeTransfer(withdrawRecipient, amount);
+    token().safeTransfer(withdrawRecipient, amount);
 
     // We zero out the funds tracking in order to prevent double-spends
     context.fundsToReturnToClient = 0;

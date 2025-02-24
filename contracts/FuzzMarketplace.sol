@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import "./TestToken.sol";
 import "./Marketplace.sol";
+import "./Vault.sol";
 import "./TestVerifier.sol";
 
 contract FuzzMarketplace is Marketplace {
@@ -14,13 +15,10 @@ contract FuzzMarketplace is Marketplace {
         SlotReservationsConfig(20),
         60 * 60 * 24 * 30 // 30 days
       ),
-      new TestToken(),
+      new Vault(new TestToken()),
       new TestVerifier()
     )
-  // solhint-disable-next-line no-empty-blocks
-  {
-
-  }
+  {}
 
   // Properties to be tested through fuzzing
 
