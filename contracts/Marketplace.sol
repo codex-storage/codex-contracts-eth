@@ -46,7 +46,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using AskHelpers for Ask;
 
   IERC20 private immutable _token;
-  MarketplaceConfig private _config;
+  MarketplaceConfig internal _config;
 
   mapping(RequestId => Request) internal _requests;
   mapping(RequestId => RequestContext) internal _requestContexts;
