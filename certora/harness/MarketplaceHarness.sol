@@ -43,7 +43,7 @@ contract MarketplaceHarness is Marketplace {
    * View that returns allocated funds to the host for given request and its slot
    * based on the state of the request/slot.
    */
-  function hostRequestSlotFunds(
+  function requestSlotFunds(
     RequestId requestId,
     uint256 slotIndex
   ) public view returns (uint256) {
@@ -60,20 +60,24 @@ contract MarketplaceHarness is Marketplace {
       state == SlotState.Paid
     ) {
       return 0;
+    } else if (state == SlotState.Repair) {
+      // TODO: Don't know how to represent this here - repair state gives discount to the collateral that needs to be submiteed
+      //  when a host that repaired the slot is "refilling the slot". This discount is not withdrawable. And at the end is rewarded
+      //  the full collateral amount.
     } else if (state == SlotState.Finished) {
-      return _slotPayout(requestId, slot.filledAt);
+      return _slotPayout(requestId, slot.filledAt) + slot.currentCollateral;
     } else if (state == SlotState.Cancelled) {
-      return _slotPayout(requestId, slot.filledAt, requestExpiry(requestId));
+      return _slotPayout(requestId, slot.filledAt, requestExpiry(requestId)) + slot.currentCollateral;
     }
 
     revert("Invalid state");
   }
 
   /**
-   * View that returns allocated funds to the client for given request based
-   * on the state of the request.
+   * View that returns request funds. 
+   * These funds are allocated to the client.
    */
-  function clientRequestFunds(
+  function requestFunds(
     RequestId requestId
   ) public view returns (uint256) {
     Request memory request = _requests[requestId];
@@ -92,59 +96,5 @@ contract MarketplaceHarness is Marketplace {
     }
 
     revert("Invalid state");
-  }
-
-  /**
-   * View that returns all allocated funds for paying out Request funds
-   * Eq. funds that are coming in from Client that pays for Request to be stored
-   * and then is splitted between hosts and client based on how the hosting of
-   * the Request goes (eq. base on state).
-   */
-  function allocatedRequestFunds(
-    RequestId requestId
-  ) public view returns (uint256) {
-    uint256 slotsFunds = 0;
-    for (uint64 i = 0; i < _requests[requestId].ask.slots; i++) {
-      slotsFunds += hostRequestSlotFunds(requestId, i);
-    }
-
-    return slotsFunds + clientRequestFunds(requestId);
-  }
-
-  function collateralRequestSlotFunds(
-    RequestId requestId,
-    uint256 slotIndex
-  ) public view returns (uint256) {
-    SlotId slotId = Requests.slotId(requestId, slotIndex);
-    Slot memory slot = _slots[slotId];
-    SlotState state = slotState(slotId);
-
-    if (
-      state == SlotState.Free ||
-      state == SlotState.Filled ||
-      state == SlotState.Failed ||
-      state == SlotState.Paid
-    ) {
-      return 0;
-    } else if (state == SlotState.Finished || state == SlotState.Cancelled) {
-      return slot.currentCollateral;
-    }
-
-    revert("Invalid state");
-  }
-
-  /**
-   * View that returns sum of all collateral funds for given request based on
-   * the state of the request and slashing that occured.
-   */
-  function collateralRequestFunds(
-    RequestId requestId
-  ) public view returns (uint256) {
-    uint256 collateralFunds = 0;
-    for (uint64 i = 0; i < _requests[requestId].ask.slots; i++) {
-      collateralFunds += collateralRequestSlotFunds(requestId, i);
-    }
-
-    return collateralFunds;
   }
 }
