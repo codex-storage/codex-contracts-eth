@@ -196,11 +196,12 @@ contract Vault is VaultBase, Pausable, Ownable {
     _burnAccount(controller, fund, account);
   }
 
-  /// Burns all tokens from all accounts in a fund.
+  /// Freezes a fund. Stops all tokens flows and disallows any operations on the
+  /// fund until it unlocks.
   /// Only allowed when the fund is locked.
-  function burnFund(Fund fund) public whenNotPaused {
+  function freezeFund(Fund fund) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _burnFund(controller, fund);
+    _freezeFund(controller, fund);
   }
 
   /// Transfers all ERC20 tokens in the account out of the vault to the account

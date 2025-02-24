@@ -588,31 +588,39 @@ describe("Vault", function () {
           await expect(vault.burnAccount(fund, account1)).not.to.be.reverted
         })
       })
+    })
 
-      describe("burn fund", function () {
-        it("can burn an entire fund", async function () {
-          await vault.transfer(fund, account1, account2, 10)
-          await vault.transfer(fund, account1, account3, 10)
-          await vault.burnFund(fund)
-          expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Burned)
-          expect(await vault.getBalance(fund, account1)).to.equal(0)
-          expect(await vault.getBalance(fund, account2)).to.equal(0)
-          expect(await vault.getBalance(fund, account3)).to.equal(0)
-        })
+    describe("freezing", function () {
+      const deposit = 1000
 
-        it("moves all tokens in the fund to address 0xdead", async function () {
-          await vault.transfer(fund, account1, account2, 10)
-          await vault.transfer(fund, account1, account3, 10)
-          const before = await token.balanceOf(dead)
-          await vault.burnFund(fund)
-          const after = await token.balanceOf(dead)
-          expect(after - before).to.equal(amount)
-        })
+      let account1, account2, account3
 
-        it("can burn fund when tokens are flowing", async function () {
-          await vault.flow(fund, account1, account2, 5)
-          await expect(vault.burnFund(fund)).not.to.be.reverted
-        })
+      beforeEach(async function () {
+        account1 = await vault.encodeAccountId(holder.address, randomBytes(12))
+        account2 = await vault.encodeAccountId(holder2.address, randomBytes(12))
+        account3 = await vault.encodeAccountId(holder3.address, randomBytes(12))
+        await token.approve(vault.address, deposit)
+        await vault.deposit(fund, account1, deposit)
+      })
+
+      it("can freeze a fund", async function () {
+        await setAutomine(true)
+        await vault.freezeFund(fund)
+        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Frozen)
+      })
+
+      it("stops all token flows", async function () {
+        await vault.flow(fund, account1, account2, 10)
+        await vault.flow(fund, account2, account3, 3)
+        await mine()
+        const start = await currentTime()
+        await setNextBlockTimestamp(start + 10)
+        await vault.freezeFund(fund)
+        await mine()
+        await advanceTimeTo(start + 20)
+        expect(await vault.getBalance(fund, account1)).to.equal(deposit - 100)
+        expect(await vault.getBalance(fund, account2)).to.equal(70)
+        expect(await vault.getBalance(fund, account3)).to.equal(30)
       })
     })
 
@@ -717,39 +725,76 @@ describe("Vault", function () {
         await vault.deposit(fund, account1, deposit)
       })
 
-      it("stops flows when lock expires", async function () {
-        await vault.flow(fund, account1, account2, 2)
-        await mine()
-        const start = await currentTime()
-        const total = (expiry - start) * 2
-        let balance1, balance2
-        await advanceTimeTo(expiry)
-        balance1 = await vault.getBalance(fund, account1)
-        balance2 = await vault.getBalance(fund, account2)
-        expect(balance1).to.equal(deposit - total)
-        expect(balance2).to.equal(total)
-        await advanceTimeTo(expiry + 10)
-        balance1 = await vault.getBalance(fund, account1)
-        balance2 = await vault.getBalance(fund, account2)
-        expect(balance1).to.equal(deposit - total)
-        expect(balance2).to.equal(total)
+      describe("unlocked flows", function () {
+        let total
+
+        beforeEach(async function () {
+          await vault.flow(fund, account1, account2, 2)
+          await mine()
+          const start = await currentTime()
+          total = (expiry - start) * 2
+          await advanceTimeTo(expiry)
+        })
+
+        it("stops flows when lock expires", async function () {
+          let balance1, balance2
+          balance1 = await vault.getBalance(fund, account1)
+          balance2 = await vault.getBalance(fund, account2)
+          expect(balance1).to.equal(deposit - total)
+          expect(balance2).to.equal(total)
+          await advanceTimeTo(expiry + 10)
+          balance1 = await vault.getBalance(fund, account1)
+          balance2 = await vault.getBalance(fund, account2)
+          expect(balance1).to.equal(deposit - total)
+          expect(balance2).to.equal(total)
+        })
+
+        it("allows flowing tokens to be withdrawn", async function () {
+          const balance1Before = await token.balanceOf(holder.address)
+          const balance2Before = await token.balanceOf(holder2.address)
+          await vault.withdraw(fund, account1)
+          await vault.withdraw(fund, account2)
+          await mine()
+          const balance1After = await token.balanceOf(holder.address)
+          const balance2After = await token.balanceOf(holder2.address)
+          expect(balance1After - balance1Before).to.equal(deposit - total)
+          expect(balance2After - balance2Before).to.equal(total)
+        })
       })
 
-      it("allows flowing tokens to be withdrawn", async function () {
-        await vault.flow(fund, account1, account2, 2)
-        await mine()
-        const start = await currentTime()
-        const total = (expiry - start) * 2
-        await advanceTimeTo(expiry + 10)
-        balance1Before = await token.balanceOf(holder.address)
-        balance2Before = await token.balanceOf(holder2.address)
-        await vault.withdraw(fund, account1)
-        await vault.withdraw(fund, account2)
-        await mine()
-        balance1After = await token.balanceOf(holder.address)
-        balance2After = await token.balanceOf(holder2.address)
-        expect(balance1After - balance1Before).to.equal(deposit - total)
-        expect(balance2After - balance2Before).to.equal(total)
+      describe("unlocked frozen flows", function () {
+        let total
+
+        beforeEach(async function () {
+          await vault.flow(fund, account1, account2, 2)
+          await mine()
+          const start = await currentTime()
+          await setNextBlockTimestamp(start + 10)
+          await vault.freezeFund(fund)
+          await mine()
+          const frozenAt = await currentTime()
+          total = (frozenAt - start) * 2
+          await advanceTimeTo(expiry)
+        })
+
+        it("stops flows at the time they were frozen", async function () {
+          const balance1 = await vault.getBalance(fund, account1)
+          const balance2 = await vault.getBalance(fund, account2)
+          expect(balance1).to.equal(deposit - total)
+          expect(balance2).to.equal(total)
+        })
+
+        it("allows frozen flows to be withdrawn", async function () {
+          balance1Before = await token.balanceOf(holder.address)
+          balance2Before = await token.balanceOf(holder2.address)
+          await vault.withdraw(fund, account1)
+          await vault.withdraw(fund, account2)
+          await mine()
+          balance1After = await token.balanceOf(holder.address)
+          balance2After = await token.balanceOf(holder2.address)
+          expect(balance1After - balance1Before).to.equal(deposit - total)
+          expect(balance2After - balance2Before).to.equal(total)
+        })
       })
     })
 
@@ -874,7 +919,7 @@ describe("Vault", function () {
     })
   })
 
-  describe("when a fund is burned", function () {
+  describe("when a fund is frozen", function () {
     const amount = 1000
 
     let expiry
@@ -886,32 +931,25 @@ describe("Vault", function () {
       await token.connect(controller).approve(vault.address, amount)
       await vault.lock(fund, expiry, expiry)
       await vault.deposit(fund, account, amount)
-      await vault.burnFund(fund)
+      await vault.freezeFund(fund)
     })
 
-    testBurnedFund()
-
-    describe("when the lock expires", function () {
-      beforeEach(async function () {
-        await advanceTimeTo(expiry)
-      })
-
-      testBurnedFund()
+    it("does not allow setting a lock", async function () {
+      const locking = vault.lock(fund, expiry, expiry)
+      await expect(locking).to.be.revertedWith("FundAlreadyLocked")
     })
 
-    function testBurnedFund() {
-      it("cannot set lock", async function () {
-        const locking = vault.lock(fund, expiry, expiry)
-        await expect(locking).to.be.revertedWith("FundAlreadyLocked")
-      })
+    it("does not allow withdrawal", async function () {
+      const withdrawing = vault.withdraw(fund, account)
+      await expect(withdrawing).to.be.revertedWith("FundNotUnlocked")
+    })
 
-      it("cannot withdraw", async function () {
-        const withdrawing = vault.withdraw(fund, account)
-        await expect(withdrawing).to.be.revertedWith("FundNotUnlocked")
-      })
+    it("unlocks when the lock expires", async function () {
+      await advanceTimeTo(expiry)
+      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Unlocked)
+    })
 
-      testFundThatIsNotLocked()
-    }
+    testFundThatIsNotLocked()
   })
 
   function testFundThatIsNotLocked() {
@@ -966,8 +1004,8 @@ describe("Vault", function () {
       )
     })
 
-    it("does not allow burning an entire fund", async function () {
-      await expect(vault.burnFund(fund)).to.be.revertedWith("FundNotLocked")
+    it("does not allow freezing of a fund", async function () {
+      await expect(vault.freezeFund(fund)).to.be.revertedWith("FundNotLocked")
     })
   }
 
@@ -1092,8 +1130,8 @@ describe("Vault", function () {
         )
       })
 
-      it("does not allow burning an entire fund", async function () {
-        await expect(vault.burnFund(fund)).to.be.revertedWith("EnforcedPause")
+      it("does not allow freezing of funds", async function () {
+        await expect(vault.freezeFund(fund)).to.be.revertedWith("EnforcedPause")
       })
 
       it("does not allow a controller to withdraw for a recipient", async function () {
