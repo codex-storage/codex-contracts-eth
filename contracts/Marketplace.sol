@@ -260,25 +260,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
      finished or cancelled requests to the host that has filled the slot.
    * @param slotId id of the slot to free
    * @dev The host that filled the slot must have initiated the transaction
-     (msg.sender). This overload allows `rewardRecipient` and
-     `collateralRecipient` to be optional.
+     (msg.sender).
    */
   function freeSlot(SlotId slotId) public slotIsNotFree(slotId) {
-    return freeSlot(slotId, msg.sender, msg.sender);
-  }
-
-  /**
-     * @notice Frees a slot, paying out rewards and returning collateral for
-     finished or cancelled requests.
-   * @param slotId id of the slot to free
-   * @param rewardRecipient address to send rewards to
-   * @param collateralRecipient address to refund collateral to
-   */
-  function freeSlot(
-    SlotId slotId,
-    address rewardRecipient,
-    address collateralRecipient
-  ) public slotIsNotFree(slotId) {
     Slot storage slot = _slots[slotId];
     if (slot.host != msg.sender) revert Marketplace_InvalidSlotHost();
 
@@ -286,14 +270,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (state == SlotState.Paid) revert Marketplace_AlreadyPaid();
 
     if (state == SlotState.Finished) {
-      _payoutSlot(slot.requestId, slotId, rewardRecipient, collateralRecipient);
+      _payoutSlot(slot.requestId, slotId);
     } else if (state == SlotState.Cancelled) {
-      _payoutCancelledSlot(
-        slot.requestId,
-        slotId,
-        rewardRecipient,
-        collateralRecipient
-      );
+      _payoutCancelledSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
@@ -399,9 +378,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function _payoutSlot(
     RequestId requestId,
-    SlotId slotId,
-    address rewardRecipient,
-    address collateralRecipient
+    SlotId slotId
   ) private requestIsKnown(requestId) {
     RequestContext storage context = _requestContexts[requestId];
     Request storage request = _requests[requestId];
@@ -415,24 +392,19 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    token().safeTransfer(rewardRecipient, payoutAmount);
-    token().safeTransfer(collateralRecipient, collateralAmount);
+    token().safeTransfer(slot.host, payoutAmount + collateralAmount);
   }
 
   /**
      * @notice Pays out a host for duration of time that the slot was filled, and
      returns the collateral.
-   * @dev The payouts are sent to the rewardRecipient, and collateral is returned
-     to the host address.
    * @param requestId RequestId of the request that contains the slot to be paid
      out.
    * @param slotId SlotId of the slot to be paid out.
    */
   function _payoutCancelledSlot(
     RequestId requestId,
-    SlotId slotId,
-    address rewardRecipient,
-    address collateralRecipient
+    SlotId slotId
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
@@ -445,8 +417,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    token().safeTransfer(rewardRecipient, payoutAmount);
-    token().safeTransfer(collateralRecipient, collateralAmount);
+    token().safeTransfer(slot.host, payoutAmount + collateralAmount);
   }
 
   /**
@@ -456,21 +427,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
      transaction must originate from the depositor address.
    * @param requestId the id of the request
    */
-  function withdrawFunds(RequestId requestId) public {
-    withdrawFunds(requestId, msg.sender);
-  }
-
-  /**
-     * @notice Withdraws storage request funds to the provided address.
-   * @dev Request must be expired, must be in RequestState.New, and the
-     transaction must originate from the depositer address.
-   * @param requestId the id of the request
-   * @param withdrawRecipient address to return the remaining funds to
-   */
-  function withdrawFunds(
-    RequestId requestId,
-    address withdrawRecipient
-  ) public requestIsKnown(requestId) {
+  function withdrawFunds(RequestId requestId) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
     RequestContext storage context = _requestContexts[requestId];
 
@@ -513,7 +470,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    token().safeTransfer(withdrawRecipient, amount);
+    token().safeTransfer(request.client, amount);
 
     // We zero out the funds tracking in order to prevent double-spends
     context.fundsToReturnToClient = 0;
