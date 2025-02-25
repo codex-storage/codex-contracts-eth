@@ -9,9 +9,7 @@ contract TestMarketplace is Marketplace {
     MarketplaceConfig memory config,
     Vault vault,
     IGroth16Verifier verifier
-  )
-    Marketplace(config, vault, verifier)
-  {}
+  ) Marketplace(config, vault, verifier) {}
 
   function forciblyFreeSlot(SlotId slotId) public {
     _forciblyFreeSlot(slotId);
