@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Accounts.sol";
 import "./Locks.sol";
 
+/// Unique identifier for a fund, chosen by the controller
+type Fund is bytes32;
+
 /// Records account balances and token flows. Accounts are separated into funds.
 /// Funds are kept separate between controllers.
 ///
@@ -46,8 +49,6 @@ abstract contract VaultBase {
 
   /// Represents a smart contract that can redistribute and burn tokens in funds
   type Controller is address;
-  /// Unique identifier for a fund, chosen by the controller
-  type Fund is bytes32;
 
   /// Each fund has its own time lock
   mapping(Controller => mapping(Fund => Lock)) private _locks;
