@@ -13,6 +13,7 @@ import "./SlotReservations.sol";
 import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
+import "./marketplace/VaultHelpers.sol";
 
 contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_RepairRewardPercentageTooHigh();
@@ -47,6 +48,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.AddressSet;
   using Requests for Request;
   using AskHelpers for Ask;
+  using VaultHelpers for Vault;
+  using VaultHelpers for RequestId;
+  using VaultHelpers for Request;
 
   Vault private immutable _vault;
   MarketplaceConfig private _config;
@@ -174,10 +178,18 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     _addToMyRequests(request.client, id);
 
-    uint256 amount = request.maxPrice();
+    uint128 amount = uint128(request.maxPrice());
     _requestContexts[id].fundsToReturnToClient = amount;
     _marketplaceTotals.received += amount;
-    token().safeTransferFrom(msg.sender, address(this), amount);
+
+    FundId fund = id.asFundId();
+    AccountId account = _vault.clientAccount(request.client);
+    _vault.lock(
+      fund,
+      Timestamp.wrap(uint40(_requestContexts[id].expiresAt)),
+      Timestamp.wrap(uint40(_requestContexts[id].endsAt))
+    );
+    _transferToVault(request.client, fund, account, amount);
 
     emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
@@ -237,7 +249,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     } else {
       collateralAmount = collateralPerSlot;
     }
-    token().safeTransferFrom(msg.sender, address(this), collateralAmount);
+
+    FundId fund = requestId.asFundId();
+    AccountId clientAccount = _vault.clientAccount(request.client);
+    AccountId hostAccount = _vault.hostAccount(slot.host, slotIndex);
+
+    _transferToVault(slot.host, fund, hostAccount, uint128(collateralAmount));
+    _vault.flow(fund, clientAccount, hostAccount, request.slotPrice());
+
     _marketplaceTotals.received += collateralAmount;
     slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
@@ -252,8 +271,20 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     ) {
       context.state = RequestState.Started;
       context.startedAt = uint64(block.timestamp);
+      _vault.extendLock(fund, Timestamp.wrap(uint40(context.endsAt)));
       emit RequestFulfilled(requestId);
     }
+  }
+
+  function _transferToVault(
+    address from,
+    FundId fund,
+    AccountId account,
+    uint128 amount
+  ) private {
+    _vault.getToken().safeTransferFrom(from, address(this), amount);
+    _vault.getToken().approve(address(_vault), amount);
+    _vault.deposit(fund, account, amount);
   }
 
   /**
@@ -342,7 +373,19 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
-    token().safeTransfer(msg.sender, validatorRewardAmount);
+
+    FundId fund = slot.requestId.asFundId();
+    AccountId hostAccount = _vault.hostAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId validatorAccount = _vault.validatorAccount(msg.sender);
+    _vault.transfer(
+      fund,
+      hostAccount,
+      validatorAccount,
+      uint128(validatorRewardAmount)
+    );
 
     slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
@@ -368,6 +411,17 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     // we keep correctly the track of the funds that needs to be returned at the end.
     context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
+    Request storage request = _requests[requestId];
+
+    FundId fund = requestId.asFundId();
+    AccountId hostAccount = _vault.hostAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId clientAccount = _vault.clientAccount(request.client);
+    _vault.flow(fund, hostAccount, clientAccount, request.slotPrice());
+    _vault.burnAccount(fund, hostAccount);
+
     _removeFromMySlots(slot.host, slotId);
     _reservations[slotId].clear(); // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
@@ -378,14 +432,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     emit SlotFreed(requestId, slot.slotIndex);
     _resetMissingProofs(slotId);
 
-    Request storage request = _requests[requestId];
     uint256 slotsLost = request.ask.slots - context.slotsFilled;
     if (
       slotsLost > request.ask.maxSlotLoss &&
       context.state == RequestState.Started
     ) {
       context.state = RequestState.Failed;
-      context.endsAt = uint64(block.timestamp) - 1;
+      _vault.freezeFund(fund);
+
       emit RequestFailed(requestId);
     }
   }
@@ -406,7 +460,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    token().safeTransfer(slot.host, payoutAmount + collateralAmount);
+    FundId fund = requestId.asFundId();
+    AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
+    _vault.withdraw(fund, account);
   }
 
   /**
@@ -431,7 +487,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    token().safeTransfer(slot.host, payoutAmount + collateralAmount);
+    FundId fund = requestId.asFundId();
+    AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
+    _vault.withdraw(fund, account);
   }
 
   /**
@@ -484,10 +542,18 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    token().safeTransfer(request.client, amount);
+    FundId fund = requestId.asFundId();
+    AccountId account = _vault.clientAccount(request.client);
+    _vault.withdraw(fund, account);
 
     // We zero out the funds tracking in order to prevent double-spends
     context.fundsToReturnToClient = 0;
+  }
+
+  function withdrawByValidator(RequestId requestId) public {
+    FundId fund = requestId.asFundId();
+    AccountId account = _vault.validatorAccount(msg.sender);
+    _vault.withdraw(fund, account);
   }
 
   function getActiveSlot(
@@ -530,7 +596,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function requestEnd(RequestId requestId) public view returns (uint64) {
     RequestState state = requestState(requestId);
-    if (state == RequestState.New || state == RequestState.Started) {
+    if (
+      state == RequestState.New ||
+      state == RequestState.Started ||
+      state == RequestState.Failed
+    ) {
       return _requestContexts[requestId].endsAt;
     }
     if (state == RequestState.Cancelled) {
