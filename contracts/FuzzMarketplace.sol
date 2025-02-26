@@ -13,7 +13,7 @@ contract FuzzMarketplace is Marketplace {
         CollateralConfig(10, 5, 10, 20),
         ProofConfig(10, 5, 64, 67, ""),
         SlotReservationsConfig(20),
-        60 * 60 * 24 * 30 // 30 days
+        Duration.wrap(60 * 60 * 24 * 30) // 30 days
       ),
       new Vault(new TestToken()),
       new TestVerifier()

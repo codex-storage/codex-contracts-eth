@@ -43,11 +43,4 @@ library VaultHelpers {
   function asFund(RequestId requestId) internal pure returns (Fund) {
     return Fund.wrap(RequestId.unwrap(requestId));
   }
-
-  function slotPrice(
-    Request memory request
-  ) internal pure returns (TokensPerSecond) {
-    uint256 price = request.ask.pricePerBytePerSecond * request.ask.slotSize;
-    return TokensPerSecond.wrap(uint96(price));
-  }
 }
