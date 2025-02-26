@@ -2,12 +2,13 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Timestamps.sol";
 
 struct MarketplaceConfig {
   CollateralConfig collateral;
   ProofConfig proofs;
   SlotReservationsConfig reservations;
-  uint64 requestDurationLimit;
+  Duration requestDurationLimit;
 }
 
 struct CollateralConfig {
