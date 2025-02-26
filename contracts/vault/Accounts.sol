@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "./TokenFlows.sol";
-import "./Timestamps.sol";
+import "../Tokens.sol";
+import "../Timestamps.sol";
 
 /// Used to identify an account. The first 20 bytes consist of the address of
 /// the account holder, and the last 12 bytes consist of a discriminator value.
@@ -38,7 +38,7 @@ struct Flow {
 
 library Accounts {
   using Accounts for Account;
-  using TokenFlows for TokensPerSecond;
+  using Tokens for TokensPerSecond;
   using Timestamps for Timestamp;
 
   /// Creates an account id from the account holder address and a discriminator.
