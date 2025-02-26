@@ -1,5 +1,4 @@
 const { Assertion } = require("chai")
-const { currentTime } = require("./evm")
 
 const RequestState = {
   New: 0,
