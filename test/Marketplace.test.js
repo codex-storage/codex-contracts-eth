@@ -499,9 +499,9 @@ describe("Marketplace", function () {
     it("sets the request end time to now + duration", async function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(
-        (await marketplace.requestEnd(requestId(request))).toNumber()
-      ).to.equal(requestTime + request.ask.duration)
+      await expect(await marketplace.requestEnd(requestId(request))).to.equal(
+        requestTime + request.ask.duration
+      )
     })
 
     it("sets request end time to the past once cancelled", async function () {
@@ -605,9 +605,7 @@ describe("Marketplace", function () {
     it("pays the host when contract was cancelled", async function () {
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
-      const expiresAt = (
-        await marketplace.requestExpiry(requestId(request))
-      ).toNumber()
+      const expiresAt = await marketplace.requestExpiry(requestId(request))
 
       const startBalance = await token.balanceOf(host.address)
       await marketplace.reserveSlot(slot.request, slot.index)
@@ -822,9 +820,7 @@ describe("Marketplace", function () {
     it("withdraws to the client for cancelled requests lowered by hosts payout", async function () {
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
-      const expiresAt = (
-        await marketplace.requestExpiry(requestId(request))
-      ).toNumber()
+      const expiresAt = await marketplace.requestExpiry(requestId(request))
 
       await marketplace.reserveSlot(slot.request, slot.index)
       await setNextBlockTimestamp(filledAt)
