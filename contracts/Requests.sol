@@ -18,7 +18,7 @@ struct Request {
 struct Ask {
   uint256 proofProbability; // how often storage proofs are required
   TokensPerSecond pricePerBytePerSecond; // amount of tokens paid per second per byte to hosts
-  uint256 collateralPerByte; // amount of tokens per byte required to be deposited by the hosts in order to fill the slot
+  uint128 collateralPerByte; // amount of tokens per byte required to be deposited by the hosts in order to fill the slot
   uint64 slots; // the number of requested slots
   uint64 slotSize; // amount of storage per slot (in number of bytes)
   Duration duration; // how long content should be stored (in seconds)
@@ -49,7 +49,7 @@ enum SlotState {
 }
 
 library AskHelpers {
-  function collateralPerSlot(Ask memory ask) internal pure returns (uint256) {
+  function collateralPerSlot(Ask memory ask) internal pure returns (uint128) {
     return ask.collateralPerByte * ask.slotSize;
   }
 
