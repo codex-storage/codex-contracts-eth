@@ -39,7 +39,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_SlotNotAcceptingProofs();
   error Marketplace_SlotIsFree();
   error Marketplace_ReservationRequired();
-  error Marketplace_NothingToWithdraw();
   error Marketplace_DurationExceedsLimit();
 
   using SafeERC20 for IERC20;
@@ -60,18 +59,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   mapping(RequestId => RequestContext) internal _requestContexts;
   mapping(SlotId => Slot) internal _slots;
 
-  MarketplaceTotals internal _marketplaceTotals;
-
   struct RequestContext {
     RequestState state;
-    /// @notice Tracks how much funds should be returned to the client as not all funds might be used for hosting the request
-    /// @dev The sum starts with the full reward amount for the request and is reduced every time a host fills a slot.
-    ///      The reduction is calculated from the duration of time between the slot being filled and the request's end.
-    ///      This is the amount that will be paid out to the host when the request successfully finishes.
-    /// @dev fundsToReturnToClient == 0 is used to signal that after request is terminated all the remaining funds were withdrawn.
-    ///      This is possible, because technically it is not possible for this variable to reach 0 in "natural" way as
-    ///      that would require all the slots to be filled at the same block as the request was created.
-    uint256 fundsToReturnToClient;
     uint64 slotsFilled;
     Timestamp startedAt;
     Timestamp endsAt;
@@ -181,10 +170,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     _addToMyRequests(request.client, id);
 
-    uint128 amount = request.maxPrice();
-    _requestContexts[id].fundsToReturnToClient = amount;
-    _marketplaceTotals.received += amount;
-
     FundId fund = id.asFundId();
     AccountId account = _vault.clientAccount(request.client);
     _vault.lock(
@@ -192,7 +177,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       _requestContexts[id].expiresAt,
       _requestContexts[id].endsAt
     );
-    _transferToVault(request.client, fund, account, amount);
+    _transferToVault(request.client, fund, account, request.maxPrice());
 
     emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
   }
@@ -239,7 +224,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     slot.filledAt = currentTime;
 
     context.slotsFilled += 1;
-    context.fundsToReturnToClient -= _slotPayout(requestId, slot.filledAt);
 
     // Collect collateral
     uint128 collateralAmount;
@@ -263,7 +247,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _transferToVault(slot.host, fund, hostAccount, collateralAmount);
     _vault.flow(fund, clientAccount, hostAccount, rate);
 
-    _marketplaceTotals.received += collateralAmount;
     slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
     _addToMySlots(slot.host, slotId);
@@ -365,7 +348,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     uint128 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
-    _marketplaceTotals.sent += validatorRewardAmount;
 
     FundId fund = slot.requestId.asFundId();
     AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
@@ -396,10 +378,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     RequestId requestId = slot.requestId;
     RequestContext storage context = _requestContexts[requestId];
-
-    // We need to refund the amount of payout of the current node to the `fundsToReturnToClient` so
-    // we keep correctly the track of the funds that needs to be returned at the end.
-    context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
     Request storage request = _requests[requestId];
 
@@ -445,9 +423,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMyRequests(request.client, requestId);
     _removeFromMySlots(slot.host, slotId);
 
-    uint256 payoutAmount = _slotPayout(requestId, slot.filledAt);
-    uint256 collateralAmount = slot.currentCollateral;
-    _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
     FundId fund = requestId.asFundId();
     AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
@@ -467,14 +442,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
-
-    uint256 payoutAmount = _slotPayout(
-      requestId,
-      slot.filledAt,
-      requestExpiry(requestId)
-    );
-    uint256 collateralAmount = slot.currentCollateral;
-    _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
     FundId fund = requestId.asFundId();
     AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
@@ -503,40 +470,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       revert Marketplace_InvalidState();
     }
 
-    // fundsToReturnToClient == 0 is used for "double-spend" protection, once the funds are withdrawn
-    // then this variable is set to 0.
-    if (context.fundsToReturnToClient == 0)
-      revert Marketplace_NothingToWithdraw();
-
+    context.state = state;
     if (state == RequestState.Cancelled) {
-      context.state = RequestState.Cancelled;
       emit RequestCancelled(requestId);
-
-      // `fundsToReturnToClient` currently tracks funds to be returned for requests that successfully finish.
-      // When requests are cancelled, funds earmarked for payment for the duration
-      // between request expiry and request end (for every slot that was filled), should be returned to the client.
-      // Update `fundsToReturnToClient` to reflect this.
-      context.fundsToReturnToClient +=
-        context.slotsFilled *
-        _slotPayout(requestId, requestExpiry(requestId));
-    } else if (state == RequestState.Failed) {
-      // For Failed requests the client is refunded whole amount.
-      context.fundsToReturnToClient = request.maxPrice();
-    } else {
-      context.state = RequestState.Finished;
     }
 
     _removeFromMyRequests(request.client, requestId);
 
-    uint256 amount = context.fundsToReturnToClient;
-    _marketplaceTotals.sent += amount;
-
     FundId fund = requestId.asFundId();
     AccountId account = _vault.clientAccount(request.client);
     _vault.withdraw(fund, account);
-
-    // We zero out the funds tracking in order to prevent double-spends
-    context.fundsToReturnToClient = 0;
   }
 
   function withdrawByValidator(RequestId requestId) public {
@@ -685,9 +628,4 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   event SlotFilled(RequestId indexed requestId, uint64 slotIndex);
   event SlotFreed(RequestId indexed requestId, uint64 slotIndex);
   event RequestCancelled(RequestId indexed requestId);
-
-  struct MarketplaceTotals {
-    uint256 received;
-    uint256 sent;
-  }
 }
