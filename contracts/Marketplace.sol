@@ -448,38 +448,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _vault.withdraw(fund, account);
   }
 
-  /**
-     * @notice Withdraws remaining storage request funds back to the client that
-     deposited them.
-   * @dev Request must be cancelled, failed or finished, and the
-     transaction must originate from the depositor address.
-   * @param requestId the id of the request
-   */
+  /// Withdraws remaining storage request funds back to the client that
   function withdrawFunds(RequestId requestId) public requestIsKnown(requestId) {
-    Request storage request = _requests[requestId];
-    RequestContext storage context = _requestContexts[requestId];
-
-    if (request.client != msg.sender) revert Marketplace_InvalidClientAddress();
-
-    RequestState state = requestState(requestId);
-    if (
-      state != RequestState.Cancelled &&
-      state != RequestState.Failed &&
-      state != RequestState.Finished
-    ) {
-      revert Marketplace_InvalidState();
-    }
-
-    context.state = state;
-    if (state == RequestState.Cancelled) {
-      emit RequestCancelled(requestId);
-    }
-
-    _removeFromMyRequests(request.client, requestId);
-
     FundId fund = requestId.asFundId();
-    AccountId account = _vault.clientAccount(request.client);
+    AccountId account = _vault.clientAccount(msg.sender);
     _vault.withdraw(fund, account);
+
+    _removeFromMyRequests(msg.sender, requestId);
   }
 
   function withdrawByValidator(RequestId requestId) public {
@@ -627,5 +602,4 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   event RequestFailed(RequestId indexed requestId);
   event SlotFilled(RequestId indexed requestId, uint64 slotIndex);
   event SlotFreed(RequestId indexed requestId, uint64 slotIndex);
-  event RequestCancelled(RequestId indexed requestId);
 }
