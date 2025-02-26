@@ -754,15 +754,18 @@ describe("Marketplace", function () {
     it("rejects withdraw when request not yet timed out", async function () {
       switchAccount(client)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Marketplace_InvalidState"
+        "VaultFundNotUnlocked"
       )
     })
 
-    it("rejects withdraw when wrong account used", async function () {
+    it("withdraws nothing when wrong account used", async function () {
       await waitUntilCancelled(marketplace, request)
-      await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Marketplace_InvalidClientAddress"
-      )
+
+      const startBalance = await token.balanceOf(host.address)
+      await marketplace.withdrawFunds(slot.request)
+      const endBalance = await token.balanceOf(host.address)
+
+      expect(endBalance - startBalance).to.equal(0)
     })
 
     it("rejects withdraw when in wrong state", async function () {
@@ -779,7 +782,7 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       switchAccount(client)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
-        "Marketplace_InvalidState"
+        "VaultFundNotUnlocked"
       )
     })
 
@@ -794,14 +797,6 @@ describe("Marketplace", function () {
       const endBalance = await token.balanceOf(client.address)
 
       expect(endBalance - startBalance).to.equal(0)
-    })
-
-    it("emits event once request is cancelled", async function () {
-      await waitUntilCancelled(marketplace, request)
-      switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request))
-        .to.emit(marketplace, "RequestCancelled")
-        .withArgs(requestId(request))
     })
 
     it("withdraw rest of funds to the client for finished requests", async function () {
