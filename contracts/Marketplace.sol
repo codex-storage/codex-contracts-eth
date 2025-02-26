@@ -243,8 +243,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     context.fundsToReturnToClient -= _slotPayout(requestId, slot.filledAt);
 
     // Collect collateral
-    uint256 collateralAmount;
-    uint256 collateralPerSlot = request.ask.collateralPerSlot();
+    uint128 collateralAmount;
+    uint128 collateralPerSlot = request.ask.collateralPerSlot();
     if (slotState(slotId) == SlotState.Repair) {
       // Host is repairing a slot and is entitled for repair reward, so he gets "discounted collateral"
       // in this way he gets "physically" the reward at the end of the request when the full amount of collateral
@@ -261,7 +261,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     AccountId hostAccount = _vault.hostAccount(slot.host, slotIndex);
     TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
 
-    _transferToVault(slot.host, fund, hostAccount, uint128(collateralAmount));
+    _transferToVault(slot.host, fund, hostAccount, collateralAmount);
     _vault.flow(fund, clientAccount, hostAccount, rate);
 
     _marketplaceTotals.received += collateralAmount;
@@ -374,10 +374,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
-    uint256 slashedAmount = (request.ask.collateralPerSlot() *
+    uint128 slashedAmount = (request.ask.collateralPerSlot() *
       _config.collateral.slashPercentage) / 100;
 
-    uint256 validatorRewardAmount = (slashedAmount *
+    uint128 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
 
@@ -388,7 +388,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       fund,
       hostAccount,
       validatorAccount,
-      uint128(validatorRewardAmount)
+      validatorRewardAmount
     );
 
     slot.currentCollateral -= slashedAmount;
