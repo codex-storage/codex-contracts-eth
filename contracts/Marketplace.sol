@@ -62,7 +62,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   struct RequestContext {
     RequestState state;
     uint64 slotsFilled;
-    Timestamp startedAt;
     Timestamp endsAt;
     Timestamp expiresAt;
   }
@@ -70,12 +69,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   struct Slot {
     SlotState state;
     RequestId requestId;
-    /// @notice Timestamp that signals when slot was filled
-    /// @dev Used for calculating payouts as hosts are paid
-    ///      based on time they actually host the content
-    Timestamp filledAt;
     uint64 slotIndex;
-    /// @notice address used for collateral interactions and identifying hosts
     address host;
   }
 
@@ -195,10 +189,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _startRequiringProofs(slotId);
     submitProof(slotId, proof);
 
-    Timestamp currentTime = Timestamps.currentTime();
-
     slot.host = msg.sender;
-    slot.filledAt = currentTime;
 
     context.slotsFilled += 1;
 
@@ -233,7 +224,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       context.state == RequestState.New // Only New requests can "start" the requests
     ) {
       context.state = RequestState.Started;
-      context.startedAt = currentTime;
       _vault.extendLock(fund, context.endsAt);
       emit RequestFulfilled(requestId);
     }
@@ -353,7 +343,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMySlots(slot.host, slotId);
     delete _reservations[slotId]; // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
-    slot.filledAt = Timestamp.wrap(0);
     slot.host = address(0);
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slot.slotIndex);
