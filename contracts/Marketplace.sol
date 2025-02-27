@@ -14,11 +14,9 @@ import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
 import "./marketplace/VaultHelpers.sol";
+import "./marketplace/Collateral.sol";
 
 contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
-  error Marketplace_RepairRewardPercentageTooHigh();
-  error Marketplace_SlashPercentageTooHigh();
-  error Marketplace_MaximumSlashingTooHigh();
   error Marketplace_InvalidExpiry();
   error Marketplace_InvalidMaxSlotLoss();
   error Marketplace_InsufficientSlots();
@@ -50,6 +48,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using VaultHelpers for Vault;
   using VaultHelpers for RequestId;
   using VaultHelpers for Request;
+  using Collateral for Request;
+  using Collateral for CollateralConfig;
   using Timestamps for Timestamp;
   using Tokens for TokensPerSecond;
 
@@ -76,14 +76,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     ///      based on time they actually host the content
     Timestamp filledAt;
     uint64 slotIndex;
-    /// @notice Tracks the current amount of host's collateral that is
-    ///         to be payed out at the end of Slot's lifespan.
-    /// @dev    When Slot is filled, the collateral is collected in amount
-    ///         of request.ask.collateralPerByte * request.ask.slotSize
-    ///         (== request.ask.collateralPerSlot() when using the AskHelpers library)
-    /// @dev    When Host is slashed for missing a proof the slashed amount is
-    ///         reflected in this variable
-    uint256 currentCollateral;
     /// @notice address used for collateral interactions and identifying hosts
     address host;
   }
@@ -99,18 +91,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     IGroth16Verifier verifier
   ) SlotReservations(config.reservations) Proofs(config.proofs, verifier) {
     _vault = vault_;
-
-    if (config.collateral.repairRewardPercentage > 100)
-      revert Marketplace_RepairRewardPercentageTooHigh();
-    if (config.collateral.slashPercentage > 100)
-      revert Marketplace_SlashPercentageTooHigh();
-
-    if (
-      config.collateral.maxNumberOfSlashes * config.collateral.slashPercentage >
-      100
-    ) {
-      revert Marketplace_MaximumSlashingTooHigh();
-    }
+    config.collateral.checkCorrectness();
     _config = config;
   }
 
@@ -124,10 +105,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function vault() public view returns (Vault) {
     return _vault;
-  }
-
-  function currentCollateral(SlotId slotId) public view returns (uint256) {
-    return _slots[slotId].currentCollateral;
   }
 
   function requestStorage(Request calldata request) public {
@@ -227,17 +204,15 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     context.slotsFilled += 1;
 
     // Collect collateral
-    uint128 collateralAmount;
-    uint128 collateralPerSlot = request.ask.collateralPerSlot();
+    uint128 collateralAmount = request.collateralPerSlot();
+    uint128 designatedAmount = _config.collateral.designatedCollateral(
+      collateralAmount
+    );
     if (slotState(slotId) == SlotState.Repair) {
       // Host is repairing a slot and is entitled for repair reward, so he gets "discounted collateral"
       // in this way he gets "physically" the reward at the end of the request when the full amount of collateral
       // is returned to him.
-      collateralAmount =
-        collateralPerSlot -
-        ((collateralPerSlot * _config.collateral.repairRewardPercentage) / 100);
-    } else {
-      collateralAmount = collateralPerSlot;
+      collateralAmount -= _config.collateral.repairReward(collateralAmount);
     }
 
     FundId fund = requestId.asFundId();
@@ -246,9 +221,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
 
     _transferToVault(slot.host, fund, hostAccount, collateralAmount);
+    _vault.designate(fund, hostAccount, designatedAmount);
     _vault.flow(fund, clientAccount, hostAccount, rate);
-
-    slot.currentCollateral = collateralPerSlot; // Even if he has collateral discounted, he is operating with full collateral
 
     _addToMySlots(slot.host, slotId);
 
@@ -357,23 +331,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
-    uint128 slashedAmount = (request.ask.collateralPerSlot() *
-      _config.collateral.slashPercentage) / 100;
-
-    uint128 validatorRewardAmount = (slashedAmount *
-      _config.collateral.validatorRewardPercentage) / 100;
+    uint128 collateral = request.collateralPerSlot();
+    uint128 slashedAmount = _config.collateral.slashAmount(collateral);
+    uint128 validatorReward = _config.collateral.validatorReward(slashedAmount);
 
     FundId fund = slot.requestId.asFundId();
     AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
     AccountId validatorAccount = _vault.validatorAccount(msg.sender);
-    _vault.transfer(
-      fund,
-      hostAccount,
-      validatorAccount,
-      validatorRewardAmount
-    );
+    _vault.transfer(fund, hostAccount, validatorAccount, validatorReward);
+    _vault.burnDesignated(fund, hostAccount, slashedAmount - validatorReward);
 
-    slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
       // When the number of slashings is at or above the allowed amount,
       // free the slot.
@@ -381,13 +348,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
   }
 
-  /**
-     * @notice Abandons the slot without returning collateral, effectively slashing the
-     entire collateral.
-   * @param slotId SlotId of the slot to free.
-   * @dev _slots[slotId] is deleted, resetting _slots[slotId].currentCollateral
-     to 0.
-  */
+  /// Abandons the slot, burns all associated tokens
   function _forciblyFreeSlot(SlotId slotId) internal {
     Slot storage slot = _slots[slotId];
     RequestId requestId = slot.requestId;
@@ -407,7 +368,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _reservations[slotId].clear(); // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
     slot.filledAt = Timestamp.wrap(0);
-    slot.currentCollateral = 0;
     slot.host = address(0);
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slot.slotIndex);
