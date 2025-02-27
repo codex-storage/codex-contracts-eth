@@ -148,10 +148,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     _addToMyRequests(request.client, id);
 
+    TokensPerSecond pricePerSecond = request.ask.pricePerSecond();
+    uint128 price = pricePerSecond.accumulate(request.ask.duration);
+
     FundId fund = id.asFundId();
     AccountId account = _vault.clientAccount(request.client);
     _vault.lock(fund, expiresAt, endsAt);
-    _transferToVault(request.client, fund, account, request.maxPrice());
+    _transferToVault(request.client, fund, account, price);
+    _vault.flow(fund, account, account, pricePerSecond);
 
     emit StorageRequested(id, request.ask, expiresAt);
   }
@@ -196,25 +200,23 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     context.slotsFilled += 1;
 
-    // Collect collateral
-    uint128 collateralAmount = request.collateralPerSlot();
-    uint128 designatedAmount = _config.collateral.designatedCollateral(
-      collateralAmount
-    );
-    if (slotState(slotId) == SlotState.Repair) {
-      // Host is repairing a slot and is entitled for repair reward, so he gets "discounted collateral"
-      // in this way he gets "physically" the reward at the end of the request when the full amount of collateral
-      // is returned to him.
-      collateralAmount -= _config.collateral.repairReward(collateralAmount);
-    }
-
     FundId fund = requestId.asFundId();
     AccountId clientAccount = _vault.clientAccount(request.client);
     AccountId hostAccount = _vault.hostAccount(slot.host, slotIndex);
     TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
 
-    _transferToVault(slot.host, fund, hostAccount, collateralAmount);
-    _vault.designate(fund, hostAccount, designatedAmount);
+    uint128 collateral = request.collateralPerSlot();
+    uint128 designated = _config.collateral.designatedCollateral(collateral);
+
+    if (slotState(slotId) == SlotState.Repair) {
+      // host gets a discount on its collateral, paid for by the repair reward
+      uint128 repairReward = _config.collateral.repairReward(collateral);
+      _vault.transfer(fund, clientAccount, hostAccount, repairReward);
+      collateral -= repairReward;
+    }
+
+    _transferToVault(slot.host, fund, hostAccount, collateral);
+    _vault.designate(fund, hostAccount, designated);
     _vault.flow(fund, clientAccount, hostAccount, rate);
 
     _addToMySlots(slot.host, slotId);
@@ -348,12 +350,15 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     Request storage request = _requests[requestId];
 
+    TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
+    uint128 collateral = request.collateralPerSlot();
+    uint128 repairReward = _config.collateral.repairReward(collateral);
+
     FundId fund = requestId.asFundId();
     AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
     AccountId clientAccount = _vault.clientAccount(request.client);
-    TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
-
     _vault.flow(fund, hostAccount, clientAccount, rate);
+    _vault.transfer(fund, hostAccount, clientAccount, repairReward);
     _vault.burnAccount(fund, hostAccount);
 
     _removeFromMySlots(slot.host, slotId);
