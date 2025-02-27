@@ -49,11 +49,18 @@ enum SlotState {
 }
 
 library AskHelpers {
+  using AskHelpers for Ask;
+
   function pricePerSlotPerSecond(
     Ask memory ask
   ) internal pure returns (TokensPerSecond) {
     uint96 perByte = TokensPerSecond.unwrap(ask.pricePerBytePerSecond);
     return TokensPerSecond.wrap(perByte * ask.slotSize);
+  }
+
+  function pricePerSecond(Ask memory ask) internal pure returns (TokensPerSecond) {
+    uint96 perSlot = TokensPerSecond.unwrap(ask.pricePerSlotPerSecond());
+    return TokensPerSecond.wrap(perSlot * ask.slots);
   }
 }
 
@@ -88,12 +95,5 @@ library Requests {
     assembly {
       result := ids
     }
-  }
-
-  function maxPrice(Request memory request) internal pure returns (uint128) {
-    uint64 slots = request.ask.slots;
-    TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
-    Duration duration = request.ask.duration;
-    return slots * rate.accumulate(duration);
   }
 }
