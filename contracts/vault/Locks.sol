@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "./Timestamps.sol";
+import "../Timestamps.sol";
 
 /// A time-lock for funds
 struct Lock {

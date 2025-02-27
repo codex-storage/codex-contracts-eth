@@ -5,20 +5,24 @@ import "./Marketplace.sol";
 
 // exposes internal functions of Marketplace for testing
 contract TestMarketplace is Marketplace {
+  using VaultHelpers for RequestId;
+  using VaultHelpers for Vault;
+
   constructor(
     MarketplaceConfig memory config,
-    IERC20 token,
+    Vault vault,
     IGroth16Verifier verifier
-  )
-    Marketplace(config, token, verifier) // solhint-disable-next-line no-empty-blocks
-  {}
+  ) Marketplace(config, vault, verifier) {}
 
   function forciblyFreeSlot(SlotId slotId) public {
     _forciblyFreeSlot(slotId);
   }
 
-  function getSlotCollateral(SlotId slotId) public view returns (uint256) {
-    return _slots[slotId].currentCollateral;
+  function getSlotBalance(SlotId slotId) public view returns (uint256) {
+    Slot storage slot = _slots[slotId];
+    Fund fund = slot.requestId.asFund();
+    AccountId account = vault().hostAccount(slot.host, slot.slotIndex);
+    return vault().getBalance(fund, account);
   }
 
   function challengeToFieldElement(
