@@ -134,23 +134,25 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
 
     Timestamp currentTime = Timestamps.currentTime();
+    Timestamp expiresAt = currentTime.add(request.expiry);
+    Timestamp endsAt = currentTime.add(request.ask.duration);
 
     _requests[id] = request;
-    _requestContexts[id].endsAt = currentTime.add(request.ask.duration);
-    _requestContexts[id].expiresAt = currentTime.add(request.expiry);
+    _requestContexts[id] = RequestContext({
+      state: RequestState.New,
+      slotsFilled: 0,
+      endsAt: endsAt,
+      expiresAt: expiresAt
+    });
 
     _addToMyRequests(request.client, id);
 
     FundId fund = id.asFundId();
     AccountId account = _vault.clientAccount(request.client);
-    _vault.lock(
-      fund,
-      _requestContexts[id].expiresAt,
-      _requestContexts[id].endsAt
-    );
+    _vault.lock(fund, expiresAt, endsAt);
     _transferToVault(request.client, fund, account, request.maxPrice());
 
-    emit StorageRequested(id, request.ask, _requestContexts[id].expiresAt);
+    emit StorageRequested(id, request.ask, expiresAt);
   }
 
   /**
