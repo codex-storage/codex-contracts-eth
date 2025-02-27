@@ -58,7 +58,9 @@ library AskHelpers {
     return TokensPerSecond.wrap(perByte * ask.slotSize);
   }
 
-  function pricePerSecond(Ask memory ask) internal pure returns (TokensPerSecond) {
+  function pricePerSecond(
+    Ask memory ask
+  ) internal pure returns (TokensPerSecond) {
     uint96 perSlot = TokensPerSecond.unwrap(ask.pricePerSlotPerSecond());
     return TokensPerSecond.wrap(perSlot * ask.slots);
   }
