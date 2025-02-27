@@ -1166,18 +1166,16 @@ describe("Marketplace", function () {
         await waitUntilProofIsRequired(id)
         let missedPeriod = periodOf(await currentTime())
         await advanceTime(period + 1)
+
+        const startBalance = await marketplace.getSlotBalance(id)
+        await setNextBlockTimestamp(await currentTime())
         await marketplace.markProofAsMissing(id, missedPeriod)
+        const endBalance = await marketplace.getSlotBalance(id)
 
         const collateral = collateralPerSlot(request)
-        const expectedBalance = Math.round(
-          (collateral * (100 - slashPercentage)) / 100
-        )
+        const expectedSlash = Math.round((collateral * slashPercentage) / 100)
 
-        expect(
-          BigNumber.from(expectedBalance).eq(
-            await marketplace.getSlotCollateral(id)
-          )
-        )
+        expect(endBalance).to.equal(startBalance - expectedSlash)
       })
 
       it("rewards validator when marking proof as missing", async function () {
@@ -1211,62 +1209,30 @@ describe("Marketplace", function () {
       })
     })
 
-    it("frees slot when collateral slashed below minimum threshold", async function () {
-      const collateral = collateralPerSlot(request)
-      const minimum =
-        collateral -
-        (collateral *
-          config.collateral.maxNumberOfSlashes *
-          config.collateral.slashPercentage) /
-          100
-      await waitUntilStarted(marketplace, request, proof, token)
-      while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
-        expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(
-          minimum
-        )
-        await waitUntilProofIsRequired(slotId(slot))
-        const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period + 1)
-        await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
-      }
-      expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair
-      )
-      expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(
-        minimum
-      )
-    })
+    describe("when slashing the maximum number of times", function () {
+      beforeEach(async function () {
+        await waitUntilStarted(marketplace, request, proof, token)
+        for (let i = 0; i < config.collateral.maxNumberOfSlashes; i++) {
+          await waitUntilProofIsRequired(slotId(slot))
+          const missedPeriod = periodOf(await currentTime())
+          await advanceTime(period + 1)
+          await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
+        }
+      })
 
-    it("free slot when minimum reached and resets missed proof counter", async function () {
-      const collateral = collateralPerSlot(request)
-      const minimum =
-        collateral -
-        (collateral *
-          config.collateral.maxNumberOfSlashes *
-          config.collateral.slashPercentage) /
-          100
-      await waitUntilStarted(marketplace, request, proof, token)
-      let missedProofs = 0
-      while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
-        expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(
-          minimum
+      it("sets the state to 'repair'", async function () {
+        expect(await marketplace.slotState(slotId(slot))).to.equal(
+          SlotState.Repair
         )
-        await waitUntilProofIsRequired(slotId(slot))
-        const missedPeriod = periodOf(await currentTime())
-        await advanceTime(period + 1)
-        expect(await marketplace.missingProofs(slotId(slot))).to.equal(
-          missedProofs
-        )
-        await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
-        missedProofs += 1
-      }
-      expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair
-      )
-      expect(await marketplace.missingProofs(slotId(slot))).to.equal(0)
-      expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(
-        minimum
-      )
+      })
+
+      it("burns the balance", async function () {
+        expect(await marketplace.getSlotBalance(slotId(slot))).to.equal(0)
+      })
+
+      it("resets missed proof counter", async function () {
+        expect(await marketplace.missingProofs(slotId(slot))).to.equal(0)
+      })
     })
   })
 

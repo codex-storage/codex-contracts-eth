@@ -49,10 +49,6 @@ enum SlotState {
 }
 
 library AskHelpers {
-  function collateralPerSlot(Ask memory ask) internal pure returns (uint128) {
-    return ask.collateralPerByte * ask.slotSize;
-  }
-
   function pricePerSlotPerSecond(
     Ask memory ask
   ) internal pure returns (TokensPerSecond) {
