@@ -642,13 +642,14 @@ describe("Marketplace", function () {
       expect(endBalance).to.equal(startBalance)
     })
 
-    it("can only be done once", async function () {
+    it("pays only once", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
-      await expect(marketplace.freeSlot(slotId(slot))).to.be.revertedWith(
-        "Marketplace_AlreadyPaid"
-      )
+      const startBalance = await token.balanceOf(host.address)
+      await marketplace.freeSlot(slotId(slot))
+      const endBalance = await token.balanceOf(host.address)
+      expect(endBalance).to.equal(startBalance)
     })
 
     it("cannot be filled again", async function () {
@@ -941,8 +942,7 @@ describe("Marketplace", function () {
   })
 
   describe("slot state", function () {
-    const { Free, Filled, Finished, Failed, Paid, Cancelled, Repair } =
-      SlotState
+    const { Free, Filled, Finished, Failed, Cancelled, Repair } = SlotState
     let period, periodEnd
 
     beforeEach(async function () {
@@ -1014,13 +1014,6 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilSlotFailed(marketplace, request, slot)
       expect(await marketplace.slotState(slotId(slot))).to.equal(Failed)
-    })
-
-    it("changes to 'Paid' when host has been paid", async function () {
-      await waitUntilStarted(marketplace, request, proof, token)
-      await waitUntilFinished(marketplace, slot.request)
-      await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.slotState(slotId(slot))).to.equal(Paid)
     })
   })
 
