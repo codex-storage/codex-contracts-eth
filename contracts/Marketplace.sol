@@ -473,33 +473,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     return _requestContexts[requestId].expiresAt;
   }
 
-  /**
-   * @notice Calculates the amount that should be paid out to a host that successfully finished the request
-   * @param requestId RequestId of the request used to calculate the payout
-   * amount.
-   * @param start timestamp indicating when a host filled a slot and
-   * started providing proofs.
-   */
-  function _slotPayout(
-    RequestId requestId,
-    Timestamp start
-  ) private view returns (uint256) {
-    return _slotPayout(requestId, start, _requestContexts[requestId].endsAt);
-  }
-
-  /// @notice Calculates the amount that should be paid out to a host based on the specified time frame.
-  function _slotPayout(
-    RequestId requestId,
-    Timestamp start,
-    Timestamp end
-  ) private view returns (uint256) {
-    Request storage request = _requests[requestId];
-    if (end <= start) {
-      revert Marketplace_StartNotBeforeExpiry();
-    }
-    return request.ask.pricePerSlotPerSecond().accumulate(start.until(end));
-  }
-
   function getHost(SlotId slotId) public view returns (address) {
     return _slots[slotId].host;
   }
