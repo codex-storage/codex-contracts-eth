@@ -333,6 +333,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
     AccountId validatorAccount = _vault.validatorAccount(msg.sender);
     _vault.transfer(fund, hostAccount, validatorAccount, validatorReward);
+    _vault.designate(fund, validatorAccount, validatorReward);
     _vault.burnDesignated(fund, hostAccount, slashedAmount - validatorReward);
 
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
