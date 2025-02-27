@@ -67,7 +67,6 @@ library AskHelpers {
 }
 
 library Requests {
-  using Tokens for TokensPerSecond;
   using AskHelpers for Ask;
 
   function id(Request memory request) internal pure returns (RequestId) {
