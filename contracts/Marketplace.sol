@@ -30,7 +30,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_InvalidCid();
   error Marketplace_SlotNotFree();
   error Marketplace_InvalidSlotHost();
-  error Marketplace_AlreadyPaid();
   error Marketplace_UnknownRequest();
   error Marketplace_InvalidState();
   error Marketplace_StartNotBeforeExpiry();
@@ -257,8 +256,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (slot.host != msg.sender) revert Marketplace_InvalidSlotHost();
 
     SlotState state = slotState(slotId);
-    if (state == SlotState.Paid) revert Marketplace_AlreadyPaid();
-
     if (state == SlotState.Finished) {
       _payoutSlot(slot.requestId, slotId);
     } else if (state == SlotState.Cancelled) {
@@ -394,7 +391,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMyRequests(request.client, requestId);
     _removeFromMySlots(slot.host, slotId);
 
-    slot.state = SlotState.Paid;
     FundId fund = requestId.asFundId();
     AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
     _vault.withdraw(fund, account);
@@ -413,7 +409,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
-    slot.state = SlotState.Paid;
     FundId fund = requestId.asFundId();
     AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
     _vault.withdraw(fund, account);
@@ -525,9 +520,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       return SlotState.Free;
     }
     RequestState reqState = requestState(slot.requestId);
-    if (slot.state == SlotState.Paid) {
-      return SlotState.Paid;
-    }
     if (reqState == RequestState.Cancelled) {
       return SlotState.Cancelled;
     }
