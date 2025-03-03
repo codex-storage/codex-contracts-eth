@@ -85,7 +85,9 @@ abstract contract VaultBase {
       account.update(Timestamps.currentTime());
       return account.balance;
     }
-    if (lockStatus == LockStatus.Unlocked || lockStatus == LockStatus.Frozen) {
+    if (
+      lockStatus == LockStatus.Withdrawing || lockStatus == LockStatus.Frozen
+    ) {
       Account memory account = _accounts[controller][fundId][accountId];
       account.update(lock.flowEnd());
       return account.balance;
@@ -100,7 +102,7 @@ abstract contract VaultBase {
     Timestamp maximum
   ) internal {
     Lock memory lock = _locks[controller][fundId];
-    require(lock.status() == LockStatus.NoLock, VaultFundAlreadyLocked());
+    require(lock.status() == LockStatus.Inactive, VaultFundAlreadyLocked());
     lock.expiry = expiry;
     lock.maximum = maximum;
     _checkLockInvariant(lock);
@@ -252,7 +254,7 @@ abstract contract VaultBase {
     AccountId accountId
   ) internal {
     Lock memory lock = _locks[controller][fundId];
-    require(lock.status() == LockStatus.Unlocked, VaultFundNotUnlocked());
+    require(lock.status() == LockStatus.Withdrawing, VaultFundNotUnlocked());
 
     Account memory account = _accounts[controller][fundId][accountId];
     account.update(lock.flowEnd());
