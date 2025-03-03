@@ -10,7 +10,7 @@ const {
   snapshot,
   revert,
 } = require("./evm")
-const { LockStatus } = require("./vault")
+const { FundStatus } = require("./vault")
 
 describe("Vault", function () {
   const fund = randomBytes(32)
@@ -69,7 +69,7 @@ describe("Vault", function () {
       const expiry = (await currentTime()) + 80
       const maximum = (await currentTime()) + 100
       await vault.lock(fund, expiry, maximum)
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
+      expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Locked)
       expect(await vault.getLockExpiry(fund)).to.equal(expiry)
     })
 
@@ -131,7 +131,7 @@ describe("Vault", function () {
         await token.connect(controller).approve(vault.address, 30)
         await vault.deposit(fund, account, 30)
         await vault.burnAccount(fund, account)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
+        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Locked)
         expect(await vault.getLockExpiry(fund)).to.not.equal(0)
       })
     })
@@ -606,7 +606,7 @@ describe("Vault", function () {
       it("can freeze a fund", async function () {
         await setAutomine(true)
         await vault.freezeFund(fund)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Frozen)
+        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Frozen)
       })
 
       it("stops all token flows", async function () {
@@ -676,10 +676,10 @@ describe("Vault", function () {
 
     it("unlocks the funds", async function () {
       await mine()
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
+      expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Locked)
       await expire()
       await mine()
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
+      expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Withdrawing)
     })
 
     describe("locking", function () {
@@ -706,13 +706,13 @@ describe("Vault", function () {
         await expire()
         // some tokens are withdrawn
         await vault.withdraw(fund, account1)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
+        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Withdrawing)
         expect(await vault.getLockExpiry(fund)).not.to.equal(0)
         // remainder of the tokens are withdrawn by recipient
         await vault
           .connect(holder3)
           .withdrawByRecipient(controller.address, fund, account3)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Inactive)
+        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Inactive)
         expect(await vault.getLockExpiry(fund)).to.equal(0)
       })
     })
@@ -946,7 +946,7 @@ describe("Vault", function () {
 
     it("unlocks when the lock expires", async function () {
       await advanceTimeTo(expiry)
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
+      expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Withdrawing)
     })
 
     testFundThatIsNotLocked()
