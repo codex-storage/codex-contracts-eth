@@ -62,64 +62,67 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// Extracts the address of the account holder and the discriminator from the
   /// account id.
   function decodeAccountId(
-    AccountId account
+    AccountId id
   ) public pure returns (address holder, bytes12 discriminator) {
-    return Accounts.decodeId(account);
+    return Accounts.decodeId(id);
   }
 
   /// The amount of tokens that are currently in an account.
   /// This includes available and designated tokens. Available tokens can be
   /// transfered to other accounts, but designated tokens cannot.
-  function getBalance(Fund fund, AccountId id) public view returns (uint128) {
+  function getBalance(
+    FundId fundId,
+    AccountId accountId
+  ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory balance = _getBalance(controller, fund, id);
+    Balance memory balance = _getBalance(controller, fundId, accountId);
     return balance.available + balance.designated;
   }
 
   /// The amount of tokens that are currently designated in an account
   /// These tokens can no longer be transfered to other accounts.
   function getDesignatedBalance(
-    Fund fund,
-    AccountId id
+    FundId fundId,
+    AccountId accountId
   ) public view returns (uint128) {
     Controller controller = Controller.wrap(msg.sender);
-    Balance memory balance = _getBalance(controller, fund, id);
+    Balance memory balance = _getBalance(controller, fundId, accountId);
     return balance.designated;
   }
 
   /// Returns the status of the lock on the fund. Most operations on the vault
   /// can only be done by the controller when the funds are locked. Withdrawal
   /// can only be done when the funds are unlocked.
-  function getLockStatus(Fund fund) public view returns (LockStatus) {
+  function getLockStatus(FundId fundId) public view returns (LockStatus) {
     Controller controller = Controller.wrap(msg.sender);
-    return _getLockStatus(controller, fund);
+    return _getLockStatus(controller, fundId);
   }
 
   /// Returns the expiry time of the lock on the fund. A locked fund unlocks
   /// automatically at this timestamp.
-  function getLockExpiry(Fund fund) public view returns (Timestamp) {
+  function getLockExpiry(FundId fundId) public view returns (Timestamp) {
     Controller controller = Controller.wrap(msg.sender);
-    return _getLockExpiry(controller, fund);
+    return _getLockExpiry(controller, fundId);
   }
 
   /// Locks the fund until the expiry timestamp. The lock expiry can be extended
   /// later, but no more than the maximum timestamp.
   function lock(
-    Fund fund,
+    FundId fundId,
     Timestamp expiry,
     Timestamp maximum
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _lock(controller, fund, expiry, maximum);
+    _lock(controller, fundId, expiry, maximum);
   }
 
   /// Delays unlocking of a locked fund. The new expiry should be later than
   /// the existing expiry, but no later than the maximum timestamp that was
   /// provided when locking the fund.
   /// Only allowed when the lock has not unlocked yet.
-  function extendLock(Fund fund, Timestamp expiry) public whenNotPaused {
+  function extendLock(FundId fundId, Timestamp expiry) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _extendLock(controller, fund, expiry);
+    _extendLock(controller, fundId, expiry);
   }
 
   /// Deposits an amount of tokens into the vault, and adds them to the balance
@@ -127,12 +130,12 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// contract.
   /// Only allowed when the fund is locked.
   function deposit(
-    Fund fund,
-    AccountId id,
+    FundId fundId,
+    AccountId accountId,
     uint128 amount
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _deposit(controller, fund, id, amount);
+    _deposit(controller, fundId, accountId, amount);
   }
 
   /// Takes an amount of tokens from the account balance and designates them
@@ -140,24 +143,24 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// transfered to other accounts.
   /// Only allowed when the fund is locked.
   function designate(
-    Fund fund,
-    AccountId id,
+    FundId fundId,
+    AccountId accountId,
     uint128 amount
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _designate(controller, fund, id, amount);
+    _designate(controller, fundId, accountId, amount);
   }
 
   /// Transfers an amount of tokens from one account to the other.
   /// Only allowed when the fund is locked.
   function transfer(
-    Fund fund,
+    FundId fundId,
     AccountId from,
     AccountId to,
     uint128 amount
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _transfer(controller, fund, from, to, amount);
+    _transfer(controller, fundId, from, to, amount);
   }
 
   /// Transfers tokens from one account the other over time.
@@ -168,40 +171,43 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// Only allowed when the balance is sufficient to sustain the flow until the
   /// fund unlocks, even if the lock expiry time is extended to its maximum.
   function flow(
-    Fund fund,
+    FundId fundId,
     AccountId from,
     AccountId to,
     TokensPerSecond rate
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _flow(controller, fund, from, to, rate);
+    _flow(controller, fundId, from, to, rate);
   }
 
   /// Burns an amount of designated tokens from the account.
   /// Only allowed when the fund is locked.
   function burnDesignated(
-    Fund fund,
-    AccountId account,
+    FundId fundId,
+    AccountId accountId,
     uint128 amount
   ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _burnDesignated(controller, fund, account, amount);
+    _burnDesignated(controller, fundId, accountId, amount);
   }
 
   /// Burns all tokens from the account.
   /// Only allowed when the fund is locked.
   /// Only allowed when no funds are flowing into or out of the account.
-  function burnAccount(Fund fund, AccountId account) public whenNotPaused {
+  function burnAccount(
+    FundId fundId,
+    AccountId accountId
+  ) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _burnAccount(controller, fund, account);
+    _burnAccount(controller, fundId, accountId);
   }
 
   /// Freezes a fund. Stops all tokens flows and disallows any operations on the
   /// fund until it unlocks.
   /// Only allowed when the fund is locked.
-  function freezeFund(Fund fund) public whenNotPaused {
+  function freezeFund(FundId fundId) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _freezeFund(controller, fund);
+    _freezeFund(controller, fundId);
   }
 
   /// Transfers all ERC20 tokens in the account out of the vault to the account
@@ -210,9 +216,9 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// ⚠️ The account holder can also withdraw itself, so when designing a smart
   /// contract that controls funds in the vault, don't assume that only this
   /// smart contract can initiate a withdrawal ⚠️
-  function withdraw(Fund fund, AccountId account) public whenNotPaused {
+  function withdraw(FundId fund, AccountId accountId) public whenNotPaused {
     Controller controller = Controller.wrap(msg.sender);
-    _withdraw(controller, fund, account);
+    _withdraw(controller, fund, accountId);
   }
 
   /// Allows an account holder to withdraw its tokens from a fund directly,
@@ -221,12 +227,12 @@ contract Vault is VaultBase, Pausable, Ownable {
   /// Only allowed when the fund is unlocked.
   function withdrawByRecipient(
     Controller controller,
-    Fund fund,
-    AccountId account
+    FundId fund,
+    AccountId accountId
   ) public {
-    (address holder, ) = Accounts.decodeId(account);
+    (address holder, ) = Accounts.decodeId(accountId);
     require(msg.sender == holder, VaultOnlyAccountHolder());
-    _withdraw(controller, fund, account);
+    _withdraw(controller, fund, accountId);
   }
 
   function pause() public onlyOwner {
