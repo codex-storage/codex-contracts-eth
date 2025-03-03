@@ -679,7 +679,7 @@ describe("Vault", function () {
       expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Locked)
       await expire()
       await mine()
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Unlocked)
+      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
     })
 
     describe("locking", function () {
@@ -706,13 +706,13 @@ describe("Vault", function () {
         await expire()
         // some tokens are withdrawn
         await vault.withdraw(fund, account1)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Unlocked)
+        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
         expect(await vault.getLockExpiry(fund)).not.to.equal(0)
         // remainder of the tokens are withdrawn by recipient
         await vault
           .connect(holder3)
           .withdrawByRecipient(controller.address, fund, account3)
-        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.NoLock)
+        expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Inactive)
         expect(await vault.getLockExpiry(fund)).to.equal(0)
       })
     })
@@ -946,7 +946,7 @@ describe("Vault", function () {
 
     it("unlocks when the lock expires", async function () {
       await advanceTimeTo(expiry)
-      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Unlocked)
+      expect(await vault.getLockStatus(fund)).to.equal(LockStatus.Withdrawing)
     })
 
     testFundThatIsNotLocked()
