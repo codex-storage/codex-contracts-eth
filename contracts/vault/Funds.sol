@@ -3,19 +3,18 @@ pragma solidity 0.8.28;
 
 import "./Timestamps.sol";
 
-/// A time-lock for funds
-struct Lock {
-  /// The lock unlocks at this time
-  Timestamp expiry;
-  /// The expiry can be extended no further than this
-  Timestamp maximum;
+struct Fund {
+  /// The time-lock unlocks at this time
+  Timestamp lockExpiry;
+  /// The lock expiry can be extended no further than this
+  Timestamp lockMaximum;
   /// Indicates whether fund is frozen, and at what time
   Timestamp frozenAt;
-  /// The total amount of tokens locked up in the fund
+  /// The total amount of tokens in the fund
   uint128 value;
 }
 
-/// A lock can go through the following states:
+/// A fund can go through the following states:
 ///
 ///     -----------------------------------------------
 ///    |                                               |
@@ -24,7 +23,7 @@ struct Lock {
 ///                           \             /
 ///                            --> Frozen --
 ///
-enum LockStatus {
+enum FundStatus {
   /// Indicates that the fund is inactive and contains no tokens. This is the
   /// initial state, or the state after all tokens have been withdrawn.
   Inactive,
@@ -40,24 +39,24 @@ enum LockStatus {
   Withdrawing
 }
 
-library Locks {
-  function status(Lock memory lock) internal view returns (LockStatus) {
-    if (Timestamps.currentTime() < lock.expiry) {
-      if (lock.frozenAt != Timestamp.wrap(0)) {
-        return LockStatus.Frozen;
+library Funds {
+  function status(Fund memory fund) internal view returns (FundStatus) {
+    if (Timestamps.currentTime() < fund.lockExpiry) {
+      if (fund.frozenAt != Timestamp.wrap(0)) {
+        return FundStatus.Frozen;
       }
-      return LockStatus.Locked;
+      return FundStatus.Locked;
     }
-    if (lock.maximum == Timestamp.wrap(0)) {
-      return LockStatus.Inactive;
+    if (fund.lockMaximum == Timestamp.wrap(0)) {
+      return FundStatus.Inactive;
     }
-    return LockStatus.Withdrawing;
+    return FundStatus.Withdrawing;
   }
 
-  function flowEnd(Lock memory lock) internal pure returns (Timestamp) {
-    if (lock.frozenAt != Timestamp.wrap(0)) {
-      return lock.frozenAt;
+  function flowEnd(Fund memory fund) internal pure returns (Timestamp) {
+    if (fund.frozenAt != Timestamp.wrap(0)) {
+      return fund.frozenAt;
     }
-    return lock.expiry;
+    return fund.lockExpiry;
   }
 }

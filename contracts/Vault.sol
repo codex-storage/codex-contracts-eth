@@ -90,12 +90,12 @@ contract Vault is VaultBase, Pausable, Ownable {
     return balance.designated;
   }
 
-  /// Returns the status of the lock on the fund. Most operations on the vault
-  /// can only be done by the controller when the funds are locked. Withdrawal
-  /// can only be done when the funds are unlocked.
-  function getLockStatus(FundId fundId) public view returns (LockStatus) {
+  /// Returns the status of the fund. Most operations on the vault can only be
+  /// done by the controller when the funds are locked. Withdrawals can only be
+  /// done in the withdrawing state.
+  function getFundStatus(FundId fundId) public view returns (FundStatus) {
     Controller controller = Controller.wrap(msg.sender);
-    return _getLockStatus(controller, fundId);
+    return _getFundStatus(controller, fundId);
   }
 
   /// Returns the expiry time of the lock on the fund. A locked fund unlocks
