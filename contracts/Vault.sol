@@ -19,7 +19,8 @@ import "./vault/VaultBase.sol";
 /// controller.
 ///
 /// An account has a balance, of which a part can be designated. Designated
-/// tokens can no longer be transfered to another account.
+/// tokens can no longer be transfered to another account, although they can be
+/// burned.
 /// Accounts are identified by the address of the account holder, and an id that
 /// can be used to create different accounts for the same holder.
 ///
