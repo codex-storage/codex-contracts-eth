@@ -2,19 +2,20 @@
 
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Vault} from "../../contracts/Vault.sol";
 import {IGroth16Verifier} from "../../contracts/Groth16.sol";
 import {MarketplaceConfig} from "../../contracts/Configuration.sol";
 import {Marketplace} from "../../contracts/Marketplace.sol";
 import {RequestId, SlotId} from "../../contracts/Requests.sol";
 import {Requests} from "../../contracts/Requests.sol";
+import {Timestamp} from "../../contracts/Timestamps.sol";
 
 contract MarketplaceHarness is Marketplace {
-    constructor(MarketplaceConfig memory config, IERC20 token, IGroth16Verifier verifier)
-        Marketplace(config, token, verifier)
+    constructor(MarketplaceConfig memory config, Vault vault, IGroth16Verifier verifier)
+        Marketplace(config, vault, verifier)
     {}
 
-    function publicPeriodEnd(Period period) public view returns (uint64) {
+    function publicPeriodEnd(Period period) public view returns (Timestamp) {
         return _periodEnd(period);
     }
 
