@@ -43,7 +43,7 @@ function _tokensPerSecondAtMost(
   return TokensPerSecond.unwrap(a) <= TokensPerSecond.unwrap(b);
 }
 
-library TokenFlows {
+library Tokens {
   /// Calculates how many tokens are accumulated when a token flow is maintained
   /// for a duration of time.
   function accumulate(
