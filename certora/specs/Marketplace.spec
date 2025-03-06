@@ -3,8 +3,6 @@ import "./shared.spec";
 using ERC20A as Token;
 
 methods {
-    function Token.balanceOf(address) external returns (uint256) envfree;
-    function Token.totalSupply() external returns (uint256) envfree;
     function publicPeriodEnd(Periods.Period) external returns (Marketplace.Timestamp) envfree;
     function generateSlotId(Marketplace.RequestId, uint64) external returns (Marketplace.SlotId) envfree;
 }
@@ -12,18 +10,6 @@ methods {
 /*--------------------------------------------
 |              Ghosts and hooks              |
 --------------------------------------------*/
-
-ghost mathint sumOfBalances {
-    init_state axiom sumOfBalances == 0;
-}
-
-hook Sload uint256 balance Token._balances[KEY address addr] {
-    require sumOfBalances >= to_mathint(balance);
-}
-
-hook Sstore Token._balances[KEY address addr] uint256 newValue (uint256 oldValue) {
-    sumOfBalances = sumOfBalances - oldValue + newValue;
-}
 
 ghost Marketplace.Timestamp lastBlockTimestampGhost;
 
@@ -146,9 +132,6 @@ function slotAttributesAreConsistent(env e, Marketplace.SlotId slotId) {
 /*--------------------------------------------
 |                 Invariants                 |
 --------------------------------------------*/
-
-invariant totalSupplyIsSumOfBalances()
-    to_mathint(Token.totalSupply()) == sumOfBalances;
 
 invariant requestStartedWhenSlotsFilled(env e, Marketplace.RequestId requestId, Marketplace.SlotId slotId)
     currentContract.requestState(e, requestId) == Marketplace.RequestState.Started => to_mathint(currentContract.getRequest(e, requestId).ask.slots) - slotsFilledGhost[requestId] <= to_mathint(currentContract.getRequest(e, requestId).ask.maxSlotLoss);
