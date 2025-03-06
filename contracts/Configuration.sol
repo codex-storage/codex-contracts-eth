@@ -20,8 +20,8 @@ struct CollateralConfig {
 }
 
 struct ProofConfig {
-  uint64 period; // proofs requirements are calculated per period (in seconds)
-  uint64 timeout; // mark proofs as missing before the timeout (in seconds)
+  Duration period; // proofs requirements are calculated per period (in seconds)
+  Duration timeout; // mark proofs as missing before the timeout (in seconds)
   uint8 downtime; // ignore this much recent blocks for proof requirements
   // Ensures the pointer does not remain in downtime for many consecutive
   // periods. For each period increase, move the pointer `pointerProduct`
