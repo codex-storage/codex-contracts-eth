@@ -25,32 +25,12 @@ hook Sstore Token._balances[KEY address addr] uint256 newValue (uint256 oldValue
     sumOfBalances = sumOfBalances - oldValue + newValue;
 }
 
-ghost mathint totalReceived;
-
-hook Sload uint256 defaultValue currentContract._marketplaceTotals.received {
-    require totalReceived >= to_mathint(defaultValue);
-}
-
-hook Sstore currentContract._marketplaceTotals.received uint256 defaultValue (uint256 defaultValue_old) {
-    totalReceived = totalReceived + defaultValue - defaultValue_old;
-}
-
-ghost mathint totalSent;
-
-hook Sload uint256 defaultValue currentContract._marketplaceTotals.sent {
-    require totalSent >= to_mathint(defaultValue);
-}
-
-hook Sstore currentContract._marketplaceTotals.sent uint256 defaultValue (uint256 defaultValue_old) {
-    totalSent = totalSent + defaultValue - defaultValue_old;
-}
-
-ghost uint64 lastBlockTimestampGhost;
+ghost Marketplace.Timestamp lastBlockTimestampGhost;
 
 hook TIMESTAMP uint v {
-    require v < max_uint64;
-    require lastBlockTimestampGhost <= assert_uint64(v);
-    lastBlockTimestampGhost = assert_uint64(v);
+    require v < max_uint40;
+    require lastBlockTimestampGhost <= assert_uint40(v);
+    lastBlockTimestampGhost = assert_uint40(v);
 }
 
 ghost mapping(MarketplaceHarness.SlotId => mapping(Periods.Period => bool)) _missingMirror {
@@ -121,13 +101,13 @@ hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].slotsFi
     slotsFilledGhost[RequestId] = defaultValue;
 }
 
-ghost mapping(MarketplaceHarness.RequestId => uint64) endsAtGhost;
+ghost mapping(MarketplaceHarness.RequestId => Marketplace.Timestamp) endsAtGhost;
 
-hook Sload uint64 defaultValue _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt {
+hook Sload Marketplace.Timestamp defaultValue _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt {
     require endsAtGhost[RequestId] == defaultValue;
 }
 
-hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt uint64 defaultValue {
+hook Sstore _requestContexts[KEY MarketplaceHarness.RequestId RequestId].endsAt Marketplace.Timestamp defaultValue {
     endsAtGhost[RequestId] = defaultValue;
 }
 
@@ -144,18 +124,11 @@ function canStartRequest(method f) returns bool {
 }
 
 function canFinishRequest(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
+    return f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
 function canFailRequest(method f) returns bool {
     return f.selector == sig:markProofAsMissing(Marketplace.SlotId, Periods.Period).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
-        f.selector == sig:freeSlot(Marketplace.SlotId).selector;
-}
-
-function canMakeSlotPaid(method f) returns bool {
-    return f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector ||
         f.selector == sig:freeSlot(Marketplace.SlotId).selector;
 }
 
@@ -198,25 +171,6 @@ invariant cancelledRequestAlwaysExpired(env e, Marketplace.RequestId requestId)
     currentContract.requestState(e, requestId) == Marketplace.RequestState.Cancelled =>
         currentContract.requestExpiry(e, requestId) < lastBlockTimestampGhost;
 
-// STATUS - verified
-// failed request is always ended
-// https://prover.certora.com/output/6199/3c5e57311e474f26aa7d9e9481c5880a?anonymousKey=36e39932ee488bb35fe23e38d8d4091190e047af
-invariant failedRequestAlwaysEnded(env e, Marketplace.RequestId requestId)
-    currentContract.requestState(e, requestId) == Marketplace.RequestState.Failed =>
-        endsAtGhost[requestId] < lastBlockTimestampGhost;
-
-// STATUS - verified
-// paid slot always has finished or cancelled request
-// https://prover.certora.com/output/6199/d0e165ed5d594f9fb477602af06cfeb1?anonymousKey=01ffaad46027786c38d78e5a41c03ce002032200
-invariant paidSlotAlwaysHasFinishedOrCancelledRequest(env e, Marketplace.SlotId slotId)
-     currentContract.slotState(e, slotId) == Marketplace.SlotState.Paid =>
-         currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Finished || currentContract.requestState(e, slotIdToRequestId[slotId]) == Marketplace.RequestState.Cancelled
-    { preserved {
-        requireInvariant cancelledSlotAlwaysHasCancelledRequest(e, slotId);
-      }
-    }
-
-
 /*--------------------------------------------
 |                 Properties                 |
 --------------------------------------------*/
@@ -228,34 +182,10 @@ rule sanity(env e, method f) {
     satisfy true;
 }
 
-rule totalReceivedCannotDecrease(env e, method f) {
-    mathint total_before = totalReceived;
-
-    calldataarg args;
-    f(e, args);
-
-    mathint total_after = totalReceived;
-
-    assert total_after >= total_before;
-}
-
-rule totalSentCannotDecrease(env e, method f) {
-    mathint total_before = totalSent;
-
-    calldataarg args;
-    f(e, args);
-
-    mathint total_after = totalSent;
-
-    assert total_after >= total_before;
-}
-
 // https://prover.certora.com/output/6199/0b56a7cdb3f9466db08f2a4677eddaac?anonymousKey=351ce9d5561f6c2aff1b38942e307735428bb83f
 rule slotIsFailedOrFreeIfRequestHasFailed(env e, method f) {
     calldataarg args;
     Marketplace.SlotId slotId;
-
-    requireInvariant paidSlotAlwaysHasFinishedOrCancelledRequest(e, slotId);
 
     Marketplace.RequestState requestStateBefore = currentContract.requestState(e, slotIdToRequestId[slotId]);
     f(e, args);
@@ -298,9 +228,6 @@ rule functionsCausingSlotStateChanges(env e, method f) {
     f(e, args);
     Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
 
-    // SlotState.Finished -> SlotState.Paid
-    assert slotStateBefore == Marketplace.SlotState.Finished && slotStateAfter == Marketplace.SlotState.Paid => canMakeSlotPaid(f);
-
     // SlotState.Free -> SlotState.Filled
     assert (slotStateBefore == Marketplace.SlotState.Free || slotStateBefore == Marketplace.SlotState.Repair) && slotStateAfter == Marketplace.SlotState.Filled => canFillSlot(f);
 }
@@ -316,15 +243,11 @@ rule allowedSlotStateChanges(env e, method f) {
     f(e, args);
     Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
 
-    // Cannot change from Paid
-    assert slotStateBefore == Marketplace.SlotState.Paid => slotStateAfter == Marketplace.SlotState.Paid;
-
-    // SlotState.Cancelled -> SlotState.Cancelled || SlotState.Failed || Finished || Paid
+    // SlotState.Cancelled -> SlotState.Cancelled || SlotState.Failed || Finished
     assert slotStateBefore == Marketplace.SlotState.Cancelled => (
             slotStateAfter == Marketplace.SlotState.Cancelled ||
             slotStateAfter == Marketplace.SlotState.Failed ||
-            slotStateAfter == Marketplace.SlotState.Finished ||
-            slotStateAfter == Marketplace.SlotState.Paid
+            slotStateAfter == Marketplace.SlotState.Finished
             );
 
     // SlotState.Filled only from Free or Repair
@@ -384,22 +307,4 @@ rule slotStateChangesOnlyOncePerFunctionCall(env e, method f) {
     mathint slotStateChangesCountAfter =slotStateChangesCount;
 
     assert slotStateChangesCountAfter <= slotStateChangesCountBefore + 1;
-}
-
-rule slotCanBeFreedAndPaidOnce {
-  env e;
-  Marketplace.SlotId slotId;
-  address rewardRecipient;
-  address collateralRecipient;
-
-  Marketplace.SlotState slotStateBefore = currentContract.slotState(e, slotId);
-  require slotStateBefore != Marketplace.SlotState.Paid;
-  freeSlot(e, slotId, rewardRecipient, collateralRecipient);
-
-  Marketplace.SlotState slotStateAfter = currentContract.slotState(e, slotId);
-  require slotStateAfter == Marketplace.SlotState.Paid;
-
-  freeSlot@withrevert(e, slotId, rewardRecipient, collateralRecipient);
-
-  assert lastReverted;
 }
