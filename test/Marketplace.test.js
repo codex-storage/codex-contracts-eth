@@ -304,31 +304,17 @@ describe("Marketplace", function () {
         await marketplace.freeSlot(slotId(slot))
       })
 
-      it("gives the host a discount on the collateral", async function () {
-        const collateral = collateralPerSlot(request)
-        const reward = repairReward(config, collateral)
-        const discountedCollateral = collateral - reward
-        await token.approve(marketplace.address, discountedCollateral)
-        await marketplace.reserveSlot(slot.request, slot.index)
-        const startBalance = await token.balanceOf(host.address)
-        await marketplace.fillSlot(slot.request, slot.index, proof)
-        const endBalance = await token.balanceOf(host.address)
-
-        expect(startBalance - endBalance).to.equal(discountedCollateral)
-      })
-
       it("tops up the host collateral with the repair reward", async function () {
         const collateral = collateralPerSlot(request)
         const reward = repairReward(config, collateral)
-        const discountedCollateral = collateral - reward
-        await token.approve(marketplace.address, discountedCollateral)
+        await token.approve(marketplace.address, collateral)
         await marketplace.reserveSlot(slot.request, slot.index)
 
         const startBalance = await marketplace.getSlotBalance(slotId(slot))
         await marketplace.fillSlot(slot.request, slot.index, proof)
         const endBalance = await marketplace.getSlotBalance(slotId(slot))
 
-        expect(endBalance - startBalance).to.equal(collateral)
+        expect(endBalance - startBalance).to.equal(collateral + reward)
       })
     })
 
