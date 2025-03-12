@@ -207,10 +207,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint128 designated = _config.collateral.designatedCollateral(collateral);
 
     if (slotState(slotId) == SlotState.Repair) {
-      // host gets a discount on its collateral, paid for by the repair reward
       uint128 repairReward = _config.collateral.repairReward(collateral);
       _vault.transfer(fund, clientAccount, hostAccount, repairReward);
-      collateral -= repairReward;
     }
 
     _transferToVault(slot.host, fund, hostAccount, collateral);
