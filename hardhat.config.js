@@ -24,7 +24,7 @@ module.exports = {
   networks: {
     hardhat: {
       tags: ["local"],
-      allowBlocksWithSameTimestamp: true
+      allowBlocksWithSameTimestamp: true,
     },
     codexdisttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
@@ -40,6 +40,11 @@ module.exports = {
       accounts: [
         // "<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"
       ],
+    },
+    linea_testnet: {
+      url: `https://public.sepolia.rpc.status.network`,
+      chainId: 1660990954,
+      accounts: [process.env.LINEA_TESTNET_PRIVATE_KEY || ""],
     },
   },
 }
