@@ -44,7 +44,9 @@ module.exports = {
     linea_testnet: {
       url: `https://public.sepolia.rpc.status.network`,
       chainId: 1660990954,
-      accounts: [process.env.LINEA_TESTNET_PRIVATE_KEY || ""],
+      accounts: process.env.LINEA_TESTNET_PRIVATE_KEY
+        ? [process.env.LINEA_TESTNET_PRIVATE_KEY]
+        : [],
     },
   },
 }
