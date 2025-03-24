@@ -66,10 +66,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   struct Slot {
-    SlotState state;
     RequestId requestId;
+    SlotState state;
     uint64 slotIndex;
     address host;
+    address rewardRecipient;
   }
 
   struct ActiveSlot {
@@ -169,7 +170,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   function fillSlot(
     RequestId requestId,
     uint64 slotIndex,
-    Groth16Proof calldata proof
+    Groth16Proof calldata proof,
+    address rewardRecipient
   ) public requestIsKnown(requestId) {
     Request storage request = _requests[requestId];
     if (slotIndex >= request.ask.slots) revert Marketplace_InvalidSlot();
@@ -195,25 +197,36 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     submitProof(slotId, proof);
 
     slot.host = msg.sender;
+    slot.rewardRecipient = rewardRecipient;
 
     context.slotsFilled += 1;
 
     FundId fund = requestId.asFundId();
-    AccountId clientAccount = _vault.clientAccount(request.client);
-    AccountId hostAccount = _vault.hostAccount(slot.host, slotIndex);
-    TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
 
-    uint128 collateral = request.collateralPerSlot();
-    uint128 designated = _config.collateral.designatedCollateral(collateral);
+    {
+      AccountId clientAccount = _vault.clientAccount(request.client);
+      AccountId collateralAccount = _vault.collateralAccount(
+        slot.host,
+        slotIndex
+      );
+      AccountId rewardAccount = _vault.rewardAccount(
+        slot.rewardRecipient,
+        slotIndex
+      );
 
-    if (slotState(slotId) == SlotState.Repair) {
-      uint128 repairReward = _config.collateral.repairReward(collateral);
-      _vault.transfer(fund, clientAccount, hostAccount, repairReward);
+      uint128 collateral = request.collateralPerSlot();
+      uint128 designated = _config.collateral.designatedCollateral(collateral);
+      TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
+
+      if (slotState(slotId) == SlotState.Repair) {
+        uint128 repairReward = _config.collateral.repairReward(collateral);
+        _vault.transfer(fund, clientAccount, rewardAccount, repairReward);
+      }
+
+      _transferToVault(slot.host, fund, collateralAccount, collateral);
+      _vault.designate(fund, collateralAccount, designated);
+      _vault.flow(fund, clientAccount, rewardAccount, rate);
     }
-
-    _transferToVault(slot.host, fund, hostAccount, collateral);
-    _vault.designate(fund, hostAccount, designated);
-    _vault.flow(fund, clientAccount, hostAccount, rate);
 
     _addToMySlots(slot.host, slotId);
 
@@ -311,11 +324,18 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint128 validatorReward = _config.collateral.validatorReward(slashedAmount);
 
     FundId fund = slot.requestId.asFundId();
-    AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
+    AccountId collateralAccount = _vault.collateralAccount(
+      slot.host,
+      slot.slotIndex
+    );
     AccountId validatorAccount = _vault.validatorAccount(msg.sender);
-    _vault.transfer(fund, hostAccount, validatorAccount, validatorReward);
+    _vault.transfer(fund, collateralAccount, validatorAccount, validatorReward);
     _vault.designate(fund, validatorAccount, validatorReward);
-    _vault.burnDesignated(fund, hostAccount, slashedAmount - validatorReward);
+    _vault.burnDesignated(
+      fund,
+      collateralAccount,
+      slashedAmount - validatorReward
+    );
 
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
       // When the number of slashings is at or above the allowed amount,
@@ -337,16 +357,25 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint128 repairReward = _config.collateral.repairReward(collateral);
 
     FundId fund = requestId.asFundId();
-    AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
+    AccountId collateralAccount = _vault.collateralAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId rewardAccount = _vault.rewardAccount(
+      slot.rewardRecipient,
+      slot.slotIndex
+    );
     AccountId clientAccount = _vault.clientAccount(request.client);
-    _vault.flow(fund, hostAccount, clientAccount, rate);
-    _vault.transfer(fund, hostAccount, clientAccount, repairReward);
-    _vault.burnAccount(fund, hostAccount);
+    _vault.flow(fund, rewardAccount, clientAccount, rate);
+    _vault.transfer(fund, collateralAccount, clientAccount, repairReward);
+    _vault.burnAccount(fund, rewardAccount);
+    _vault.burnAccount(fund, collateralAccount);
 
     _removeFromMySlots(slot.host, slotId);
     delete _reservations[slotId]; // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
     slot.host = address(0);
+    slot.rewardRecipient = address(0);
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slot.slotIndex);
     _resetMissingProofs(slotId);
@@ -376,8 +405,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMySlots(slot.host, slotId);
 
     FundId fund = requestId.asFundId();
-    AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
-    _vault.withdraw(fund, account);
+    AccountId collateralAccount = _vault.collateralAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId rewardAccount = _vault.rewardAccount(
+      slot.rewardRecipient,
+      slot.slotIndex
+    );
+    _vault.withdraw(fund, collateralAccount);
+    _vault.withdraw(fund, rewardAccount);
   }
 
   /**
@@ -394,8 +431,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     _removeFromMySlots(slot.host, slotId);
     FundId fund = requestId.asFundId();
-    AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
-    _vault.withdraw(fund, account);
+    AccountId collateralAccount = _vault.collateralAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId rewardAccount = _vault.rewardAccount(
+      slot.rewardRecipient,
+      slot.slotIndex
+    );
+    _vault.withdraw(fund, collateralAccount);
+    _vault.withdraw(fund, rewardAccount);
   }
 
   /// Withdraws remaining storage request funds back to the client that

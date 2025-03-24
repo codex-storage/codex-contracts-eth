@@ -15,9 +15,15 @@ async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
 
   let requestEnd = await contract.requestEnd(requestId(request))
   const payouts = []
+  let rewardRecipient = contract.signer.address
   for (let slotIndex of slots) {
     await contract.reserveSlot(requestId(request), slotIndex)
-    await contract.fillSlot(requestId(request), slotIndex, proof)
+    await contract.fillSlot(
+      requestId(request),
+      slotIndex,
+      proof,
+      rewardRecipient
+    )
 
     payouts[slotIndex] = payoutForDuration(
       request,

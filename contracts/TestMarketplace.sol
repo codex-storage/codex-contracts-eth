@@ -21,8 +21,17 @@ contract TestMarketplace is Marketplace {
   function getSlotBalance(SlotId slotId) public view returns (uint256) {
     Slot storage slot = _slots[slotId];
     FundId fund = slot.requestId.asFundId();
-    AccountId account = vault().hostAccount(slot.host, slot.slotIndex);
-    return vault().getBalance(fund, account);
+    AccountId collateralAccount = vault().collateralAccount(
+      slot.host,
+      slot.slotIndex
+    );
+    AccountId rewardAccount = vault().rewardAccount(
+      slot.rewardRecipient,
+      slot.slotIndex
+    );
+    return
+      vault().getBalance(fund, collateralAccount) +
+      vault().getBalance(fund, rewardAccount);
   }
 
   function challengeToFieldElement(

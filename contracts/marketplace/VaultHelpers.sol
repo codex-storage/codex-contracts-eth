@@ -9,7 +9,8 @@ import "hardhat/console.sol";
 library VaultHelpers {
   enum VaultRole {
     client,
-    host,
+    collateral,
+    reward,
     validator
   }
 
@@ -21,15 +22,26 @@ library VaultHelpers {
     return vault.encodeAccountId(client, discriminator);
   }
 
-  function hostAccount(
+  function collateralAccount(
     Vault vault,
     address host,
     uint64 slotIndex
   ) internal pure returns (AccountId) {
-    bytes12 role = bytes12(bytes1(uint8(VaultRole.host)));
+    bytes12 role = bytes12(bytes1(uint8(VaultRole.collateral)));
     bytes12 index = bytes12(uint96(slotIndex));
     bytes12 discriminator = role | index;
     return vault.encodeAccountId(host, discriminator);
+  }
+
+  function rewardAccount(
+    Vault vault,
+    address rewardRecipient,
+    uint64 slotIndex
+  ) internal pure returns (AccountId) {
+    bytes12 role = bytes12(bytes1(uint8(VaultRole.reward)));
+    bytes12 index = bytes12(uint96(slotIndex));
+    bytes12 discriminator = role | index;
+    return vault.encodeAccountId(rewardRecipient, discriminator);
   }
 
   function validatorAccount(
