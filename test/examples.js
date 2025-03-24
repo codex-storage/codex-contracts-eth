@@ -20,6 +20,7 @@ const exampleConfiguration = () => ({
     maxReservations: 3,
   },
   requestDurationLimit: 60 * 60 * 24 * 30, // 30 days
+  protocolFeePermille: 5,
 })
 
 const exampleRequest = async () => {

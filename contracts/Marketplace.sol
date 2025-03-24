@@ -37,6 +37,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_SlotIsFree();
   error Marketplace_ReservationRequired();
   error Marketplace_DurationExceedsLimit();
+  error Marketplace_ProtocolFeePermilleTooHigh();
 
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -84,6 +85,12 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   ) SlotReservations(config.reservations) Proofs(config.proofs, verifier) {
     _vault = vault_;
     config.collateral.checkCorrectness();
+
+    require(
+      config.protocolFeePermille <= 1000,
+      Marketplace_ProtocolFeePermilleTooHigh()
+    );
+    
     _config = config;
   }
 
@@ -149,6 +156,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     TokensPerSecond pricePerSecond = request.ask.pricePerSecond();
     uint128 price = pricePerSecond.accumulate(request.ask.duration);
 
+    _collectProtocolFee(request.client, request.ask);
+
     FundId fund = id.asFundId();
     AccountId account = _vault.clientAccount(request.client);
     _vault.lock(fund, expiresAt, endsAt);
@@ -157,6 +166,15 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
     emit StorageRequested(id, request.ask, expiresAt);
   }
+
+  /**
+   * Calculates the protocol fee, which is then burned.
+   * @param ask Request's ask
+   */
+  function _collectProtocolFee(address from, Ask memory ask) private {
+    uint256 fee =  protocolFeeForRequestAsk(ask);
+    _vault.getToken().safeTransferFrom(from, address(0xdead), fee);
+  } 
 
   /**
    * @notice Fills a slot. Reverts if an invalid proof of the slot data is
@@ -464,6 +482,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function requestExpiry(RequestId requestId) public view returns (Timestamp) {
     return _requestContexts[requestId].expiresAt;
+  }
+
+  function protocolFeeForRequestAsk(Ask memory ask) public view returns(uint256) {
+    TokensPerSecond pricePerSecond = ask.pricePerSecond();
+    uint128 requestPrice = pricePerSecond.accumulate(ask.duration);
+
+    return (requestPrice/1000) * _config.protocolFeePermille;
   }
 
   function getHost(SlotId slotId) public view returns (address) {

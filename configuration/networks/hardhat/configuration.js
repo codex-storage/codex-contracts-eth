@@ -4,6 +4,7 @@ module.exports = {
     maxNumberOfSlashes: 2,
     slashPercentage: 20,
     validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
+    protocolFeePermille: 5, // dictates how much of the request price (defined by its ask) should go to protocol fee that is burned; specified in a per mille
   },
   proofs: {
     // period has to be less than downtime * blocktime

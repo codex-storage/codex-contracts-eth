@@ -9,6 +9,7 @@ struct MarketplaceConfig {
   ProofConfig proofs;
   SlotReservationsConfig reservations;
   Duration requestDurationLimit;
+  uint16 protocolFeePermille; // dictates how much of the request price (defined by its ask) should go to protocol fee that is burned; specified in a per mille
 }
 
 struct CollateralConfig {
