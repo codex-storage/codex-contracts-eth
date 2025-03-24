@@ -20,7 +20,8 @@ const DEFAULT_CONFIGURATION = {
   reservations: {
     maxReservations: 3,
   },
-  requestDurationLimit: 60*60*24*30 // 30 days
+  requestDurationLimit: 60*60*24*30, // 30 days
+  protocolFeePermille: 5, // dictates how much of the request price (defined by its ask) should go to protocol fee that is burned; specified in a per mille
 }
 
 function loadConfiguration(name) {
