@@ -323,7 +323,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   ) public requestIsKnown(_slots[id].requestId) {
     Slot storage slot = _slots[id];
 
-    if (msg.sender != slot.host){
+    if (msg.sender != slot.host) {
       revert Marketplace_ProofNotSubmittedByHost();
     }
 
