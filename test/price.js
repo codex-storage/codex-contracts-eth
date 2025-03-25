@@ -3,7 +3,8 @@ function pricePerSlotPerSecond(request) {
 }
 
 function protocolFee(request, config) {
-  let requestPrice = request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
+  let requestPrice =
+    request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
   return (requestPrice / 1000) * config.protocolFeePermille
 }
 
@@ -18,7 +19,8 @@ function maxPriceWithProtocolFee(request, config) {
 }
 
 function maxPriceWithProtocolFee(request, config) {
-  let requestPrice = request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
+  let requestPrice =
+    request.ask.slots * request.ask.duration * pricePerSlotPerSecond(request)
   let protocolFee = (requestPrice / 1000) * config.protocolFeePermille
   return requestPrice + protocolFee
 }
@@ -27,4 +29,10 @@ function payoutForDuration(request, start, end) {
   return (end - start) * pricePerSlotPerSecond(request)
 }
 
-module.exports = { maxPrice, maxPriceWithProtocolFee, protocolFee, pricePerSlotPerSecond, payoutForDuration }
+module.exports = {
+  maxPrice,
+  maxPriceWithProtocolFee,
+  protocolFee,
+  pricePerSlotPerSecond,
+  payoutForDuration,
+}

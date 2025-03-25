@@ -90,7 +90,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       config.protocolFeePermille <= 1000,
       Marketplace_ProtocolFeePermilleTooHigh()
     );
-    
+
     _config = config;
   }
 
@@ -172,9 +172,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
    * @param ask Request's ask
    */
   function _collectProtocolFee(address from, Ask memory ask) private {
-    uint256 fee =  protocolFeeForRequestAsk(ask);
+    uint256 fee = protocolFeeForRequestAsk(ask);
     _vault.getToken().safeTransferFrom(from, address(0xdead), fee);
-  } 
+  }
 
   /**
    * @notice Fills a slot. Reverts if an invalid proof of the slot data is
@@ -484,11 +484,13 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     return _requestContexts[requestId].expiresAt;
   }
 
-  function protocolFeeForRequestAsk(Ask memory ask) public view returns(uint256) {
+  function protocolFeeForRequestAsk(
+    Ask memory ask
+  ) public view returns (uint256) {
     TokensPerSecond pricePerSecond = ask.pricePerSecond();
     uint128 requestPrice = pricePerSecond.accumulate(ask.duration);
 
-    return (requestPrice/1000) * _config.protocolFeePermille;
+    return (requestPrice / 1000) * _config.protocolFeePermille;
   }
 
   function getHost(SlotId slotId) public view returns (address) {
