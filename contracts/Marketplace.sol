@@ -67,9 +67,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   }
 
   struct Slot {
-    SlotState state;
     RequestId requestId;
     uint64 slotIndex;
+    uint128 currentCollateral;
+    SlotState state;
     address host;
   }
 
@@ -98,6 +99,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function vault() public view returns (Vault) {
     return _vault;
+  }
+
+  function currentCollateral(SlotId slotId) public view returns (uint128) {
+    return _slots[slotId].currentCollateral;
   }
 
   function requestStorage(Request calldata request) public {
@@ -216,6 +221,8 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _vault.designate(fund, hostAccount, designated);
     _vault.flow(fund, clientAccount, hostAccount, rate);
 
+    slot.currentCollateral = collateral;
+
     _addToMySlots(slot.host, slotId);
 
     slot.state = SlotState.Filled;
@@ -331,6 +338,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _vault.designate(fund, validatorAccount, validatorReward);
     _vault.burnDesignated(fund, hostAccount, slashedAmount - validatorReward);
 
+    slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
       // When the number of slashings is at or above the allowed amount,
       // free the slot.
@@ -360,6 +368,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _removeFromMySlots(slot.host, slotId);
     _reservations[slotId].clear(); // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
+    slot.currentCollateral = 0;
     slot.host = address(0);
     context.slotsFilled -= 1;
     emit SlotFreed(requestId, slot.slotIndex);
@@ -385,6 +394,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[requestId];
     context.state = RequestState.Finished;
     Slot storage slot = _slots[slotId];
+    slot.currentCollateral = 0;
 
     _removeFromMyRequests(request.client, requestId);
     _removeFromMySlots(slot.host, slotId);
@@ -406,6 +416,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     SlotId slotId
   ) private requestIsKnown(requestId) {
     Slot storage slot = _slots[slotId];
+    slot.currentCollateral = 0;
     _removeFromMySlots(slot.host, slotId);
     FundId fund = requestId.asFundId();
     AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);

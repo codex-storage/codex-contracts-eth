@@ -327,6 +327,13 @@ describe("Marketplace", function () {
       })
     })
 
+    it("updates the slot's current collateral", async function () {
+      await marketplace.reserveSlot(slot.request, slot.index)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      const collateral = await marketplace.currentCollateral(slotId(slot))
+      expect(collateral).to.equal(collateralPerSlot(request))
+    })
+
     it("fails to retrieve a request of an empty slot", async function () {
       expect(marketplace.getActiveSlot(slotId(slot))).to.be.revertedWith(
         "Marketplace_SlotIsFree"
@@ -583,6 +590,12 @@ describe("Marketplace", function () {
       await token.approve(marketplace.address, collateral)
       await marketplace.fillSlot(slot.request, slot.index, proof)
     })
+
+    it("updates the slot's current collateral", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await marketplace.freeSlot(id)
+      expect(await marketplace.currentCollateral(id)).to.equal(0)
+    })
   })
 
   describe("paying out a slot", function () {
@@ -635,6 +648,21 @@ describe("Marketplace", function () {
       const expectedPartialPayout =
         (expiresAt - filledAt) * pricePerSlotPerSecond(request)
       expect(endBalance - startBalance).to.be.equal(expectedPartialPayout)
+    })
+
+    it("updates the collateral when freeing a finished slot", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.currentCollateral(slotId(slot))).to.equal(0)
+    })
+
+    it("updates the collateral when freeing a cancelled slot", async function () {
+      await marketplace.reserveSlot(slot.request, slot.index)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      await waitUntilCancelled(marketplace, request)
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.currentCollateral(slotId(slot))).to.equal(0)
     })
 
     it("does not pay when the contract hasn't ended", async function () {
@@ -1191,7 +1219,13 @@ describe("Marketplace", function () {
         await marketplace.markProofAsMissing(id, missedPeriod)
         const endBalance = await marketplace.getSlotBalance(id)
         expect(endBalance).to.equal(startBalance - slashAmount)
+      })
 
+      it("updates the slot's current collateral", async function () {
+        await setNextBlockTimestamp(await currentTime())
+        await marketplace.markProofAsMissing(id, missedPeriod)
+        const currentCollateral = await marketplace.currentCollateral(id)
+        expect(currentCollateral).to.equal(collateral - slashAmount)
       })
 
       it("rewards validator when marking proof as missing", async function () {
@@ -1232,6 +1266,11 @@ describe("Marketplace", function () {
 
       it("burns the balance", async function () {
         expect(await marketplace.getSlotBalance(slotId(slot))).to.equal(0)
+      })
+
+      it("updates the slot's current collateral", async function () {
+        const collateral = await marketplace.currentCollateral(slotId(slot))
+        expect(collateral).to.equal(0)
       })
 
       it("resets missed proof counter", async function () {
