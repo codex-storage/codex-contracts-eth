@@ -1,37 +1,45 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import "./Timestamps.sol";
+
 contract Periods {
   error Periods_InvalidSecondsPerPeriod();
 
-  type Period is uint64;
+  type Period is uint40;
 
-  uint64 internal immutable _secondsPerPeriod;
+  Duration internal immutable _secondsPerPeriod;
 
-  constructor(uint64 secondsPerPeriod) {
-    if (secondsPerPeriod == 0) {
+  constructor(Duration secondsPerPeriod) {
+    if (secondsPerPeriod == Duration.wrap(0)) {
       revert Periods_InvalidSecondsPerPeriod();
     }
     _secondsPerPeriod = secondsPerPeriod;
   }
 
-  function _periodOf(uint64 timestamp) internal view returns (Period) {
-    return Period.wrap(timestamp / _secondsPerPeriod);
+  function _periodOf(Timestamp timestamp) internal view returns (Period) {
+    return
+      Period.wrap(
+        Timestamp.unwrap(timestamp) / Duration.unwrap(_secondsPerPeriod)
+      );
   }
 
   function _blockPeriod() internal view returns (Period) {
-    return _periodOf(uint64(block.timestamp));
+    return _periodOf(Timestamps.currentTime());
   }
 
   function _nextPeriod(Period period) internal pure returns (Period) {
     return Period.wrap(Period.unwrap(period) + 1);
   }
 
-  function _periodStart(Period period) internal view returns (uint64) {
-    return Period.unwrap(period) * _secondsPerPeriod;
+  function _periodStart(Period period) internal view returns (Timestamp) {
+    return
+      Timestamp.wrap(
+        Period.unwrap(period) * Duration.unwrap(_secondsPerPeriod)
+      );
   }
 
-  function _periodEnd(Period period) internal view returns (uint64) {
+  function _periodEnd(Period period) internal view returns (Timestamp) {
     return _periodStart(_nextPeriod(period));
   }
 
