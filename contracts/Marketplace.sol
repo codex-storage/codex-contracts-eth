@@ -35,6 +35,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_InvalidState();
   error Marketplace_StartNotBeforeExpiry();
   error Marketplace_SlotNotAcceptingProofs();
+  error Marketplace_ProofNotSubmittedByHost();
   error Marketplace_SlotIsFree();
   error Marketplace_ReservationRequired();
   error Marketplace_NothingToWithdraw();
@@ -208,11 +209,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       revert Marketplace_SlotNotFree();
     }
 
-    _startRequiringProofs(slotId);
-    submitProof(slotId, proof);
-
     slot.host = msg.sender;
     slot.filledAt = uint64(block.timestamp);
+
+    _startRequiringProofs(slotId);
+    submitProof(slotId, proof);
 
     context.slotsFilled += 1;
     context.fundsToReturnToClient -= _slotPayout(requestId, slot.filledAt);
@@ -321,6 +322,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Groth16Proof calldata proof
   ) public requestIsKnown(_slots[id].requestId) {
     Slot storage slot = _slots[id];
+
+    if (msg.sender != slot.host) {
+      revert Marketplace_ProofNotSubmittedByHost();
+    }
+
     Request storage request = _requests[slot.requestId];
     uint256[] memory pubSignals = new uint256[](3);
     pubSignals[0] = _challengeToFieldElement(getChallenge(id));
