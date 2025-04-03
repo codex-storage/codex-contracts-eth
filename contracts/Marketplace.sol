@@ -338,14 +338,14 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   function canProofBeMarkedAsMissing(
     SlotId slotId,
     Period period
-  ) public view slotIsFilled(slotId) {
+  ) public view slotAcceptsProofs(slotId) {
     _canMarkProofAsMissing(slotId, period);
   }
 
   function markProofAsMissing(
     SlotId slotId,
     Period period
-  ) public slotIsFilled(slotId) {
+  ) public slotAcceptsProofs(slotId) {
     _markProofAsMissing(slotId, period);
 
     Slot storage slot = _slots[slotId];
@@ -570,7 +570,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _;
   }
 
-  modifier slotIsFilled(SlotId slotId) {
+  modifier slotAcceptsProofs(SlotId slotId) {
     if (slotState(slotId) != SlotState.Filled)
       revert Marketplace_SlotNotAcceptingProofs();
     _;
