@@ -1,46 +1,45 @@
-const { ethers } = require("hardhat")
+const {
+  time,
+  mine,
+  takeSnapshot,
+} = require("@nomicfoundation/hardhat-network-helpers")
 
-let snapshots = []
+const snapshots = []
 
 async function snapshot() {
-  const id = await ethers.provider.send("evm_snapshot")
-  const time = await currentTime()
-  snapshots.push({ id, time })
+  const snapshot = await takeSnapshot()
+  snapshots.push(snapshot)
 }
 
 async function revert() {
-  const { id, time } = snapshots.pop()
-  await ethers.provider.send("evm_revert", [id])
-  await ethers.provider.send("evm_setNextBlockTimestamp", [time])
-}
-
-async function mine() {
-  await ethers.provider.send("evm_mine")
+  const snapshot = snapshots.pop()
+  if (snapshot) {
+    return snapshot.restore()
+  }
 }
 
 async function ensureMinimumBlockHeight(height) {
-  while ((await ethers.provider.getBlockNumber()) < height) {
+  while ((await time.latestBlock()) < height) {
     await mine()
   }
 }
 
+async function setNextBlockTimestamp(timestamp) {
+  return time.setNextBlockTimestamp(timestamp)
+}
+
 async function currentTime() {
-  let block = await ethers.provider.getBlock("latest")
-  return block.timestamp
+  return time.latest()
 }
 
 async function advanceTime(seconds) {
-  await ethers.provider.send("evm_increaseTime", [seconds])
+  await time.increase(seconds)
   await mine()
 }
 
 async function advanceTimeTo(timestamp) {
-  await setNextBlockTimestamp(timestamp)
+  await time.setNextBlockTimestamp(timestamp)
   await mine()
-}
-
-async function setNextBlockTimestamp(timestamp) {
-  await ethers.provider.send("evm_setNextBlockTimestamp", [timestamp])
 }
 
 module.exports = {
