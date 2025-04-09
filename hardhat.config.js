@@ -1,6 +1,4 @@
-require("@nomiclabs/hardhat-waffle")
-require("hardhat-deploy")
-require("hardhat-deploy-ethers")
+require("@nomicfoundation/hardhat-toolbox")
 
 module.exports = {
   solidity: {
@@ -24,7 +22,7 @@ module.exports = {
   networks: {
     hardhat: {
       tags: ["local"],
-      allowBlocksWithSameTimestamp: true
+      allowBlocksWithSameTimestamp: true,
     },
     codexdisttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
