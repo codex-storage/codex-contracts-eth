@@ -1,5 +1,4 @@
 const { Assertion } = require("chai")
-const { currentTime } = require("./evm")
 
 const RequestState = {
   New: 0,
@@ -10,13 +9,13 @@ const RequestState = {
 }
 
 const SlotState = {
-  Free: 0,
-  Filled: 1,
-  Finished: 2,
-  Failed: 3,
-  Paid: 4,
-  Cancelled: 5,
-  Repair: 6,
+  Free: 0n,
+  Filled: 1n,
+  Finished: 2n,
+  Failed: 3n,
+  Paid: 4n,
+  Cancelled: 5n,
+  Repair: 6n,
 }
 
 function enableRequestAssertions() {
