@@ -10,7 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
-
 jobs:
   formatting:
     runs-on: ubuntu-latest
@@ -29,7 +28,7 @@ jobs:
       # workaround for https://github.com/NomicFoundation/hardhat/issues/3877
       - uses: actions/setup-node@v4
         with:
-          node-version: 18.15
+          node-version: 22
       - run: npm install
       - run: npm test
       - uses: actions/cache@v4
@@ -53,9 +52,9 @@ jobs:
       - name: Install Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '11'
-          java-package: 'jre'
+          distribution: "zulu"
+          java-version: "11"
+          java-package: "jre"
 
       - name: Install Certora CLI
         run: pip3 install certora-cli==7.10.2
@@ -88,4 +87,3 @@ jobs:
         rule:
           - verify:marketplace
           - verify:state_changes
-
