@@ -212,14 +212,14 @@ describe("Proofs", function () {
     it("fails proof submission when proof is incorrect", async function () {
       let invalid = exampleProof()
       await expect(
-        proofs.proofReceived(slotId, invalid, pubSignals)
+        proofs.proofReceived(slotId, invalid, pubSignals),
       ).to.be.revertedWithCustomError(proofs, "Proofs_InvalidProof")
     })
 
     it("fails proof submission when public input is incorrect", async function () {
       let invalid = [1, 2, 3]
       await expect(
-        proofs.proofReceived(slotId, proof, invalid)
+        proofs.proofReceived(slotId, proof, invalid),
       ).to.be.revertedWithCustomError(proofs, "Proofs_InvalidProof")
     })
 
@@ -232,7 +232,7 @@ describe("Proofs", function () {
     it("fails proof submission when already submitted", async function () {
       await proofs.proofReceived(slotId, proof, pubSignals)
       await expect(
-        proofs.proofReceived(slotId, proof, pubSignals)
+        proofs.proofReceived(slotId, proof, pubSignals),
       ).to.be.revertedWithCustomError(proofs, "Proofs_ProofAlreadySubmitted")
     })
 
@@ -249,7 +249,7 @@ describe("Proofs", function () {
       await waitUntilProofIsRequired(slotId)
       let currentPeriod = periodOf(await currentTime())
       await expect(
-        proofs.markProofAsMissing(slotId, currentPeriod)
+        proofs.markProofAsMissing(slotId, currentPeriod),
       ).to.be.revertedWithCustomError(proofs, "Proofs_PeriodNotEnded")
     })
 
@@ -258,7 +258,7 @@ describe("Proofs", function () {
       let currentPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(currentPeriod) + timeout + 1)
       await expect(
-        proofs.markProofAsMissing(slotId, currentPeriod)
+        proofs.markProofAsMissing(slotId, currentPeriod),
       ).to.be.revertedWithCustomError(proofs, "Proofs_ValidationTimedOut")
     })
 
@@ -268,7 +268,7 @@ describe("Proofs", function () {
       await proofs.proofReceived(slotId, proof, pubSignals)
       await advanceTimeTo(periodEnd(receivedPeriod) + 1)
       await expect(
-        proofs.markProofAsMissing(slotId, receivedPeriod)
+        proofs.markProofAsMissing(slotId, receivedPeriod),
       ).to.be.revertedWithCustomError(proofs, "Proofs_ProofNotMissing")
     })
 
@@ -279,7 +279,7 @@ describe("Proofs", function () {
       let currentPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(currentPeriod) + 1)
       await expect(
-        proofs.markProofAsMissing(slotId, currentPeriod)
+        proofs.markProofAsMissing(slotId, currentPeriod),
       ).to.be.revertedWithCustomError(proofs, "Proofs_ProofNotRequired")
     })
 
@@ -289,10 +289,10 @@ describe("Proofs", function () {
       await advanceTimeTo(periodEnd(missedPeriod) + 1)
       await proofs.markProofAsMissing(slotId, missedPeriod)
       await expect(
-        proofs.markProofAsMissing(slotId, missedPeriod)
+        proofs.markProofAsMissing(slotId, missedPeriod),
       ).to.be.revertedWithCustomError(
         proofs,
-        "Proofs_ProofAlreadyMarkedMissing"
+        "Proofs_ProofAlreadyMarkedMissing",
       )
     })
 
