@@ -485,6 +485,13 @@ describe("Marketplace", function () {
       await marketplace.submitProof(slotId(slot), proof)
     })
 
+    it("reverts when somebody other then host submit the proof", async function () {
+      switchAccount(host2)
+      await expect(
+        marketplace.submitProof(slotId(slot), proof)
+      ).to.be.revertedWith("Marketplace_ProofNotSubmittedByHost")
+    })
+
     it("converts first 31 bytes of challenge to field element", async function () {
       let challenge = arrayify(await marketplace.getChallenge(slotId(slot)))
       let truncated = challenge.slice(0, 31)
