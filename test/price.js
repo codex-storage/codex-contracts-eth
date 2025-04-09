@@ -9,7 +9,21 @@ function maxPrice(request) {
 }
 
 function payoutForDuration(request, start, end) {
-  return (end - start) * pricePerSlotPerSecond(request)
+  return (Number(end) - Number(start)) * pricePerSlotPerSecond(request)
 }
 
-module.exports = { maxPrice, pricePerSlotPerSecond, payoutForDuration }
+function calculatePartialPayout(request, expiresAt, filledAt) {
+  return (Number(expiresAt) - Number(filledAt)) * pricePerSlotPerSecond(request)
+}
+
+function calculateBalance(balance, reward) {
+  return BigInt(balance) + BigInt(reward)
+}
+
+module.exports = {
+  maxPrice,
+  pricePerSlotPerSecond,
+  payoutForDuration,
+  calculatePartialPayout,
+  calculateBalance,
+}

@@ -1,20 +1,21 @@
 const { expect } = require("chai")
-const { ethers, deployments } = require("hardhat")
-const { hexlify, randomBytes } = ethers.utils
+const { ethers } = require("hardhat")
+const { hexlify, randomBytes } = ethers
 const {
   snapshot,
   revert,
-  mine,
   ensureMinimumBlockHeight,
   currentTime,
   advanceTime,
   advanceTimeTo,
+  mine,
 } = require("./evm")
 const { periodic } = require("./time")
 const { loadProof, loadPublicInput } = require("../verifier/verifier")
 const { SlotState } = require("./requests")
 const binomialTest = require("@stdlib/stats-binomial-test")
 const { exampleProof } = require("./examples")
+const ProofsModule = require("../ignition/modules/proofs")
 
 describe("Proofs", function () {
   const slotId = hexlify(randomBytes(32))
@@ -30,13 +31,22 @@ describe("Proofs", function () {
   beforeEach(async function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
-    const Proofs = await ethers.getContractFactory("TestProofs")
-    await deployments.fixture(["Verifier"])
-    const verifier = await deployments.get("Groth16Verifier")
-    proofs = await Proofs.deploy(
-      { period, timeout, downtime, zkeyHash: "", downtimeProduct },
-      verifier.address
-    )
+
+    const { testProofs } = await ignition.deploy(ProofsModule, {
+      parameters: {
+        Proofs: {
+          configuration: {
+            period,
+            timeout,
+            downtime,
+            zkeyHash: "",
+            downtimeProduct,
+          },
+        },
+      },
+    })
+
+    proofs = testProofs
   })
 
   afterEach(async function () {
@@ -113,7 +123,7 @@ describe("Proofs", function () {
         let previous = await proofs.getPointer(slotId)
         await mine()
         let current = await proofs.getPointer(slotId)
-        expect(current).to.equal((previous + 1) % 256)
+        expect(current).to.equal((previous + 1n) % 256n)
       }
     })
   })
@@ -203,14 +213,14 @@ describe("Proofs", function () {
       let invalid = exampleProof()
       await expect(
         proofs.proofReceived(slotId, invalid, pubSignals)
-      ).to.be.revertedWith("Proofs_InvalidProof")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_InvalidProof")
     })
 
     it("fails proof submission when public input is incorrect", async function () {
       let invalid = [1, 2, 3]
       await expect(
         proofs.proofReceived(slotId, proof, invalid)
-      ).to.be.revertedWith("Proofs_InvalidProof")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_InvalidProof")
     })
 
     it("emits an event when proof was submitted", async function () {
@@ -223,7 +233,7 @@ describe("Proofs", function () {
       await proofs.proofReceived(slotId, proof, pubSignals)
       await expect(
         proofs.proofReceived(slotId, proof, pubSignals)
-      ).to.be.revertedWith("Proofs_ProofAlreadySubmitted")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_ProofAlreadySubmitted")
     })
 
     it("marks a proof as missing", async function () {
@@ -240,7 +250,7 @@ describe("Proofs", function () {
       let currentPeriod = periodOf(await currentTime())
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Proofs_PeriodNotEnded")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_PeriodNotEnded")
     })
 
     it("does not mark a proof as missing after timeout", async function () {
@@ -249,7 +259,7 @@ describe("Proofs", function () {
       await advanceTimeTo(periodEnd(currentPeriod) + timeout + 1)
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Proofs_ValidationTimedOut")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_ValidationTimedOut")
     })
 
     it("does not mark a received proof as missing", async function () {
@@ -259,7 +269,7 @@ describe("Proofs", function () {
       await advanceTimeTo(periodEnd(receivedPeriod) + 1)
       await expect(
         proofs.markProofAsMissing(slotId, receivedPeriod)
-      ).to.be.revertedWith("Proofs_ProofNotMissing")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_ProofNotMissing")
     })
 
     it("does not mark proof as missing when not required", async function () {
@@ -270,7 +280,7 @@ describe("Proofs", function () {
       await advanceTimeTo(periodEnd(currentPeriod) + 1)
       await expect(
         proofs.markProofAsMissing(slotId, currentPeriod)
-      ).to.be.revertedWith("Proofs_ProofNotRequired")
+      ).to.be.revertedWithCustomError(proofs, "Proofs_ProofNotRequired")
     })
 
     it("does not mark proof as missing twice", async function () {
@@ -280,7 +290,10 @@ describe("Proofs", function () {
       await proofs.markProofAsMissing(slotId, missedPeriod)
       await expect(
         proofs.markProofAsMissing(slotId, missedPeriod)
-      ).to.be.revertedWith("Proofs_ProofAlreadyMarkedMissing")
+      ).to.be.revertedWithCustomError(
+        proofs,
+        "Proofs_ProofAlreadyMarkedMissing"
+      )
     })
 
     it("requires no proofs when slot is finished", async function () {

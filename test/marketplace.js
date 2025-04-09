@@ -4,16 +4,16 @@ const { payoutForDuration } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 
 async function waitUntilCancelled(contract, request) {
-  const expiry = (await contract.requestExpiry(requestId(request))).toNumber()
+  const expiry = await contract.requestExpiry(requestId(request))
   // We do +1, because the expiry check in contract is done as `>` and not `>=`.
-  await advanceTimeTo(expiry + 1)
+  return advanceTimeTo(expiry + 1n)
 }
 
 async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
   let collateral = collateralPerSlot(request)
-  await token.approve(contract.address, collateral * slots.length)
+  await token.approve(await contract.getAddress(), collateral * slots.length)
 
-  let requestEnd = (await contract.requestEnd(requestId(request))).toNumber()
+  let requestEnd = await contract.requestEnd(requestId(request))
   const payouts = []
   for (let slotIndex of slots) {
     await contract.reserveSlot(requestId(request), slotIndex)
@@ -40,9 +40,9 @@ async function waitUntilStarted(contract, request, proof, token) {
 }
 
 async function waitUntilFinished(contract, requestId) {
-  const end = (await contract.requestEnd(requestId)).toNumber()
+  const end = await contract.requestEnd(requestId)
   // We do +1, because the end check in contract is done as `>` and not `>=`.
-  await advanceTimeTo(end + 1)
+  await advanceTimeTo(end + 1n)
 }
 
 async function waitUntilFailed(contract, request) {
@@ -96,6 +96,11 @@ function patchOverloads(contract) {
   }
 }
 
+function littleEndianToBigInt(littleEndian) {
+  const buffer = Buffer.from(littleEndian)
+  return BigInt(`0x${buffer.toString("hex")}`)
+}
+
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
@@ -104,4 +109,5 @@ module.exports = {
   waitUntilFailed,
   waitUntilSlotFailed,
   patchOverloads,
+  littleEndianToBigInt,
 }

@@ -4,3 +4,5 @@ artifacts
 deployment-localhost.json
 crytic-export
 .certora_internal
+coverage
+coverage.json
