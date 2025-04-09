@@ -28,21 +28,21 @@ function enableRequestAssertions() {
       "expected request #{this} to have client #{exp} but got #{act}",
       "expected request #{this} to not have client #{act}, expected #{exp}",
       request.client, // expected
-      actual.client // actual
+      actual.client, // actual
     )
     this.assert(
       actual.expiry == request.expiry,
       "expected request #{this} to have expiry #{exp} but got #{act}",
       "expected request #{this} to not have expiry #{act}, expected #{exp}",
       request.expiry, // expected
-      actual.expiry // actual
+      actual.expiry, // actual
     )
     this.assert(
       actual.nonce === request.nonce,
       "expected request #{this} to have nonce #{exp} but got #{act}",
       "expected request #{this} to not have nonce #{act}, expected #{exp}",
       request.nonce, // expected
-      actual.nonce // actual
+      actual.nonce, // actual
     )
   })
 }
