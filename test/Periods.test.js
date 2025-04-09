@@ -17,7 +17,7 @@ describe("Periods", function () {
       .to.have.property("message")
       .that.contains(
         expectedError,
-        `Expected error ${expectedError}, but got ${error.message}`
+        `Expected error ${expectedError}, but got ${error.message}`,
       )
   })
 
