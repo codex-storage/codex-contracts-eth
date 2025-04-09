@@ -22,7 +22,7 @@ async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
     payouts[slotIndex] = payoutForDuration(
       request,
       await currentTime(),
-      requestEnd
+      requestEnd,
     )
   }
 
@@ -35,7 +35,7 @@ async function waitUntilStarted(contract, request, proof, token) {
     request,
     proof,
     token,
-    Array.from({ length: request.ask.slots }, (_, i) => i)
+    Array.from({ length: request.ask.slots }, (_, i) => i),
   )
 }
 
@@ -72,7 +72,7 @@ function patchOverloads(contract) {
     if (logicalXor(rewardRecipient, collateralRecipient)) {
       // XOR, if exactly one is truthy
       throw new Error(
-        "Invalid freeSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither."
+        "Invalid freeSlot overload, you must specify both `rewardRecipient` and `collateralRecipient` or neither.",
       )
     }
 
