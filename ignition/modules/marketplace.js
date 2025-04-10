@@ -51,6 +51,3 @@ module.exports = buildModule("Marketplace", (m) => {
     token,
   }
 })
-
-// // Tags and dependencies
-// module.exports.tags = ["Marketplace"]
