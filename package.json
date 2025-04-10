@@ -9,7 +9,7 @@
     "format": "prettier --write test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol ",
     "format:check": "prettier --check test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol",
     "lint": "solhint contracts/**.sol",
-    "deploy": "npx hardhat run scripts/deploy.js",
+    "deploy": "hardhat run scripts/deploy.js",
     "verify": "npm run verify:marketplace && npm run verify:state_changes",
     "verify:marketplace": "certoraRun certora/confs/Marketplace.conf",
     "verify:state_changes": "certoraRun certora/confs/StateChanges.conf",
