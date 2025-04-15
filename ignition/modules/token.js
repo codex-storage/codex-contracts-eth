@@ -10,11 +10,13 @@ module.exports = buildModule("Token", (m) => {
     from: deployer,
   })
 
-  if (hre.network.config.tags.includes("local")) {
+  if (hre.network.config && hre.network.config.tags.includes("local")) {
     for (let i = 0; i < MAX_ACCOUNTS; i++) {
       const account = m.getAccount(i)
-      const futureId = "SendingEth" + i
-      m.send(futureId, account, MINTED_TOKENS)
+      m.call(token, "mint", [account, MINTED_TOKENS], {
+        from: deployer,
+        id: `SendingEth_${i}`,
+      })
     }
   }
 
