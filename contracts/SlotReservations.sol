@@ -16,7 +16,7 @@ abstract contract SlotReservations {
     _config = config;
   }
 
-  function _slotIsFree(SlotId slotId) internal view virtual returns (bool);
+  function slotState(SlotId id) public view virtual returns (SlotState);
 
   function reserveSlot(RequestId requestId, uint64 slotIndex) public {
     if (!canReserveSlot(requestId, slotIndex))
@@ -36,9 +36,10 @@ abstract contract SlotReservations {
   ) public view returns (bool) {
     address host = msg.sender;
     SlotId slotId = Requests.slotId(requestId, slotIndex);
+    SlotState state = slotState(slotId);
     return
       // TODO: add in check for address inside of expanding window
-      _slotIsFree(slotId) &&
+      (state == SlotState.Free || state == SlotState.Repair) &&
       (_reservations[slotId].length() < _config.maxReservations) &&
       (!_reservations[slotId].contains(host));
   }
