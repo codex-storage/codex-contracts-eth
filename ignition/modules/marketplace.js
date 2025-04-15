@@ -28,12 +28,12 @@ module.exports = buildModule("Marketplace", (m) => {
     [configuration, token, verifier],
     {
       from: deployer,
-    }
+    },
   )
 
   let testMarketplace
 
-  if (hre.network.config.tags.includes("local")) {
+  if (hre.network.config && hre.network.config.tags.includes("local")) {
     const { testVerifier } = m.useModule(VerifierModule)
 
     testMarketplace = m.contract(
@@ -41,7 +41,7 @@ module.exports = buildModule("Marketplace", (m) => {
       [configuration, token, testVerifier],
       {
         from: deployer,
-      }
+      },
     )
   }
 
