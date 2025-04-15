@@ -1,5 +1,5 @@
 const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const EndianModule = require("../ignition/modules/endian")
 
 describe("Endian", function () {
   const big =
@@ -10,8 +10,8 @@ describe("Endian", function () {
   let endian
 
   beforeEach(async function () {
-    let Endian = await ethers.getContractFactory("TestEndian")
-    endian = await Endian.deploy()
+    const { testEndian } = await ignition.deploy(EndianModule)
+    endian = testEndian
   })
 
   it("converts from little endian to big endian", async function () {

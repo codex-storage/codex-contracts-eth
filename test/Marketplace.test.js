@@ -1,6 +1,5 @@
-const { ethers } = require("hardhat")
-const { AddressZero } = ethers.constants
-const { BigNumber } = ethers
+const { ethers, ignition } = require("hardhat")
+const { ZeroAddress } = ethers
 const { expect } = require("chai")
 const {
   exampleConfiguration,
@@ -22,41 +21,34 @@ const {
   waitUntilFailed,
   waitUntilSlotFailed,
   patchOverloads,
+  littleEndianToBigInt,
 } = require("./marketplace")
 const {
   maxPrice,
   pricePerSlotPerSecond,
-  payoutForDuration,
+  calculatePartialPayout,
+  calculateBalance,
 } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 const {
-  snapshot,
-  revert,
   ensureMinimumBlockHeight,
   advanceTime,
   advanceTimeTo,
   currentTime,
+  snapshot,
+  revert,
   setNextBlockTimestamp,
 } = require("./evm")
-const { arrayify } = require("ethers/lib/utils")
+const { getBytes } = require("ethers")
+const MarketplaceModule = require("../ignition/modules/marketplace")
+const { assertDeploymentRejectedWithCustomError } = require("./helpers")
 
-const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000
+const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000n
 
 describe("Marketplace constructor", function () {
-  let Marketplace, token, verifier, config
-
   beforeEach(async function () {
     await snapshot()
     await ensureMinimumBlockHeight(256)
-
-    const TestToken = await ethers.getContractFactory("TestToken")
-    token = await TestToken.deploy()
-
-    const TestVerifier = await ethers.getContractFactory("TestVerifier")
-    verifier = await TestVerifier.deploy()
-
-    Marketplace = await ethers.getContractFactory("TestMarketplace")
-    config = exampleConfiguration()
   })
 
   afterEach(async function () {
@@ -65,30 +57,49 @@ describe("Marketplace constructor", function () {
 
   function testPercentageOverflow(property, expectedError) {
     it(`should reject for ${property} overflowing percentage values`, async () => {
+      const config = exampleConfiguration()
       config.collateral[property] = 101
 
-      await expect(
-        Marketplace.deploy(config, token.address, verifier.address)
-      ).to.be.revertedWith(expectedError)
+      const promise = ignition.deploy(MarketplaceModule, {
+        parameters: {
+          Marketplace: {
+            configuration: config,
+          },
+        },
+      })
+
+      assertDeploymentRejectedWithCustomError(expectedError, promise)
     })
   }
 
   testPercentageOverflow(
     "repairRewardPercentage",
-    "Marketplace_RepairRewardPercentageTooHigh"
+    "Marketplace_RepairRewardPercentageTooHigh",
   )
   testPercentageOverflow(
     "slashPercentage",
-    "Marketplace_SlashPercentageTooHigh"
+    "Marketplace_SlashPercentageTooHigh",
   )
 
   it("should reject when total slash percentage exceeds 100%", async () => {
+    const config = exampleConfiguration()
     config.collateral.slashPercentage = 1
     config.collateral.maxNumberOfSlashes = 101
 
-    await expect(
-      Marketplace.deploy(config, token.address, verifier.address)
-    ).to.be.revertedWith("Marketplace_MaximumSlashingTooHigh")
+    const expectedError = "Marketplace_MaximumSlashingTooHigh"
+
+    const promise = ignition.deploy(MarketplaceModule, {
+      parameters: {
+        Marketplace: {
+          configuration: config,
+        },
+      },
+    })
+
+    assertDeploymentRejectedWithCustomError(
+      "Marketplace_MaximumSlashingTooHigh",
+      promise,
+    )
   })
 })
 
@@ -115,6 +126,7 @@ describe("Marketplace", function () {
 
   beforeEach(async function () {
     await snapshot()
+
     await ensureMinimumBlockHeight(256)
     ;[
       client,
@@ -128,8 +140,20 @@ describe("Marketplace", function () {
     ] = await ethers.getSigners()
     host = host1
 
-    const TestToken = await ethers.getContractFactory("TestToken")
-    token = await TestToken.deploy()
+    const { testMarketplace, token: _token } = await ignition.deploy(
+      MarketplaceModule,
+      {
+        parameters: {
+          Marketplace: {
+            configuration: config,
+          },
+        },
+      },
+    )
+
+    marketplace = testMarketplace
+    token = _token
+
     for (let account of [
       client,
       clientWithdrawRecipient,
@@ -143,15 +167,6 @@ describe("Marketplace", function () {
       await token.mint(account.address, ACCOUNT_STARTING_BALANCE)
     }
 
-    const TestVerifier = await ethers.getContractFactory("TestVerifier")
-    verifier = await TestVerifier.deploy()
-
-    const Marketplace = await ethers.getContractFactory("TestMarketplace")
-    marketplace = await Marketplace.deploy(
-      config,
-      token.address,
-      verifier.address
-    )
     patchOverloads(marketplace)
 
     request = await exampleRequest()
@@ -179,7 +194,7 @@ describe("Marketplace", function () {
     })
 
     it("emits event when storage is requested", async function () {
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       const now = await currentTime()
       await setNextBlockTimestamp(now)
       const expectedExpiry = now + request.expiry
@@ -189,7 +204,7 @@ describe("Marketplace", function () {
     })
 
     it("allows retrieval of request details", async function () {
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       const id = requestId(request)
       expect(await marketplace.getRequest(id)).to.be.request(request)
@@ -197,110 +212,143 @@ describe("Marketplace", function () {
 
     it("rejects request with invalid client address", async function () {
       let invalid = { ...request, client: host.address }
-      await token.approve(marketplace.address, maxPrice(invalid))
-      await expect(marketplace.requestStorage(invalid)).to.be.revertedWith(
-        "Marketplace_InvalidClientAddress"
+      await token.approve(await marketplace.getAddress(), maxPrice(invalid))
+      await expect(
+        marketplace.requestStorage(invalid),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InvalidClientAddress",
       )
     })
 
     it("rejects request with duration exceeding limit", async function () {
       request.ask.duration = config.requestDurationLimit + 1
-      await token.approve(marketplace.address, collateralPerSlot(request))
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_DurationExceedsLimit"
+      await token.approve(
+        await marketplace.getAddress(),
+        collateralPerSlot(request),
+      )
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_DurationExceedsLimit",
       )
     })
 
     it("rejects request with insufficient payment", async function () {
       let insufficient = maxPrice(request) - 1
-      await token.approve(marketplace.address, insufficient)
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "ERC20: insufficient allowance"
-      )
+      await token.approve(await marketplace.getAddress(), insufficient)
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance")
     })
 
     it("rejects request when expiry out of bounds", async function () {
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
 
       request.expiry = request.ask.duration + 1
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InvalidExpiry"
-      )
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidExpiry")
 
       request.expiry = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InvalidExpiry"
-      )
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidExpiry")
     })
 
     it("is rejected with insufficient slots ", async function () {
       request.ask.slots = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InsufficientSlots"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InsufficientSlots",
       )
     })
 
     it("is rejected when maxSlotLoss exceeds slots", async function () {
       request.ask.maxSlotLoss = request.ask.slots + 1
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InvalidMaxSlotLoss"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InvalidMaxSlotLoss",
       )
     })
 
     it("rejects resubmission of request", async function () {
-      await token.approve(marketplace.address, maxPrice(request) * 2)
+      await token.approve(await marketplace.getAddress(), maxPrice(request) * 2)
       await marketplace.requestStorage(request)
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_RequestAlreadyExists"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_RequestAlreadyExists",
       )
     })
 
     it("is rejected when insufficient duration", async function () {
       request.ask.duration = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
         // request.expiry has to be > 0 and
         // request.expiry < request.ask.duration
         // so request.ask.duration will trigger "Marketplace_InvalidExpiry"
-        "Marketplace_InvalidExpiry"
+        "Marketplace_InvalidExpiry",
       )
     })
 
     it("is rejected when insufficient proofProbability", async function () {
       request.ask.proofProbability = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InsufficientProofProbability"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InsufficientProofProbability",
       )
     })
 
     it("is rejected when insufficient collateral", async function () {
       request.ask.collateralPerByte = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InsufficientCollateral"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InsufficientCollateral",
       )
     })
 
     it("is rejected when insufficient reward", async function () {
       request.ask.pricePerBytePerSecond = 0
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InsufficientReward"
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InsufficientReward",
       )
     })
 
     it("is rejected when cid is missing", async function () {
-      request.content.cid = []
-      await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "Marketplace_InvalidCid"
-      )
+      request.content.cid = Buffer.from("")
+      await expect(
+        marketplace.requestStorage(request),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidCid")
     })
   })
 
   describe("filling a slot with collateral", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      await token.approve(marketplace.address, collateralPerSlot(request))
+      await token.approve(
+        await marketplace.getAddress(),
+        collateralPerSlot(request),
+      )
     })
 
     it("emits event when slot is filled", async function () {
@@ -311,10 +359,12 @@ describe("Marketplace", function () {
     })
 
     it("allows retrieval of host that filled slot", async function () {
-      expect(await marketplace.getHost(slotId(slot))).to.equal(AddressZero)
+      expect(await marketplace.getHost(slotId(slot))).to.equal(ZeroAddress)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      expect(await marketplace.getHost(slotId(slot))).to.equal(host.address)
+      expect(await marketplace.getHost(slotId(slot))).to.equal(
+        await host.getAddress(),
+      )
     })
 
     it("gives discount on the collateral for repaired slot", async function () {
@@ -322,7 +372,7 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await marketplace.freeSlot(slotId(slot))
       expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair
+        SlotState.Repair,
       )
 
       // We need to advance the time to next period, because filling slot
@@ -335,21 +385,21 @@ describe("Marketplace", function () {
       const discountedCollateral =
         collateral -
         Math.round(
-          (collateral * config.collateral.repairRewardPercentage) / 100
+          (collateral * config.collateral.repairRewardPercentage) / 100,
         )
-      await token.approve(marketplace.address, discountedCollateral)
+      await token.approve(await marketplace.getAddress(), discountedCollateral)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const endBalance = await token.balanceOf(host.address)
       expect(startBalance - endBalance).to.equal(discountedCollateral)
       expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Filled
+        SlotState.Filled,
       )
     })
 
     it("fails to retrieve a request of an empty slot", async function () {
-      expect(marketplace.getActiveSlot(slotId(slot))).to.be.revertedWith(
-        "Marketplace_SlotIsFree"
-      )
+      expect(
+        marketplace.getActiveSlot(slotId(slot)),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotIsFree")
     })
 
     it("allows retrieval of request of a filled slot", async function () {
@@ -363,103 +413,112 @@ describe("Marketplace", function () {
     it("is rejected when proof is incorrect", async function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, invalidProof())
-      ).to.be.revertedWith("Proofs_InvalidProof")
+        marketplace.fillSlot(slot.request, slot.index, invalidProof()),
+      ).to.be.revertedWithCustomError(marketplace, "Proofs_InvalidProof")
     })
 
     it("is rejected when slot already filled", async function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(slot.request, slot.index, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is unknown", async function () {
       let unknown = await exampleRequest()
       await expect(
-        marketplace.fillSlot(requestId(unknown), 0, proof)
-      ).to.be.revertedWith("Marketplace_UnknownRequest")
+        marketplace.fillSlot(requestId(unknown), 0, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_UnknownRequest")
     })
 
     it("is rejected when request is cancelled", async function () {
       switchAccount(client)
       let expired = { ...request, expiry: hours(1) + 1 }
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(expired)
       await waitUntilCancelled(marketplace, expired)
       switchAccount(host)
       await marketplace.reserveSlot(requestId(expired), slot.index)
       await expect(
-        marketplace.fillSlot(requestId(expired), slot.index, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(requestId(expired), slot.index, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is finished", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, slot.request)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(slot.request, slot.index, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
 
     it("is rejected when request is failed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFailed(marketplace, request)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(slot.request, slot.index, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
 
     it("is rejected when slot index not in range", async function () {
       const invalid = request.ask.slots
       await expect(
-        marketplace.fillSlot(slot.request, invalid, proof)
-      ).to.be.revertedWith("Marketplace_InvalidSlot")
+        marketplace.fillSlot(slot.request, invalid, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidSlot")
     })
 
     it("fails when all slots are already filled", async function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * lastSlot
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * lastSlot,
       )
-      await token.approve(marketplace.address, maxPrice(request) * lastSlot)
+      await token.approve(
+        await marketplace.getAddress(),
+        maxPrice(request) * lastSlot,
+      )
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
         await marketplace.fillSlot(slot.request, i, proof)
       }
       await expect(
-        marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(slot.request, lastSlot, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
 
     it("fails if slot is not reserved first", async function () {
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Marketplace_ReservationRequired")
+        marketplace.fillSlot(slot.request, slot.index, proof),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_ReservationRequired",
+      )
     })
   })
 
   describe("filling slot without collateral", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
     })
 
     it("is rejected when approved collateral is insufficient", async function () {
       let insufficient = collateralPerSlot(request) - 1
-      await token.approve(marketplace.address, insufficient)
+      await token.approve(await marketplace.getAddress(), insufficient)
       await marketplace.reserveSlot(slot.request, slot.index)
       await expect(
-        marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("ERC20: insufficient allowance")
+        marketplace.fillSlot(slot.request, slot.index, proof),
+      ).to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance")
     })
 
     it("collects only requested collateral and not more", async function () {
-      await token.approve(marketplace.address, collateralPerSlot(request) * 2)
+      await token.approve(
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * 2,
+      )
       const startBalance = await token.balanceOf(host.address)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -471,11 +530,11 @@ describe("Marketplace", function () {
   describe("submitting proofs when slot is filled", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await advanceTime(config.proofs.period)
@@ -488,26 +547,29 @@ describe("Marketplace", function () {
     it("reverts when somebody other then host submit the proof", async function () {
       switchAccount(host2)
       await expect(
-        marketplace.submitProof(slotId(slot), proof)
-      ).to.be.revertedWith("Marketplace_ProofNotSubmittedByHost")
+        marketplace.submitProof(slotId(slot), proof),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_ProofNotSubmittedByHost",
+      )
     })
 
     it("converts first 31 bytes of challenge to field element", async function () {
-      let challenge = arrayify(await marketplace.getChallenge(slotId(slot)))
+      let challenge = getBytes(await marketplace.getChallenge(slotId(slot)))
       let truncated = challenge.slice(0, 31)
       let littleEndian = new Uint8Array(truncated).reverse()
-      let expected = BigNumber.from(littleEndian)
+      let expected = littleEndianToBigInt(littleEndian)
       expect(await marketplace.challengeToFieldElement(challenge)).to.equal(
-        expected
+        expected,
       )
     })
 
     it("converts merkle root to field element", async function () {
       let merkleRoot = request.content.merkleRoot
       let littleEndian = new Uint8Array(merkleRoot).reverse()
-      let expected = BigNumber.from(littleEndian)
+      let expected = littleEndianToBigInt(littleEndian)
       expect(await marketplace.merkleRootToFieldElement(merkleRoot)).to.equal(
-        expected
+        expected,
       )
     })
   })
@@ -516,29 +578,27 @@ describe("Marketplace", function () {
     var requestTime
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       requestTime = await currentTime()
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("sets the request end time to now + duration", async function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
-      await expect(
-        (await marketplace.requestEnd(requestId(request))).toNumber()
-      ).to.equal(requestTime + request.ask.duration)
+      expect(await marketplace.requestEnd(requestId(request))).to.equal(
+        requestTime + request.ask.duration,
+      )
     })
 
     it("sets request end time to the past once failed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFailed(marketplace, request)
       const now = await currentTime()
-      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
-        now - 1
-      )
+      expect(await marketplace.requestEnd(requestId(request))).to.be.eq(now - 1)
     })
 
     it("sets request end time to the past once cancelled", async function () {
@@ -546,18 +606,14 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
       const now = await currentTime()
-      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
-        now - 1
-      )
+      expect(await marketplace.requestEnd(requestId(request))).to.be.eq(now - 1)
     })
 
     it("checks that request end time is in the past once finished", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       const now = await currentTime()
-      await expect(await marketplace.requestEnd(requestId(request))).to.be.eq(
-        now - 1
-      )
+      expect(await marketplace.requestEnd(requestId(request))).to.be.eq(now - 1)
     })
   })
 
@@ -569,26 +625,27 @@ describe("Marketplace", function () {
       id = slotId(slot)
 
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("fails to free slot when slot not filled", async function () {
       slot.index = 5
       let nonExistentId = slotId(slot)
-      await expect(marketplace.freeSlot(nonExistentId)).to.be.revertedWith(
-        "Marketplace_SlotIsFree"
-      )
+      await expect(
+        marketplace.freeSlot(nonExistentId),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotIsFree")
     })
 
     it("can only be freed by the host occupying the slot", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       switchAccount(client)
-      await expect(marketplace.freeSlot(id)).to.be.revertedWith(
-        "Marketplace_InvalidSlotHost"
+      await expect(marketplace.freeSlot(id)).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InvalidSlotHost",
       )
     })
 
@@ -608,11 +665,11 @@ describe("Marketplace", function () {
   describe("paying out a slot", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("finished request pays out reward based on time hosted", async function () {
@@ -625,8 +682,9 @@ describe("Marketplace", function () {
         marketplace,
         request,
         proof,
-        token
+        token,
       )
+
       await waitUntilFinished(marketplace, requestId(request))
 
       const startBalanceHost = await token.balanceOf(host.address)
@@ -636,7 +694,7 @@ describe("Marketplace", function () {
       expect(expectedPayouts[slot.index]).to.be.lt(maxPrice(request))
       const collateral = collateralPerSlot(request)
       expect(endBalanceHost - startBalanceHost).to.equal(
-        expectedPayouts[slot.index] + collateral
+        expectedPayouts[slot.index] + collateral,
       )
     })
 
@@ -646,27 +704,27 @@ describe("Marketplace", function () {
 
       const startBalanceHost = await token.balanceOf(host.address)
       const startBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
       const collateralToBeReturned = await marketplace.currentCollateral(
-        slotId(slot)
+        slotId(slot),
       )
 
       await marketplace.freeSlot(
         slotId(slot),
         hostRewardRecipient.address,
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
       const endBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
       const endBalanceHost = await token.balanceOf(host.address)
       expect(endBalanceHost).to.equal(startBalanceHost)
       expect(endBalanceCollateral - startBalanceCollateral).to.equal(
-        collateralPerSlot(request)
+        collateralPerSlot(request),
       )
       expect(collateralToBeReturned).to.equal(collateralPerSlot(request))
     })
@@ -677,18 +735,18 @@ describe("Marketplace", function () {
 
       const startBalanceHost = await token.balanceOf(host.address)
       const startBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
 
       await marketplace.freeSlot(
         slotId(slot),
         hostRewardRecipient.address,
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
       const endBalanceHost = await token.balanceOf(host.address)
       const endBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
 
       expect(endBalanceHost).to.equal(startBalanceHost)
@@ -696,11 +754,11 @@ describe("Marketplace", function () {
     })
 
     it("pays the host when contract was cancelled", async function () {
+      const startBalance = await token.balanceOf(host.address)
+
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
-      const expiresAt = (
-        await marketplace.requestExpiry(requestId(request))
-      ).toNumber()
+      const expiresAt = await marketplace.requestExpiry(requestId(request))
 
       await marketplace.reserveSlot(slot.request, slot.index)
       await setNextBlockTimestamp(filledAt)
@@ -708,20 +766,21 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       await marketplace.freeSlot(slotId(slot))
 
-      const expectedPartialPayout =
-        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
-      const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
-        expectedPartialPayout
+      const expectedPartialPayout = calculatePartialPayout(
+        request,
+        expiresAt,
+        filledAt,
       )
+
+      const endBalance = await token.balanceOf(host.address)
+
+      expect(endBalance - startBalance).to.be.equal(expectedPartialPayout)
     })
 
     it("pays to host reward address when contract was cancelled, and returns collateral to host address", async function () {
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
-      const expiresAt = (
-        await marketplace.requestExpiry(requestId(request))
-      ).toNumber()
+      const expiresAt = await marketplace.requestExpiry(requestId(request))
 
       await marketplace.reserveSlot(slot.request, slot.index)
       await setNextBlockTimestamp(filledAt)
@@ -729,40 +788,43 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       const startBalanceHost = await token.balanceOf(host.address)
       const startBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
       const startBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
       const collateralToBeReturned = await marketplace.currentCollateral(
-        slotId(slot)
+        slotId(slot),
       )
 
       await marketplace.freeSlot(
         slotId(slot),
         hostRewardRecipient.address,
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
 
-      const expectedPartialPayout =
-        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
+      const expectedPartialPayout = calculatePartialPayout(
+        request,
+        expiresAt,
+        filledAt,
+      )
 
       const endBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
       expect(endBalanceReward - startBalanceReward).to.be.equal(
-        expectedPartialPayout
+        expectedPartialPayout,
       )
 
       const endBalanceHost = await token.balanceOf(host.address)
       expect(endBalanceHost).to.be.equal(startBalanceHost)
 
       const endBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
       expect(endBalanceCollateral - startBalanceCollateral).to.be.equal(
-        collateralPerSlot(request)
+        collateralPerSlot(request),
       )
 
       expect(collateralToBeReturned).to.be.equal(collateralPerSlot(request))
@@ -773,18 +835,18 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const startBalanceHost = await token.balanceOf(host.address)
       const startBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
       const startBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
       await marketplace.freeSlot(slotId(slot))
       const endBalanceHost = await token.balanceOf(host.address)
       const endBalanceReward = await token.balanceOf(
-        hostRewardRecipient.address
+        hostRewardRecipient.address,
       )
       const endBalanceCollateral = await token.balanceOf(
-        hostCollateralRecipient.address
+        hostCollateralRecipient.address,
       )
       expect(endBalanceHost).to.equal(startBalanceHost)
       expect(endBalanceReward).to.equal(startBalanceReward)
@@ -795,9 +857,9 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
-      await expect(marketplace.freeSlot(slotId(slot))).to.be.revertedWith(
-        "Marketplace_AlreadyPaid"
-      )
+      await expect(
+        marketplace.freeSlot(slotId(slot)),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_AlreadyPaid")
     })
 
     it("cannot be filled again", async function () {
@@ -812,18 +874,18 @@ describe("Marketplace", function () {
   describe("fulfilling a request", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("emits event when all slots are filled", async function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * lastSlot
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * lastSlot,
       )
       for (let i = 0; i < lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -831,7 +893,7 @@ describe("Marketplace", function () {
       }
 
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, lastSlot)
       await expect(marketplace.fillSlot(slot.request, lastSlot, proof))
         .to.emit(marketplace, "RequestFulfilled")
@@ -840,35 +902,35 @@ describe("Marketplace", function () {
     it("sets state when all slots are filled", async function () {
       const slots = request.ask.slots
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral * slots)
+      await token.approve(await marketplace.getAddress(), collateral * slots)
       for (let i = 0; i < slots; i++) {
         await marketplace.reserveSlot(slot.request, i)
         await marketplace.fillSlot(slot.request, i, proof)
       }
-      await expect(await marketplace.requestState(slot.request)).to.equal(
-        RequestState.Started
+      expect(await marketplace.requestState(slot.request)).to.equal(
+        RequestState.Started,
       )
     })
     it("fails when all slots are already filled", async function () {
       const lastSlot = request.ask.slots - 1
       await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * (lastSlot + 1)
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * (lastSlot + 1),
       )
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
         await marketplace.fillSlot(slot.request, i, proof)
       }
       await expect(
-        marketplace.fillSlot(slot.request, lastSlot, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+        marketplace.fillSlot(slot.request, lastSlot, proof),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_SlotNotFree")
     })
   })
 
   describe("withdrawing funds", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
 
       // wait a bit, so that there are funds for the client to withdraw
@@ -876,29 +938,38 @@ describe("Marketplace", function () {
 
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("rejects withdraw when request not yet timed out", async function () {
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Marketplace_InvalidState")
+        marketplace.withdrawFunds(
+          slot.request,
+          clientWithdrawRecipient.address,
+        ),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidState")
     })
 
     it("rejects withdraw when wrong account used", async function () {
       await waitUntilCancelled(marketplace, request)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Marketplace_InvalidClientAddress")
+        marketplace.withdrawFunds(
+          slot.request,
+          clientWithdrawRecipient.address,
+        ),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_InvalidClientAddress",
+      )
     })
 
     it("rejects withdraw when in wrong state", async function () {
       // fill all slots, should change state to RequestState.Started
       const lastSlot = request.ask.slots - 1
       await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * (lastSlot + 1)
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * (lastSlot + 1),
       )
       for (let i = 0; i <= lastSlot; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -907,8 +978,11 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Marketplace_InvalidState")
+        marketplace.withdrawFunds(
+          slot.request,
+          clientWithdrawRecipient.address,
+        ),
+      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidState")
     })
 
     it("rejects withdraw when already withdrawn", async function () {
@@ -918,18 +992,27 @@ describe("Marketplace", function () {
       switchAccount(client)
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       await expect(
-        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
-      ).to.be.revertedWith("Marketplace_NothingToWithdraw")
+        marketplace.withdrawFunds(
+          slot.request,
+          clientWithdrawRecipient.address,
+        ),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_NothingToWithdraw",
+      )
     })
 
     it("emits event once request is cancelled", async function () {
       await waitUntilCancelled(marketplace, request)
       switchAccount(client)
       await expect(
-        marketplace.withdrawFunds(slot.request, clientWithdrawRecipient.address)
+        marketplace.withdrawFunds(
+          slot.request,
+          clientWithdrawRecipient.address,
+        ),
       )
         .to.emit(marketplace, "RequestCancelled")
         .withArgs(requestId(request))
@@ -942,16 +1025,16 @@ describe("Marketplace", function () {
       switchAccount(client)
       const startBalanceClient = await token.balanceOf(client.address)
       const startBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
 
       const endBalanceClient = await token.balanceOf(client.address)
       const endBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
 
       expect(endBalanceClient).to.equal(startBalanceClient)
@@ -961,7 +1044,7 @@ describe("Marketplace", function () {
       // at the time of expiry and hence the user would get the full "expiry window" reward back.
       expect(endBalancePayout - startBalancePayout).to.be.gt(0)
       expect(endBalancePayout - startBalancePayout).to.be.lte(
-        request.expiry * pricePerSlotPerSecond(request)
+        request.expiry * pricePerSlotPerSecond(request),
       )
     })
 
@@ -970,15 +1053,15 @@ describe("Marketplace", function () {
       switchAccount(client)
       const startBalanceClient = await token.balanceOf(client.address)
       const startBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       const endBalanceClient = await token.balanceOf(client.address)
       const endBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       expect(endBalanceClient).to.equal(startBalanceClient)
       expect(endBalancePayout - startBalancePayout).to.equal(maxPrice(request))
@@ -992,16 +1075,16 @@ describe("Marketplace", function () {
 
       const startBalanceClient = await token.balanceOf(client.address)
       const startBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
 
       const endBalanceClient = await token.balanceOf(client.address)
       const endBalancePayout = await token.balanceOf(
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
 
       expect(endBalanceClient).to.equal(startBalanceClient)
@@ -1009,49 +1092,54 @@ describe("Marketplace", function () {
     })
 
     it("withdraws to the client payout address for cancelled requests lowered by hosts payout", async function () {
+      const startBalance = await token.balanceOf(host.address)
+
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
-      const expiresAt = (
-        await marketplace.requestExpiry(requestId(request))
-      ).toNumber()
+      const expiresAt = await marketplace.requestExpiry(requestId(request))
 
       await marketplace.reserveSlot(slot.request, slot.index)
       await setNextBlockTimestamp(filledAt)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
-      const expectedPartialhostRewardRecipient =
-        (expiresAt - filledAt) * pricePerSlotPerSecond(request)
+
+      const expectedPartialhostRewardRecipient = calculatePartialPayout(
+        request,
+        expiresAt,
+        filledAt,
+      )
 
       switchAccount(client)
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
-        maxPrice(request) - expectedPartialhostRewardRecipient
+      expect(endBalance - startBalance).to.equal(
+        maxPrice(request) - expectedPartialhostRewardRecipient,
       )
     })
 
     it("when slot is freed and not repaired, client will get refunded the freed slot's funds", async function () {
+      const startBalance = await token.balanceOf(host.address)
       const payouts = await waitUntilStarted(marketplace, request, proof, token)
 
       await expect(marketplace.freeSlot(slotId(slot))).to.emit(
         marketplace,
-        "SlotFreed"
+        "SlotFreed",
       )
       await waitUntilFinished(marketplace, requestId(request))
 
       switchAccount(client)
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
+      expect(endBalance - startBalance).to.equal(
         maxPrice(request) -
           payouts.reduce((a, b) => a + b, 0) + // This is the amount that user gets refunded for filling period in expiry window
-          payouts[slot.index] // This is the refunded amount for the freed slot
+          payouts[slot.index], // This is the refunded amount for the freed slot
       )
     })
   })
@@ -1061,11 +1149,11 @@ describe("Marketplace", function () {
 
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("is 'New' initially", async function () {
@@ -1082,7 +1170,7 @@ describe("Marketplace", function () {
       switchAccount(client)
       await marketplace.withdrawFunds(
         slot.request,
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       expect(await marketplace.requestState(slot.request)).to.equal(Cancelled)
     })
@@ -1100,8 +1188,8 @@ describe("Marketplace", function () {
 
     it("does not change to 'Failed' before it is started", async function () {
       await token.approve(
-        marketplace.address,
-        collateralPerSlot(request) * (request.ask.maxSlotLoss + 1)
+        await marketplace.getAddress(),
+        collateralPerSlot(request) * (request.ask.maxSlotLoss + 1),
       )
       for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
         await marketplace.reserveSlot(slot.request, i)
@@ -1139,11 +1227,11 @@ describe("Marketplace", function () {
       ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     async function waitUntilProofIsRequired(id) {
@@ -1216,11 +1304,11 @@ describe("Marketplace", function () {
   describe("slot probability", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("calculates correctly the slot probability", async function () {
@@ -1232,7 +1320,7 @@ describe("Marketplace", function () {
       // 4 * (256 - 64) / 256
       const expectedProbability = 3
       expect(await marketplace.slotProbability(slotId(slot))).to.equal(
-        expectedProbability
+        expectedProbability,
       )
     })
   })
@@ -1245,11 +1333,11 @@ describe("Marketplace", function () {
       ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     async function waitUntilProofWillBeRequired(id) {
@@ -1282,9 +1370,9 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofWillBeRequired(id)
-      await expect(await marketplace.willProofBeRequired(id)).to.be.true
+      expect(await marketplace.willProofBeRequired(id)).to.be.true
       await waitUntilCancelled(marketplace, request)
-      await expect(await marketplace.willProofBeRequired(id)).to.be.false
+      expect(await marketplace.willProofBeRequired(id)).to.be.false
     })
 
     it("does not require proofs once cancelled", async function () {
@@ -1292,9 +1380,9 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofIsRequired(id)
-      await expect(await marketplace.isProofRequired(id)).to.be.true
+      expect(await marketplace.isProofRequired(id)).to.be.true
       await waitUntilCancelled(marketplace, request)
-      await expect(await marketplace.isProofRequired(id)).to.be.false
+      expect(await marketplace.isProofRequired(id)).to.be.false
     })
 
     it("does not provide challenges once cancelled", async function () {
@@ -1303,10 +1391,10 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofIsRequired(id)
       const challenge1 = await marketplace.getChallenge(id)
-      expect(BigNumber.from(challenge1).gt(0))
+      expect(challenge1 > 0)
       await waitUntilCancelled(marketplace, request)
       const challenge2 = await marketplace.getChallenge(id)
-      expect(BigNumber.from(challenge2).isZero())
+      expect(challenge2 == 0)
     })
 
     it("does not provide pointer once cancelled", async function () {
@@ -1315,10 +1403,10 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilProofIsRequired(id)
       const challenge1 = await marketplace.getChallenge(id)
-      expect(BigNumber.from(challenge1).gt(0))
+      expect(challenge1 > 0)
       await waitUntilCancelled(marketplace, request)
       const challenge2 = await marketplace.getChallenge(id)
-      expect(BigNumber.from(challenge2).isZero())
+      expect(challenge2 == 0)
     })
   })
 
@@ -1330,11 +1418,11 @@ describe("Marketplace", function () {
       ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     async function waitUntilProofIsRequired(id) {
@@ -1355,8 +1443,11 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       let missedPeriod = periodOf(await currentTime())
       await expect(
-        marketplace.markProofAsMissing(slotId(slot), missedPeriod)
-      ).to.be.revertedWith("Marketplace_SlotNotAcceptingProofs")
+        marketplace.markProofAsMissing(slotId(slot), missedPeriod),
+      ).to.be.revertedWithCustomError(
+        marketplace,
+        "Marketplace_SlotNotAcceptingProofs",
+      )
     })
 
     describe("slashing when missing proofs", function () {
@@ -1373,14 +1464,10 @@ describe("Marketplace", function () {
 
         const collateral = collateralPerSlot(request)
         const expectedBalance = Math.round(
-          (collateral * (100 - slashPercentage)) / 100
+          (collateral * (100 - slashPercentage)) / 100,
         )
 
-        expect(
-          BigNumber.from(expectedBalance).eq(
-            await marketplace.getSlotCollateral(id)
-          )
-        )
+        expect(expectedBalance == (await marketplace.getSlotCollateral(id)))
       })
 
       it("rewards validator when marking proof as missing", async function () {
@@ -1404,11 +1491,11 @@ describe("Marketplace", function () {
         const slashedAmount = (collateral * slashPercentage) / 100
 
         const expectedReward = Math.round(
-          (slashedAmount * validatorRewardPercentage) / 100
+          (slashedAmount * validatorRewardPercentage) / 100,
         )
 
-        expect(endBalance.toNumber()).to.equal(
-          startBalance.toNumber() + expectedReward
+        expect(endBalance).to.equal(
+          calculateBalance(startBalance, expectedReward),
         )
       })
     })
@@ -1424,7 +1511,7 @@ describe("Marketplace", function () {
       await waitUntilStarted(marketplace, request, proof, token)
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
         expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(
-          minimum
+          minimum,
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
@@ -1432,10 +1519,10 @@ describe("Marketplace", function () {
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair
+        SlotState.Repair,
       )
       expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(
-        minimum
+        minimum,
       )
     })
 
@@ -1451,23 +1538,23 @@ describe("Marketplace", function () {
       let missedProofs = 0
       while ((await marketplace.slotState(slotId(slot))) === SlotState.Filled) {
         expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.gt(
-          minimum
+          minimum,
         )
         await waitUntilProofIsRequired(slotId(slot))
         const missedPeriod = periodOf(await currentTime())
         await advanceTime(period + 1)
         expect(await marketplace.missingProofs(slotId(slot))).to.equal(
-          missedProofs
+          missedProofs,
         )
         await marketplace.markProofAsMissing(slotId(slot), missedPeriod)
         missedProofs += 1
       }
       expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair
+        SlotState.Repair,
       )
       expect(await marketplace.missingProofs(slotId(slot))).to.equal(0)
       expect(await marketplace.getSlotCollateral(slotId(slot))).to.be.lte(
-        minimum
+        minimum,
       )
     })
   })
@@ -1476,9 +1563,9 @@ describe("Marketplace", function () {
     beforeEach(async function () {
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
     })
 
     it("adds request to list when requesting storage", async function () {
@@ -1497,7 +1584,7 @@ describe("Marketplace", function () {
       await waitUntilCancelled(marketplace, request)
       await marketplace.withdrawFunds(
         requestId(request),
-        clientWithdrawRecipient.address
+        clientWithdrawRecipient.address,
       )
       expect(await marketplace.myRequests()).to.deep.equal([])
     })
@@ -1525,11 +1612,11 @@ describe("Marketplace", function () {
   describe("list of active slots", function () {
     beforeEach(async function () {
       switchAccount(client)
-      await token.approve(marketplace.address, maxPrice(request))
+      await token.approve(await marketplace.getAddress(), maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
     })
 
     it("adds slot to list when filling slot", async function () {
@@ -1537,13 +1624,11 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
-      expect(await marketplace.mySlots()).to.have.members([
-        slotId(slot),
-        slotId(slot1),
-      ])
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.have.members([slotId(slot), slotId(slot1)])
     })
 
     it("removes slot from list when slot is freed", async function () {
@@ -1551,12 +1636,13 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       let slot1 = { ...slot, index: slot.index + 1 }
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.mySlots()).to.have.members([slotId(slot1)])
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.have.members([slotId(slot1)])
     })
 
     it("keeps slots when cancelled", async function () {
@@ -1565,21 +1651,20 @@ describe("Marketplace", function () {
       let slot1 = { ...slot, index: slot.index + 1 }
 
       const collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, slot1.index)
       await marketplace.fillSlot(slot.request, slot1.index, proof)
       await waitUntilCancelled(marketplace, request)
-      expect(await marketplace.mySlots()).to.have.members([
-        slotId(slot),
-        slotId(slot1),
-      ])
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.have.members([slotId(slot), slotId(slot1)])
     })
 
     it("removes slot when finished slot is freed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.not.contain(slotId(slot))
     })
 
     it("removes slot when cancelled slot is freed", async function () {
@@ -1587,14 +1672,16 @@ describe("Marketplace", function () {
       await marketplace.fillSlot(slot.request, slot.index, proof)
       await waitUntilCancelled(marketplace, request)
       await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.not.contain(slotId(slot))
     })
 
     it("removes slot when failed slot is freed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilSlotFailed(marketplace, request, slot)
       await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
+      const slots = Array.from(await marketplace.mySlots())
+      expect(slots).to.not.contain(slotId(slot))
     })
   })
 })
