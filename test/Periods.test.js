@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 const PeriodsModule = require("../ignition/modules/periods")
-const { assertDeploymentRejectedWithCustomError } = require("./util")
+const { assertDeploymentRejectedWithCustomError } = require("./helpers")
 
 describe("Periods", function () {
   it("should revert when secondsPerPeriod is 0", async function () {

@@ -41,7 +41,7 @@ const {
 } = require("./evm")
 const { getBytes } = require("ethers")
 const MarketplaceModule = require("../ignition/modules/marketplace")
-const { assertDeploymentRejectedWithCustomError } = require("./util")
+const { assertDeploymentRejectedWithCustomError } = require("./helpers")
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000n
 
