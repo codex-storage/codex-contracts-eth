@@ -1,5 +1,6 @@
 const { expect } = require("chai")
 const PeriodsModule = require("../ignition/modules/periods")
+const { assertDeploymentRejectedWithCustomError } = require("./util")
 
 describe("Periods", function () {
   it("should revert when secondsPerPeriod is 0", async function () {
@@ -10,15 +11,11 @@ describe("Periods", function () {
         },
       },
     })
-    const expectedError = "Periods_InvalidSecondsPerPeriod"
 
-    const error = await expect(promise).to.be.rejected
-    expect(error)
-      .to.have.property("message")
-      .that.contains(
-        expectedError,
-        `Expected error ${expectedError}, but got ${error.message}`,
-      )
+    assertDeploymentRejectedWithCustomError(
+      "Periods_InvalidSecondsPerPeriod",
+      promise,
+    )
   })
 
   it("should not revert when secondsPerPeriod more than 0", async function () {
