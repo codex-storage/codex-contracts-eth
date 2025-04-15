@@ -11,11 +11,6 @@ function getDefaultConfig() {
   return config
 }
 
-function getDefaultVerifier(m) {
-  const { verifier } = m.useModule(VerifierModule)
-  return verifier
-}
-
 module.exports = buildModule("Marketplace", (m) => {
   const deployer = m.getAccount(0)
 
