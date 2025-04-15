@@ -335,7 +335,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _proofReceived(id, proof, pubSignals);
   }
 
-  function canProofBeMarkedAsMissing(
+  function canMarkProofAsMissing(
     SlotId slotId,
     Period period
   ) public view slotAcceptsProofs(slotId) {
