@@ -792,6 +792,8 @@ describe("Marketplace", function () {
     })
 
     it("pays the host when contract was cancelled", async function () {
+      const startBalance = await token.balanceOf(host.address)
+
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
       const expiresAt = await marketplace.requestExpiry(requestId(request))
@@ -809,9 +811,8 @@ describe("Marketplace", function () {
       )
 
       const endBalance = await token.balanceOf(host.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.be.equal(
-        expectedPartialPayout
-      )
+
+      expect(endBalance - startBalance).to.be.equal(expectedPartialPayout)
     })
 
     it("pays to host reward address when contract was cancelled, and returns collateral to host address", async function () {
@@ -1114,6 +1115,8 @@ describe("Marketplace", function () {
     })
 
     it("withdraws to the client payout address for cancelled requests lowered by hosts payout", async function () {
+      const startBalance = await token.balanceOf(host.address)
+
       // Lets advance the time more into the expiry window
       const filledAt = (await currentTime()) + Math.floor(request.expiry / 3)
       const expiresAt = await marketplace.requestExpiry(requestId(request))
@@ -1137,10 +1140,13 @@ describe("Marketplace", function () {
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
       expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
         maxPrice(request) - expectedPartialhostRewardRecipient
+      expect(endBalance - startBalance).to.equal(
+        maxPrice(request) - expectedPartialhostRewardRecipient,
       )
     })
 
     it("when slot is freed and not repaired, client will get refunded the freed slot's funds", async function () {
+      const startBalance = await token.balanceOf(host.address)
       const payouts = await waitUntilStarted(marketplace, request, proof, token)
 
       await expect(marketplace.freeSlot(slotId(slot))).to.emit(
@@ -1155,7 +1161,7 @@ describe("Marketplace", function () {
         clientWithdrawRecipient.address
       )
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
+      expect(endBalance - startBalance).to.equal(
         maxPrice(request) -
           payouts.reduce((a, b) => a + b, 0) + // This is the amount that user gets refunded for filling period in expiry window
           payouts[slot.index] // This is the refunded amount for the freed slot
