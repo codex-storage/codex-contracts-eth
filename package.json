@@ -2,23 +2,25 @@
   "name": "codex-contracts-eth",
   "license": "MIT",
   "scripts": {
-    "test": "npm run lint && hardhat test --parallel",
+    "test": "npm run lint && NODE_ENV=test hardhat test",
     "fuzz": "hardhat compile && fuzzing/fuzz.sh",
-    "start": "hardhat node",
+    "start": "concurrently \"hardhat node\" \"sleep 2 &&  npm run deploy\"",
     "compile": "hardhat compile",
     "format": "prettier --write test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol ",
     "format:check": "prettier --check test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol",
     "lint": "solhint contracts/**.sol",
-    "deploy": "hardhat run scripts/deploy.js",
+    "deploy": "hardhat ignition deploy ignition/modules/marketplace.js --network localhost",
+    "predeploy": "hardhat run scripts/mine.js --network localhost",
     "verify": "npm run verify:marketplace && npm run verify:state_changes",
     "verify:marketplace": "certoraRun certora/confs/Marketplace.conf",
     "verify:state_changes": "certoraRun certora/confs/StateChanges.conf",
-    "coverage": "npx hardhat coverage",
-    "gas:report": "REPORT_GAS=true npx hardhat test"
+    "coverage": "hardhat coverage",
+    "gas:report": "REPORT_GAS=true hardhat test"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.3.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.11",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@stdlib/stats-binomial-test": "^0.2.2",
     "chai": "^4.3.7",
@@ -26,6 +28,7 @@
     "hardhat": "^2.24.2",
     "prettier": "^3.5.3",
     "prettier-plugin-solidity": "^1.4.2",
-    "solhint": "^5.0.5"
+    "solhint": "^5.0.5",
+    "concurrently": "^9.1.2"
   }
 }
