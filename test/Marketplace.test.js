@@ -41,6 +41,7 @@ const {
 } = require("./evm")
 const { getBytes } = require("ethers")
 const MarketplaceModule = require("../ignition/modules/marketplace")
+const { assertDeploymentRejectedWithCustomError } = require("./util")
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000n
 
@@ -67,13 +68,7 @@ describe("Marketplace constructor", function () {
         },
       })
 
-      const error = await expect(promise).to.be.rejected
-      expect(error)
-        .to.have.property("message")
-        .that.contains(
-          expectedError,
-          `Expected error ${expectedError}, but got ${error.message}`
-        )
+      assertDeploymentRejectedWithCustomError(expectedError, promise)
     })
   }
 
@@ -101,13 +96,10 @@ describe("Marketplace constructor", function () {
       },
     })
 
-    const error = await expect(promise).to.be.rejected
-    expect(error)
-      .to.have.property("message")
-      .that.contains(
-        expectedError,
-        `Expected error ${expectedError}, but got ${error.message}`
-      )
+    assertDeploymentRejectedWithCustomError(
+      "Marketplace_MaximumSlashingTooHigh",
+      promise,
+    )
   })
 })
 
