@@ -76,7 +76,10 @@ library Accounts {
   /// outgoing and incoming flows up until the specified timestamp. Outgoing
   /// tokens are deducted from the available balance. Incoming tokens are added
   /// to the designated tokens.
-  function update(Account memory account, Timestamp timestamp) internal pure {
+  function accumulateFlows(
+    Account memory account,
+    Timestamp timestamp
+  ) internal pure {
     Duration duration = account.flow.updated.until(timestamp);
     account.balance.available -= account.flow.outgoing.accumulate(duration);
     account.balance.designated += account.flow.incoming.accumulate(duration);
@@ -86,7 +89,7 @@ library Accounts {
   /// Starts an incoming flow of tokens at the specified rate. If there already
   /// is a flow of incoming tokens, then its rate is increased accordingly.
   function flowIn(Account memory account, TokensPerSecond rate) internal view {
-    account.update(Timestamps.currentTime());
+    account.accumulateFlows(Timestamps.currentTime());
     account.flow.incoming = account.flow.incoming + rate;
   }
 
@@ -95,7 +98,7 @@ library Accounts {
   /// outgoing flow. If there are insuffient incoming tokens, then the outgoing
   /// rate is increased.
   function flowOut(Account memory account, TokensPerSecond rate) internal view {
-    account.update(Timestamps.currentTime());
+    account.accumulateFlows(Timestamps.currentTime());
     if (rate <= account.flow.incoming) {
       account.flow.incoming = account.flow.incoming - rate;
     } else {

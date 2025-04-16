@@ -82,12 +82,12 @@ abstract contract VaultBase {
     FundStatus status = fund.status();
     if (status == FundStatus.Locked) {
       Account memory account = _accounts[controller][fundId][accountId];
-      account.update(Timestamps.currentTime());
+      account.accumulateFlows(Timestamps.currentTime());
       return account.balance;
     }
     if (status == FundStatus.Withdrawing || status == FundStatus.Frozen) {
       Account memory account = _accounts[controller][fundId][accountId];
-      account.update(fund.flowEnd());
+      account.accumulateFlows(fund.flowEnd());
       return account.balance;
     }
     return Balance({available: 0, designated: 0});
@@ -255,7 +255,7 @@ abstract contract VaultBase {
     require(fund.status() == FundStatus.Withdrawing, VaultFundNotUnlocked());
 
     Account memory account = _accounts[controller][fundId][accountId];
-    account.update(fund.flowEnd());
+    account.accumulateFlows(fund.flowEnd());
     uint128 amount = account.balance.available + account.balance.designated;
 
     fund.value -= amount;
