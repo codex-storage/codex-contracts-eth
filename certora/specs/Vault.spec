@@ -49,6 +49,27 @@ hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId Fun
 }
 
 
+// frozenAtghost mirror
+ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => VaultBase.Timestamp)) frozenAtMirror {
+    init_state axiom 
+        forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+            frozenAtMirror[controller][fundId] == 0;
+}
+
+hook Sload VaultBase.Timestamp defaultValue
+    _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
+{
+    require frozenAtMirror[Controller][FundId] == defaultValue;
+}
+
+hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
+    VaultBase.Timestamp defaultValue
+{
+    frozenAtMirror[Controller][FundId] = defaultValue;
+}
+
+
 // (∀ controller ∈ Controller, fundId ∈ FundId:
 //   fund.lockExpiry <= fund.lockMaximum
 //   where fund = _funds[controller][fundId])
@@ -66,10 +87,13 @@ invariant lockExpiryLELockMaximum()
 
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => VaultBase.TokensPerSecond))) outgoingMirror {
     init_state axiom 
-        forall VaultBase.Controller controller. 
+        (forall VaultBase.Controller controller. 
         forall VaultBase.FundId fundId. 
         forall VaultBase.AccountId accountId. 
-            outgoingMirror[controller][fundId][accountId] == 0;
+            outgoingMirror[controller][fundId][accountId] == 0) && 
+        (forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+        (sum VaultBase.AccountId accountId. outgoingMirror[controller][fundId][accountId]) == 0);
 }
 
 hook Sload VaultBase.TokensPerSecond defaultValue 
@@ -162,10 +186,13 @@ invariant outgoingLEAvailableEasy(VaultBase.Controller controller, VaultBase.Fun
 
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => VaultBase.TokensPerSecond))) incomingMirror {
     init_state axiom 
-        forall VaultBase.Controller controller. 
+        (forall VaultBase.Controller controller. 
         forall VaultBase.FundId fundId. 
         forall VaultBase.AccountId accountId. 
-            incomingMirror[controller][fundId][accountId] == 0;
+            incomingMirror[controller][fundId][accountId] == 0) && 
+        (forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+        (sum VaultBase.AccountId accountId. incomingMirror[controller][fundId][accountId]) == 0);
 }
 
 hook Sload VaultBase.TokensPerSecond defaultValue 
@@ -185,14 +212,56 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 //   (∑ accountId ∈ AccountId: accounts[accountId].flow.incoming) =
 //   (∑ accountId ∈ AccountId: accounts[accountId].flow.outgoing)
 //   where accounts = _accounts[controller][fundId])
-invariant incomingEqualsOutgoing()
-    (sum 
-        VaultBase.Controller controller. 
-        VaultBase.FundId fundId. 
-        VaultBase.AccountId accountId. 
-            outgoingMirror[controller][fundId][accountId]) 
-    == (sum
-        VaultBase.Controller controller. 
-        VaultBase.FundId fundId. 
-        VaultBase.AccountId accountId. 
-            incomingMirror[controller][fundId][accountId]);
+invariant incomingEqualsOutgoing(env e)
+    (forall VaultBase.Controller controller.
+     forall VaultBase.FundId fundId.
+    statusCVL(e, controller, fundId) == VaultBase.FundStatus.Withdrawing
+        => (sum 
+                VaultBase.AccountId accountId. 
+                    outgoingMirror[controller][fundId][accountId]) 
+            == (sum
+                VaultBase.AccountId accountId. 
+                    incomingMirror[controller][fundId][accountId]))
+    {
+        preserved with (env e2) {
+            require e.block.timestamp == e2.block.timestamp;
+        }
+    }
+
+
+// copying status implementation from Funds.sol using CVL to use it in quantifier
+/*
+if (Timestamps.currentTime() < fund.lockExpiry) {
+      if (fund.frozenAt != Timestamp.wrap(0)) {
+        return FundStatus.Frozen;
+      }
+      return FundStatus.Locked;
+    }
+    if (fund.lockMaximum == Timestamp.wrap(0)) {
+      return FundStatus.Inactive;
+    }
+    return FundStatus.Withdrawing;
+*/
+
+ghost VaultBase.Timestamp zeroValue {
+    init_state axiom zeroValue == 0;
+    axiom zeroValue == 0;
+}
+
+function statusCVL(env e, VaultBase.Controller controller, VaultBase.FundId fundId) returns VaultBase.FundStatus {
+    if (e.block.timestamp < lockExpiryMirror[controller][fundId]) {
+        if (frozenAtMirror != zeroValue) {
+            return VaultBase.FundStatus.Frozen;
+        }
+        return VaultBase.FundStatus.Locked;
+    } 
+    if (lockMaximumMirror[controller][fundId] == 0) {
+        return VaultBase.FundStatus.Inactive;
+    }
+    return VaultBase.FundStatus.Withdrawing;
+}
+
+
+
+
+
