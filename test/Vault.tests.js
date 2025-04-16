@@ -122,7 +122,7 @@ describe("Vault", function () {
         await expect(extending).to.be.revertedWith("InvalidExpiry")
       })
 
-      it("cannot move expiry forward", async function () {
+      it("cannot move expiry to an earlier time", async function () {
         const extending = vault.extendLock(fund, expiry - 1)
         await expect(extending).to.be.revertedWith("InvalidExpiry")
       })
