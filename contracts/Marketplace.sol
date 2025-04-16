@@ -335,11 +335,19 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _proofReceived(id, proof, pubSignals);
   }
 
-  function markProofAsMissing(SlotId slotId, Period period) public {
-    if (slotState(slotId) != SlotState.Filled)
-      revert Marketplace_SlotNotAcceptingProofs();
+  function canMarkProofAsMissing(
+    SlotId slotId,
+    Period period
+  ) public view slotAcceptsProofs(slotId) {
+    _canMarkProofAsMissing(slotId, period);
+  }
 
+  function markProofAsMissing(
+    SlotId slotId,
+    Period period
+  ) public slotAcceptsProofs(slotId) {
     _markProofAsMissing(slotId, period);
+
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
@@ -349,7 +357,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 validatorRewardAmount = (slashedAmount *
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
-    assert(_token.transfer(msg.sender, validatorRewardAmount));
+
+    if (!_token.transfer(msg.sender, validatorRewardAmount)) {
+      revert Marketplace_TransferFailed();
+    }
 
     slot.currentCollateral -= slashedAmount;
     if (missingProofs(slotId) >= _config.collateral.maxNumberOfSlashes) {
@@ -556,6 +567,12 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   modifier slotIsNotFree(SlotId slotId) {
     if (_slots[slotId].state == SlotState.Free) revert Marketplace_SlotIsFree();
+    _;
+  }
+
+  modifier slotAcceptsProofs(SlotId slotId) {
+    if (slotState(slotId) != SlotState.Filled)
+      revert Marketplace_SlotNotAcceptingProofs();
     _;
   }
 
