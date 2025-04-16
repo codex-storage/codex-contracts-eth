@@ -67,16 +67,4 @@ library Timestamps {
   ) internal pure returns (Duration) {
     return Duration.wrap(Timestamp.unwrap(end) - Timestamp.unwrap(start));
   }
-
-  /// Returns the earliest of the two timestamps
-  function earliest(
-    Timestamp a,
-    Timestamp b
-  ) internal pure returns (Timestamp) {
-    if (a <= b) {
-      return a;
-    } else {
-      return b;
-    }
-  }
 }

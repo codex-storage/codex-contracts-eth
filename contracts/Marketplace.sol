@@ -478,19 +478,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function requestEnd(RequestId requestId) public view returns (Timestamp) {
     RequestState state = requestState(requestId);
-    if (
-      state == RequestState.New ||
-      state == RequestState.Started ||
-      state == RequestState.Failed
-    ) {
-      return _requestContexts[requestId].endsAt;
-    }
     if (state == RequestState.Cancelled) {
       return _requestContexts[requestId].expiresAt;
     }
-    Timestamp currentTime = Timestamps.currentTime();
-    Timestamp end = _requestContexts[requestId].endsAt;
-    return Timestamps.earliest(end, currentTime);
+    return _requestContexts[requestId].endsAt;
   }
 
   function requestExpiry(RequestId requestId) public view returns (Timestamp) {
