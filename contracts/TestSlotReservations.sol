@@ -19,8 +19,8 @@ contract TestSlotReservations is SlotReservations {
     return _reservations[slotId].length();
   }
 
-  function _slotIsFree(SlotId slotId) internal view override returns (bool) {
-    return _states[slotId] == SlotState.Free;
+  function slotState(SlotId slotId) public view override returns (SlotState) {
+    return _states[slotId];
   }
 
   function setSlotState(SlotId id, SlotState state) public {
