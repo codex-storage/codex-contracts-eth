@@ -36,7 +36,7 @@ const {
   advanceTime,
   advanceTimeTo,
   currentTime,
-  setNextBlockTimestamp,
+  setNextBlockTimestamp
 } = require("./evm")
 const { arrayify } = require("ethers/lib/utils")
 
@@ -338,6 +338,7 @@ describe("Marketplace", function () {
           (collateral * config.collateral.repairRewardPercentage) / 100
         )
       await token.approve(marketplace.address, discountedCollateral)
+      await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
       const endBalance = await token.balanceOf(host.address)
       expect(startBalance - endBalance).to.equal(discountedCollateral)
@@ -408,7 +409,7 @@ describe("Marketplace", function () {
       await waitUntilFailed(marketplace, request)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("Marketplace_SlotNotFree")
+      ).to.be.revertedWith("Marketplace_ReservationRequired")
     })
 
     it("is rejected when slot index not in range", async function () {
@@ -563,16 +564,19 @@ describe("Marketplace", function () {
 
   describe("freeing a slot", function () {
     let id
+    let collateral
 
     beforeEach(async function () {
       slot.index = 0
       id = slotId(slot)
+      period = config.proofs.period
+      ;({ periodOf, periodEnd } = periodic(period))
 
       switchAccount(client)
       await token.approve(marketplace.address, maxPrice(request))
       await marketplace.requestStorage(request)
       switchAccount(host)
-      const collateral = collateralPerSlot(request)
+      collateral = collateralPerSlot(request)
       await token.approve(marketplace.address, collateral)
     })
 
@@ -602,6 +606,16 @@ describe("Marketplace", function () {
       await expect(await marketplace.freeSlot(id))
         .to.emit(marketplace, "SlotFreed")
         .withArgs(slot.request, slot.index)
+    })
+
+    it("can reserve and fill a freed slot", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await marketplace.freeSlot(id)
+      await marketplace.reserveSlot(slot.request, slot.index)
+      let currPeriod = periodOf(await currentTime())
+      await advanceTimeTo(periodEnd(currPeriod) + 1)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
     })
   })
 
