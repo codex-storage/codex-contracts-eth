@@ -4,7 +4,7 @@
   "scripts": {
     "test": "npm run lint && NODE_ENV=test hardhat test",
     "fuzz": "hardhat compile && fuzzing/fuzz.sh",
-    "start": "concurrently \"hardhat node\" \"sleep 2 &&  npm run deploy\"",
+    "start": "concurrently --names \"hardhat,deployment\"  --prefix \"[{time} {name}]\" \"hardhat node\" \"sleep 2 &&  npm run deploy\"",
     "compile": "hardhat compile",
     "format": "prettier --write test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol ",
     "format:check": "prettier --check test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol",
