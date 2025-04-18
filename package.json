@@ -2,7 +2,7 @@
   "name": "codex-contracts-eth",
   "license": "MIT",
   "scripts": {
-    "test": "npm run lint && NODE_ENV=test hardhat test",
+    "test": "npm run lint && hardhat test",
     "fuzz": "hardhat compile && fuzzing/fuzz.sh",
     "start": "concurrently --names \"hardhat,deployment\"  --prefix \"[{time} {name}]\" \"hardhat node\" \"sleep 2 &&  npm run deploy\"",
     "compile": "hardhat compile",

@@ -23,7 +23,7 @@ module.exports = {
   networks: {
     hardhat: {
       tags: ["local"],
-      allowBlocksWithSameTimestamp: process.env.NODE_ENV == "test",
+      allowBlocksWithSameTimestamp: true,
     },
     localhost: {
       tags: ["local"],
