@@ -13,4 +13,11 @@ contract VaultHarness is Vault {
         return _getFundStatus(controller, fundId);
     }
 
+    function unwrapTimestamp(
+        Timestamp timestamp
+    ) public pure returns (uint40) {
+        return Timestamp.unwrap(timestamp);
+    }
+
+    
 }
