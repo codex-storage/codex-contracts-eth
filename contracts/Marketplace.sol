@@ -376,7 +376,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
     _removeFromMySlots(slot.host, slotId);
-    _clear(_reservations[slotId]); // We purge all the reservations for the slot
+    _reservations[slotId].clear(); // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
     slot.filledAt = 0;
     slot.currentCollateral = 0;

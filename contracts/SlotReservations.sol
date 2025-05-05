@@ -18,16 +18,6 @@ abstract contract SlotReservations {
 
   function slotState(SlotId id) public view virtual returns (SlotState);
 
-  /**
-   * Removes all addresses from the set
-   * @param set EnumerableSet.AddressSet to remove addresses from
-   */
-  function _clear(EnumerableSet.AddressSet storage set) internal {
-    for(uint8 i = 0; i < set.length(); i++) {
-        set.remove(set.at(i));
-    }
-  }
-
   function reserveSlot(RequestId requestId, uint64 slotIndex) public {
     if (!canReserveSlot(requestId, slotIndex))
       revert SlotReservations_ReservationNotAllowed();

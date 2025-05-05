@@ -36,7 +36,7 @@ const {
   advanceTime,
   advanceTimeTo,
   currentTime,
-  setNextBlockTimestamp
+  setNextBlockTimestamp,
 } = require("./evm")
 const { arrayify } = require("ethers/lib/utils")
 
@@ -609,8 +609,21 @@ describe("Marketplace", function () {
     })
 
     it("can reserve and fill a freed slot", async function () {
+      // Make a reservation from another host
+      switchAccount(host2)
+      collateral = collateralPerSlot(request)
+      await token.approve(marketplace.address, collateral)
+      await marketplace.reserveSlot(slot.request, slot.index)
+
+      // Switch host and free the slot
+      switchAccount(host)
       await waitUntilStarted(marketplace, request, proof, token)
       await marketplace.freeSlot(id)
+
+      // At this point, the slot should be freed and in a repair state.
+      // Another host should be able to make a reservation for this
+      // slot and fill it.
+      switchAccount(host2)
       await marketplace.reserveSlot(slot.request, slot.index)
       let currPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(currPeriod) + 1)
