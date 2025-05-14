@@ -693,27 +693,13 @@ describe("Vault", function () {
         await expect(locking).to.be.revertedWith("AlreadyLocked")
       })
 
-      it("deletes lock when no tokens remain", async function () {
+      it("cannot set lock when no tokens remain", async function () {
         await token.connect(controller).approve(vault.address, 30)
         await vault.deposit(fund, account1, 30)
-        await vault.transfer(fund, account1, account2, 20)
-        await vault.transfer(fund, account2, account3, 10)
-        // some designated tokens are burned
-        await vault.designate(fund, account2, 10)
-        await vault.burnDesignated(fund, account2, 5)
-        // some holder is burned
-        await vault.burnAccount(fund, account2)
         await expire()
-        // some tokens are withdrawn
         await vault.withdraw(fund, account1)
-        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Withdrawing)
-        expect(await vault.getLockExpiry(fund)).not.to.equal(0)
-        // remainder of the tokens are withdrawn by recipient
-        await vault
-          .connect(holder3)
-          .withdrawByRecipient(controller.address, fund, account3)
-        expect(await vault.getFundStatus(fund)).to.equal(FundStatus.Inactive)
-        expect(await vault.getLockExpiry(fund)).to.equal(0)
+        const locking = vault.lock(fund, expiry, maximum)
+        await expect(locking).to.be.revertedWith("AlreadyLocked")
       })
     })
 
@@ -1140,6 +1126,48 @@ describe("Vault", function () {
           "EnforcedPause"
         )
       })
+    })
+  })
+
+  describe("bugs", function () {
+    it("does not allow flows to survive fund id reuse", async function () {
+      // bug discovered and reported by Aleksander and Jochen from Certora
+      async function reproduceBug() {
+        const account1 = await vault.encodeAccountId(
+          holder.address,
+          randomBytes(12)
+        )
+        const account2 = await vault.encodeAccountId(
+          holder.address,
+          randomBytes(12)
+        )
+        const expiry1 = (await currentTime()) + 10
+        const expiry2 = (await currentTime()) + 20
+
+        // store tokens in fund
+        await token.connect(controller).approve(vault.address, 100)
+        await vault.lock(fund, expiry1, expiry1)
+        await vault.deposit(fund, account1, 100)
+
+        // initiate a flow, and immediately freeze it
+        await vault.flow(fund, account1, account2, 1)
+        await vault.freezeFund(fund)
+
+        // only withdraw from flow sender
+        await advanceTimeTo(expiry1)
+        expect(await vault.getBalance(fund, account1)).to.equal(100)
+        await vault.withdraw(fund, account1)
+
+        // reuse fund id
+        await vault.lock(fund, expiry2, expiry2)
+        await advanceTimeTo(expiry2)
+
+        // bug: this balance is positive, because the flow was not reset
+        expect(await vault.getBalance(fund, account2)).to.equal(20)
+      }
+
+      // bug is fixed by no longer allowing reuse of fund ids
+      await expect(reproduceBug()).to.be.revertedWith("VaultFundAlreadyLocked")
     })
   })
 })

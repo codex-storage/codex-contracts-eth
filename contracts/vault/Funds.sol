@@ -10,8 +10,6 @@ struct Fund {
   Timestamp lockMaximum;
   /// Indicates whether fund is frozen, and at what time
   Timestamp frozenAt;
-  /// The total amount of tokens in the fund
-  uint128 value;
 }
 
 /// A fund can go through the following states:
