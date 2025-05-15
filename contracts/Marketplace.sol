@@ -376,7 +376,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     context.fundsToReturnToClient += _slotPayout(requestId, slot.filledAt);
 
     _removeFromMySlots(slot.host, slotId);
-    delete _reservations[slotId]; // We purge all the reservations for the slot
+    _reservations[slotId].clear(); // We purge all the reservations for the slot
     slot.state = SlotState.Repair;
     slot.filledAt = 0;
     slot.currentCollateral = 0;
@@ -559,10 +559,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _;
   }
 
-  function _slotIsFree(SlotId slotId) internal view override returns (bool) {
-    return _slots[slotId].state == SlotState.Free;
-  }
-
   function requestEnd(RequestId requestId) public view returns (uint64) {
     RequestState state = requestState(requestId);
     if (state == RequestState.New || state == RequestState.Started) {
@@ -636,7 +632,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
   }
 
-  function slotState(SlotId slotId) public view override returns (SlotState) {
+  function slotState(
+    SlotId slotId
+  ) public view override(Proofs, SlotReservations) returns (SlotState) {
     Slot storage slot = _slots[slotId];
     if (RequestId.unwrap(slot.requestId) == 0) {
       return SlotState.Free;
