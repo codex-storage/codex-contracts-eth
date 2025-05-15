@@ -37,7 +37,12 @@ describe("SlotReservations", function () {
     reservations = reservations.connect(account)
   }
 
-  it("allows a slot to be reserved", async function () {
+  it("allows a slot to be reserved if free", async function () {
+    expect(reservations.reserveSlot(reqId, slotIndex)).to.not.be.reverted
+  })
+
+  it("allows a slot to be reserved if in repair", async function () {
+    await reservations.setSlotState(id, SlotState.Repair)
     expect(reservations.reserveSlot(reqId, slotIndex)).to.not.be.reverted
   })
 
@@ -59,7 +64,13 @@ describe("SlotReservations", function () {
     expect(await reservations.length(id)).to.equal(2)
   })
 
-  it("reports a slot can be reserved", async function () {
+  it("reports a slot can be reserved if free", async function () {
+    await reservations.setSlotState(id, SlotState.Free)
+    expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.true
+  })
+
+  it("reports a slot can be reserved if in repair", async function () {
+    await reservations.setSlotState(id, SlotState.Repair)
     expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.true
   })
 
@@ -102,7 +113,7 @@ describe("SlotReservations", function () {
     expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.false
   })
 
-  it("cannot reserve a slot if not free", async function () {
+  it("cannot reserve a slot if not free or not in repair", async function () {
     await reservations.setSlotState(id, SlotState.Filled)
     await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
       "SlotReservations_ReservationNotAllowed"
@@ -110,7 +121,7 @@ describe("SlotReservations", function () {
     expect(await reservations.length(id)).to.equal(0)
   })
 
-  it("reports a slot cannot be reserved if not free", async function () {
+  it("reports a slot cannot be reserved if not free or not in repair", async function () {
     await reservations.setSlotState(id, SlotState.Filled)
     expect(await reservations.canReserveSlot(reqId, slotIndex)).to.be.false
   })
