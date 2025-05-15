@@ -47,9 +47,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using AskHelpers for Ask;
 
   IERC20 private immutable _token;
-  MarketplaceConfig private _config;
+  MarketplaceConfig internal _config;
 
-  mapping(RequestId => Request) private _requests;
+  mapping(RequestId => Request) internal _requests;
   mapping(RequestId => RequestContext) internal _requestContexts;
   mapping(SlotId => Slot) internal _slots;
 
@@ -585,7 +585,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   function _slotPayout(
     RequestId requestId,
     uint64 startingTimestamp
-  ) private view returns (uint256) {
+  ) internal view returns (uint256) {
     return
       _slotPayout(
         requestId,
@@ -599,7 +599,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     RequestId requestId,
     uint64 startingTimestamp,
     uint64 endingTimestamp
-  ) private view returns (uint256) {
+  ) internal view returns (uint256) {
     Request storage request = _requests[requestId];
     if (startingTimestamp >= endingTimestamp)
       revert Marketplace_StartNotBeforeExpiry();
