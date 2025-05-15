@@ -559,10 +559,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     _;
   }
 
-  function _slotIsFree(SlotId slotId) internal view override returns (bool) {
-    return _slots[slotId].state == SlotState.Free;
-  }
-
   function requestEnd(RequestId requestId) public view returns (uint64) {
     RequestState state = requestState(requestId);
     if (state == RequestState.New || state == RequestState.Started) {
@@ -636,7 +632,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
   }
 
-  function slotState(SlotId slotId) public view override returns (SlotState) {
+  function slotState(
+    SlotId slotId
+  ) public view override(Proofs, SlotReservations) returns (SlotState) {
     Slot storage slot = _slots[slotId];
     if (RequestId.unwrap(slot.requestId) == 0) {
       return SlotState.Free;
