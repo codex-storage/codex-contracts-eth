@@ -9,6 +9,7 @@ module.exports = async ({
   const { deployer } = await getNamedAccounts()
   const tokenDeployment = await deployments.deploy("TestToken", {
     from: deployer,
+    skipIfAlreadyDeployed: true,
   })
   const token = await hre.ethers.getContractAt(
     "TestToken",
