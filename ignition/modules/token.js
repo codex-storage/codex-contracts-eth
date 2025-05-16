@@ -15,7 +15,7 @@ module.exports = buildModule("Token", (m) => {
       const account = m.getAccount(i)
       m.call(token, "mint", [account, MINTED_TOKENS], {
         from: deployer,
-        id: `SendingEth_${i}`,
+        id: `SendingTestTokens_${i}`,
       })
     }
   }
