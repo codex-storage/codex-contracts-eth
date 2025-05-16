@@ -1,6 +1,5 @@
-const { ethers } = require("hardhat")
 const { hours } = require("./time")
-const { hexlify, randomBytes } = ethers.utils
+const { hexlify, randomBytes } = require("hardhat").ethers
 
 const exampleConfiguration = () => ({
   collateral: {
@@ -36,7 +35,7 @@ const exampleRequest = async () => {
     },
     content: {
       cid: Buffer.from("zb2rhheVmk3bLks5MgzTqyznLu1zqGH5jrfTA1eAZXrjx7Vob"),
-      merkleRoot: Array.from(randomBytes(32)),
+      merkleRoot: randomBytes(32),
     },
     expiry: hours(1),
     nonce: hexlify(randomBytes(32)),
