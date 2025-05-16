@@ -2,25 +2,30 @@ const {
   time,
   mine,
   takeSnapshot,
-  setNextBlockTimestamp,
 } = require("@nomicfoundation/hardhat-network-helpers")
+const hre = require("hardhat")
+const provider = hre.network.provider
 
 const snapshots = []
 
 async function snapshot() {
   const snapshot = await takeSnapshot()
-  const automine = await ethers.provider.send("hardhat_getAutomine")
   const time = await currentTime()
+  const automine = await provider.send("hardhat_getAutomine")
   snapshots.push({ snapshot, automine, time })
 }
 
 async function revert() {
   const { snapshot, time, automine } = snapshots.pop()
   if (snapshot) {
-    setNextBlockTimestamp(time)
-    await ethers.provider.send("evm_setAutomine", [automine])
-    return snapshot.restore()
+    await snapshot.restore()
+    await setNextBlockTimestamp(time)
+    await provider.send("evm_setAutomine", [automine])
   }
+}
+
+async function setAutomine(enabled) {
+  await provider.send("evm_setAutomine", [enabled])
 }
 
 async function ensureMinimumBlockHeight(height) {
