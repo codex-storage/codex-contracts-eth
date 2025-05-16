@@ -98,7 +98,7 @@ describe("Marketplace constructor", function () {
 
     assertDeploymentRejectedWithCustomError(
       "Marketplace_MaximumSlashingTooHigh",
-      promise,
+      promise
     )
   })
 })
@@ -109,7 +109,6 @@ describe("Marketplace", function () {
 
   let marketplace
   let token
-  let verifier
   let client,
     clientWithdrawRecipient,
     host,
@@ -672,7 +671,7 @@ describe("Marketplace", function () {
       // Make a reservation from another host
       switchAccount(host2)
       collateral = collateralPerSlot(request)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.reserveSlot(slot.request, slot.index)
 
       // Switch host and free the slot
@@ -687,7 +686,7 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       let currPeriod = periodOf(await currentTime())
       await advanceTimeTo(periodEnd(currPeriod) + 1)
-      await token.approve(marketplace.address, collateral)
+      await token.approve(await marketplace.getAddress(), collateral)
       await marketplace.fillSlot(slot.request, slot.index, proof)
     })
   })
@@ -1130,10 +1129,8 @@ describe("Marketplace", function () {
         clientWithdrawRecipient.address
       )
       const endBalance = await token.balanceOf(clientWithdrawRecipient.address)
-      expect(endBalance - ACCOUNT_STARTING_BALANCE).to.equal(
-        maxPrice(request) - expectedPartialhostRewardRecipient
       expect(endBalance - startBalance).to.equal(
-        maxPrice(request) - expectedPartialhostRewardRecipient,
+        maxPrice(request) - expectedPartialhostRewardRecipient
       )
     })
 
