@@ -9,12 +9,12 @@ async function mine256blocks({ network, ethers }) {
 
 // deploys a marketplace with a real Groth16 verifier
 async function deployMarketplace({ deployments, getNamedAccounts }) {
-  const token = await deployments.get("TestToken")
+  const vault = await deployments.get("Vault")
   const verifier = await deployments.get("Groth16Verifier")
   const zkeyHash = loadZkeyHash(network.name)
   let configuration = loadConfiguration(network.name)
   configuration.proofs.zkeyHash = zkeyHash
-  const args = [configuration, token.address, verifier.address]
+  const args = [configuration, vault.address, verifier.address]
   const { deployer: from } = await getNamedAccounts()
   const marketplace = await deployments.deploy("Marketplace", { args, from })
   console.log("Deployed Marketplace with Groth16 Verifier at:")
@@ -29,12 +29,12 @@ async function deployTestMarketplace({
   getNamedAccounts,
 }) {
   if (network.tags.local) {
-    const token = await deployments.get("TestToken")
+    const vault = await deployments.get("Vault")
     const verifier = await deployments.get("TestVerifier")
     const zkeyHash = loadZkeyHash(network.name)
     let configuration = loadConfiguration(network.name)
     configuration.proofs.zkeyHash = zkeyHash
-    const args = [configuration, token.address, verifier.address]
+    const args = [configuration, vault.address, verifier.address]
     const { deployer: from } = await getNamedAccounts()
     const marketplace = await deployments.deploy("Marketplace", { args, from })
     console.log("Deployed Marketplace with Test Verifier at:")
@@ -50,4 +50,4 @@ module.exports = async (environment) => {
 }
 
 module.exports.tags = ["Marketplace"]
-module.exports.dependencies = ["TestToken", "Verifier"]
+module.exports.dependencies = ["Vault", "Verifier"]
