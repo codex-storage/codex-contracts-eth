@@ -24,6 +24,11 @@ async function revert() {
   }
 }
 
+/**
+ * Enables or disables Hardhat's automine mode.
+ *
+ * When automine mode is disabled, transactions that revert are silently ignored!
+ */
 async function setAutomine(enabled) {
   await provider.send("evm_setAutomine", [enabled])
 }
