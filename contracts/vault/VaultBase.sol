@@ -132,7 +132,6 @@ abstract contract VaultBase {
     Account storage account = _accounts[controller][fundId][accountId];
 
     account.balance.available += amount;
-    fund.value += amount;
 
     _token.safeTransferFrom(
       Controller.unwrap(controller),
@@ -215,8 +214,6 @@ abstract contract VaultBase {
 
     account.balance.designated -= amount;
 
-    fund.value -= amount;
-
     _token.safeTransfer(address(0xdead), amount);
   }
 
@@ -231,8 +228,6 @@ abstract contract VaultBase {
     Account memory account = _accounts[controller][fundId][accountId];
     require(account.flow.incoming == account.flow.outgoing, VaultFlowNotZero());
     uint128 amount = account.balance.available + account.balance.designated;
-
-    fund.value -= amount;
 
     delete _accounts[controller][fundId][accountId];
 
@@ -257,14 +252,6 @@ abstract contract VaultBase {
     Account memory account = _accounts[controller][fundId][accountId];
     account.accumulateFlows(fund.flowEnd());
     uint128 amount = account.balance.available + account.balance.designated;
-
-    fund.value -= amount;
-
-    if (fund.value == 0) {
-      delete _funds[controller][fundId];
-    } else {
-      _funds[controller][fundId] = fund;
-    }
 
     delete _accounts[controller][fundId][accountId];
 

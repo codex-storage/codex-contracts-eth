@@ -10,22 +10,18 @@ struct Fund {
   Timestamp lockMaximum;
   /// Indicates whether fund is frozen, and at what time
   Timestamp frozenAt;
-  /// The total amount of tokens in the fund
-  uint128 value;
 }
 
 /// A fund can go through the following states:
 ///
-///     -----------------------------------------------
-///    |                                               |
-///     -->  Inactive ---> Locked -----> Withdrawing --
+///     -->  Inactive ---> Locked -----> Withdrawing
 ///                          \               ^
 ///                           \             /
 ///                            --> Frozen --
 ///
 enum FundStatus {
   /// Indicates that the fund is inactive and contains no tokens. This is the
-  /// initial state, or the state after all tokens have been withdrawn.
+  /// initial state.
   Inactive,
   /// Indicates that a time-lock is set and withdrawing tokens is not allowed. A
   /// fund needs to be locked for deposits, transfers, flows and burning to be
