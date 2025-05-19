@@ -24,6 +24,7 @@ module.exports = {
     hardhat: {
       tags: ["local"],
       allowBlocksWithSameTimestamp: true,
+      gas: "auto",
     },
     localhost: {
       tags: ["local"],
