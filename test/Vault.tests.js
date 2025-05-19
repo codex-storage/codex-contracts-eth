@@ -420,7 +420,7 @@ describe("Vault", function () {
 
       it("moves tokens over time", async function () {
         await vault.flow(fund, account1, account2, 2)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 4)
@@ -433,7 +433,7 @@ describe("Vault", function () {
       it("can move tokens to several different accounts", async function () {
         await vault.flow(fund, account1, account2, 1)
         await vault.flow(fund, account1, account3, 2)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 6)
@@ -448,7 +448,7 @@ describe("Vault", function () {
       it("allows flows to be diverted to other account", async function () {
         await vault.flow(fund, account1, account2, 3)
         await vault.flow(fund, account2, account3, 1)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 6)
@@ -463,7 +463,7 @@ describe("Vault", function () {
       it("allows flow to be reversed back to the sender", async function () {
         await vault.flow(fund, account1, account2, 3)
         await vault.flow(fund, account2, account1, 3)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit)
@@ -476,11 +476,11 @@ describe("Vault", function () {
       it("can change flows over time", async function () {
         await vault.flow(fund, account1, account2, 1)
         await vault.flow(fund, account1, account3, 2)
-        await mine();
+        await mine()
         const start = await currentTime()
         setNextBlockTimestamp(start + 4)
         await vault.flow(fund, account3, account2, 1)
-        await mine();
+        await mine()
         expect(await getBalance(account1)).to.equal(deposit - 12)
         expect(await getBalance(account2)).to.equal(4)
         expect(await getBalance(account3)).to.equal(8)
@@ -496,7 +496,7 @@ describe("Vault", function () {
 
       it("designates tokens that flow into the account", async function () {
         await vault.flow(fund, account1, account2, 3)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 7)
         expect(await vault.getDesignatedBalance(fund, account2)).to.equal(21)
@@ -504,7 +504,7 @@ describe("Vault", function () {
 
       it("designates tokens that flow back to the sender", async function () {
         await vault.flow(fund, account1, account1, 3)
-        await mine();
+        await mine()
         const start = await currentTime()
         await advanceTimeTo(start + 7)
         expect(await vault.getBalance(fund, account1)).to.equal(deposit)
@@ -513,10 +513,10 @@ describe("Vault", function () {
 
       it("flows longer when lock is extended", async function () {
         await vault.flow(fund, account1, account2, 2)
-        await mine();
+        await mine()
         const start = await currentTime()
         await vault.extendLock(fund, maximum)
-        await mine();
+        await mine()
         await advanceTimeTo(maximum)
         const total = (maximum - start) * 2
         expect(await getBalance(account1)).to.equal(deposit - total)
@@ -821,7 +821,7 @@ describe("Vault", function () {
         const locking = vault.lock(fund, expiry, maximum)
         await expect(locking).to.be.revertedWithCustomError(
           vault,
-          "VaultFundAlreadyLocked"
+          "VaultFundAlreadyLocked",
         )
       })
     })
@@ -884,11 +884,11 @@ describe("Vault", function () {
 
         beforeEach(async function () {
           await vault.flow(fund, account1, account2, 2)
-          await mine();
+          await mine()
           const start = await currentTime()
           await setNextBlockTimestamp(start + 10)
           await vault.freezeFund(fund)
-          await mine();
+          await mine()
           const frozenAt = await currentTime()
           total = (frozenAt - start) * 2
           await advanceTimeTo(expiry)
@@ -906,7 +906,7 @@ describe("Vault", function () {
           balance2Before = await token.balanceOf(await holder2.getAddress())
           await vault.withdraw(fund, account1)
           await vault.withdraw(fund, account2)
-          await mine();
+          await mine()
           balance1After = await token.balanceOf(await holder.getAddress())
           balance2After = await token.balanceOf(await holder2.getAddress())
           expect(balance1After - balance1Before).to.equal(deposit - total)
@@ -1298,18 +1298,18 @@ describe("Vault", function () {
       // bug discovered and reported by Aleksander and Jochen from Certora
       async function reproduceBug() {
         const account1 = await vault.encodeAccountId(
-          holder.address,
-          randomBytes(12)
+          await holder.getAddress(),
+          randomBytes(12),
         )
         const account2 = await vault.encodeAccountId(
           holder.address,
-          randomBytes(12)
+          randomBytes(12),
         )
         const expiry1 = (await currentTime()) + 10
         const expiry2 = (await currentTime()) + 20
 
         // store tokens in fund
-        await token.connect(controller).approve(vault.address, 100)
+        await token.connect(controller).approve(await vault.getAddress(), 100)
         await vault.lock(fund, expiry1, expiry1)
         await vault.deposit(fund, account1, 100)
 
@@ -1331,7 +1331,10 @@ describe("Vault", function () {
       }
 
       // bug is fixed by no longer allowing reuse of fund ids
-      await expect(reproduceBug()).to.be.revertedWith("VaultFundAlreadyLocked")
+      await expect(reproduceBug()).to.be.revertedWithCustomError(
+        vault,
+        "VaultFundAlreadyLocked",
+      )
     })
   })
 })
