@@ -419,10 +419,8 @@ describe("Vault", function () {
       }
 
       it("moves tokens over time", async function () {
-        await setAutomine(true)
-
         await vault.flow(fund, account1, account2, 2)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 4)
@@ -433,11 +431,9 @@ describe("Vault", function () {
       })
 
       it("can move tokens to several different accounts", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 1)
         await vault.flow(fund, account1, account3, 2)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 6)
@@ -450,11 +446,9 @@ describe("Vault", function () {
       })
 
       it("allows flows to be diverted to other account", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 3)
         await vault.flow(fund, account2, account3, 1)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit - 6)
@@ -467,11 +461,9 @@ describe("Vault", function () {
       })
 
       it("allows flow to be reversed back to the sender", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 3)
         await vault.flow(fund, account2, account1, 3)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 2)
         expect(await getBalance(account1)).to.equal(deposit)
@@ -482,15 +474,13 @@ describe("Vault", function () {
       })
 
       it("can change flows over time", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 1)
         await vault.flow(fund, account1, account3, 2)
-
+        await mine();
         const start = await currentTime()
         setNextBlockTimestamp(start + 4)
         await vault.flow(fund, account3, account2, 1)
-
+        await mine();
         expect(await getBalance(account1)).to.equal(deposit - 12)
         expect(await getBalance(account2)).to.equal(4)
         expect(await getBalance(account3)).to.equal(8)
@@ -505,20 +495,16 @@ describe("Vault", function () {
       })
 
       it("designates tokens that flow into the account", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 3)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 7)
         expect(await vault.getDesignatedBalance(fund, account2)).to.equal(21)
       })
 
       it("designates tokens that flow back to the sender", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account1, 3)
-
+        await mine();
         const start = await currentTime()
         await advanceTimeTo(start + 7)
         expect(await vault.getBalance(fund, account1)).to.equal(deposit)
@@ -526,13 +512,11 @@ describe("Vault", function () {
       })
 
       it("flows longer when lock is extended", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 2)
-
+        await mine();
         const start = await currentTime()
         await vault.extendLock(fund, maximum)
-
+        await mine();
         await advanceTimeTo(maximum)
         const total = (maximum - start) * 2
         expect(await getBalance(account1)).to.equal(deposit - total)
@@ -717,8 +701,6 @@ describe("Vault", function () {
       })
 
       it("stops all token flows", async function () {
-        setAutomine(true)
-
         await vault.flow(fund, account1, account2, 10)
         await vault.flow(fund, account2, account3, 3)
         await mine()
@@ -858,8 +840,8 @@ describe("Vault", function () {
         let total
 
         beforeEach(async function () {
-          setAutomine(true)
           await vault.flow(fund, account1, account2, 2)
+          await mine()
           const start = await currentTime()
           total = (expiry - start) * 2
           await advanceTimeTo(expiry)
@@ -901,14 +883,12 @@ describe("Vault", function () {
         let total
 
         beforeEach(async function () {
-          setAutomine(true)
-
           await vault.flow(fund, account1, account2, 2)
-
+          await mine();
           const start = await currentTime()
           await setNextBlockTimestamp(start + 10)
           await vault.freezeFund(fund)
-
+          await mine();
           const frozenAt = await currentTime()
           total = (frozenAt - start) * 2
           await advanceTimeTo(expiry)
@@ -926,7 +906,7 @@ describe("Vault", function () {
           balance2Before = await token.balanceOf(await holder2.getAddress())
           await vault.withdraw(fund, account1)
           await vault.withdraw(fund, account2)
-
+          await mine();
           balance1After = await token.balanceOf(await holder.getAddress())
           balance2After = await token.balanceOf(await holder2.getAddress())
           expect(balance1After - balance1Before).to.equal(deposit - total)
