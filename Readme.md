@@ -25,6 +25,19 @@ To start a local Ethereum node with the contracts deployed, execute:
 This will create a `deployment-localhost.json` file containing the addresses of
 the deployed contracts.
 
+To deploy the marketplace you can define `HARDHAT_NETWORK` and run the following command:
+
+```bash
+npm run deploy
+# Example
+# HARDHAT_NETWORK=localhost npm run deploy
+```
+
+Or you can you `npx` directly:
+
+```bash
+npx hardhat ignition deploy ignition/modules/marketplace.js --network localhost
+```
 
 Running the prover
 ------------------
