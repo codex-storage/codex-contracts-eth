@@ -10,7 +10,9 @@ module.exports = buildModule("Token", (m) => {
     from: deployer,
   })
 
-  if (hre.network.config && hre.network.config.tags.includes("local")) {
+  const config = hre.network.config
+
+  if (config && config.tags && config.tags.includes("local")) {
     for (let i = 0; i < MAX_ACCOUNTS; i++) {
       const account = m.getAccount(i)
       m.call(token, "mint", [account, MINTED_TOKENS], {
