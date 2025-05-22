@@ -7,4 +7,4 @@ crytic-export
 coverage
 coverage.json
 ignition/deployments/**/journal.jsonl
-ignition/deployments/build-info/** */
+ignition/deployments/**/build-info
