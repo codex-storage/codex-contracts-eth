@@ -6,4 +6,5 @@ crytic-export
 .certora_internal
 coverage
 coverage.json
-ignition/deployments
+ignition/deployments/**/journal.jsonl
+ignition/deployments/build-info/** */
