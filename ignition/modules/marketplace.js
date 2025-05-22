@@ -18,13 +18,15 @@ module.exports = buildModule("Marketplace", (m) => {
   const { verifier } = m.useModule(VerifierModule)
   const configuration = m.getParameter("configuration", getDefaultConfig())
 
-  const marketplace = m.contract(
-    "Marketplace",
-    [configuration, token, verifier],
-    {
+  let marketplace
+
+  if (process.env.TOKEN_ADDRESS) {
+    marketplace = m.contractAt("TestToken", process.env.TOKEN_ADDRESS, {})
+  } else {
+    marketplace = m.contract("Marketplace", [configuration, token, verifier], {
       from: deployer,
-    },
-  )
+    })
+  }
 
   let testMarketplace
   const config = hre.network.config
