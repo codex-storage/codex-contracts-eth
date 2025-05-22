@@ -27,8 +27,9 @@ module.exports = buildModule("Marketplace", (m) => {
   )
 
   let testMarketplace
+  const config = hre.network.config
 
-  if (hre.network.config && hre.network.config.tags.includes("local")) {
+  if (config && config.tags && config.tags.includes("local")) {
     const { testVerifier } = m.useModule(VerifierModule)
 
     testMarketplace = m.contract(
