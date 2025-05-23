@@ -6,9 +6,15 @@ const MINTED_TOKENS = 1_000_000_000_000_000n
 module.exports = buildModule("Token", (m) => {
   const deployer = m.getAccount(0)
 
-  const token = m.contract("TestToken", [], {
-    from: deployer,
-  })
+  let token
+
+  if (process.env.TOKEN_ADDRESS) {
+    token = m.contractAt("TestToken", process.env.TOKEN_ADDRESS, {})
+  } else {
+    token = m.contract("TestToken", [], {
+      from: deployer,
+    })
+  }
 
   const config = hre.network.config
 
