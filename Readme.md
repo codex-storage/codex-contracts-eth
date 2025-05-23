@@ -64,7 +64,7 @@ In our case, we will likely redeploy a new contract every time, so we will need 
 [clear the previous deployment](https://hardhat.org/ignition/docs/guides/modifications#clearing-an-existing-deployment-with-reset):
 
 ```bash
-HARDHAT_NETWORK=localhost npm run deploy-reset
+HARDHAT_NETWORK=localhost npm run deploy:reset
 ```
 
 Or you can you `npx` directly:
