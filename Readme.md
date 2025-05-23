@@ -39,6 +39,10 @@ Or you can you `npx` directly:
 npx hardhat ignition deploy ignition/modules/marketplace.js --network localhost
 ```
 
+To reuse a previously deployed `Token` contract, define the environment variable `TOKEN_ADDRESS`.
+The deployment script will use `contractAt` from Hardhat Ignition to retrieve the existing contract
+instead of deploying a new one.
+
 Running the prover
 ------------------
 
