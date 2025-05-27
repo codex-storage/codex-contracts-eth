@@ -159,6 +159,9 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     AccountId account = _vault.clientAccount(request.client);
     _vault.lock(fund, expiresAt, endsAt);
     _transferToVault(request.client, fund, account, price);
+
+    // start flow from client to itself, to make sure that funds that are not
+    // paid to hosts will slowly become designated to the client
     _vault.flow(fund, account, account, pricePerSecond);
 
     emit StorageRequested(id, request.ask, expiresAt);
