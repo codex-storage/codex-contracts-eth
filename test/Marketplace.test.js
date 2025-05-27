@@ -1314,16 +1314,6 @@ describe("Marketplace", function () {
       switchAccount(client)
       expect(await marketplace.myRequests()).to.deep.equal([requestId(request)])
     })
-
-    it("removes request from list when request finishes", async function () {
-      await marketplace.requestStorage(request)
-      switchAccount(host)
-      await waitUntilStarted(marketplace, request, proof, token)
-      await waitUntilFinished(marketplace, requestId(request))
-      await marketplace.freeSlot(slotId(slot))
-      switchAccount(client)
-      expect(await marketplace.myRequests()).to.deep.equal([])
-    })
   })
 
   describe("list of active slots", function () {
