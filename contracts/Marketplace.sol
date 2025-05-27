@@ -261,10 +261,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     if (slot.host != msg.sender) revert Marketplace_InvalidSlotHost();
 
     SlotState state = slotState(slotId);
-    if (state == SlotState.Finished) {
+    if (
+      state == SlotState.Finished ||
+      state == SlotState.Cancelled
+    ) {
       _payoutSlot(slot.requestId, slotId);
-    } else if (state == SlotState.Cancelled) {
-      _payoutCancelledSlot(slot.requestId, slotId);
     } else if (state == SlotState.Failed) {
       _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
@@ -386,24 +387,6 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     }
   }
 
-  function _payoutSlot(
-    RequestId requestId,
-    SlotId slotId
-  ) private requestIsKnown(requestId) {
-    RequestContext storage context = _requestContexts[requestId];
-    Request storage request = _requests[requestId];
-    context.state = RequestState.Finished;
-    Slot storage slot = _slots[slotId];
-    slot.currentCollateral = 0;
-
-    _removeFromMyRequests(request.client, requestId);
-    _removeFromMySlots(slot.host, slotId);
-
-    FundId fund = requestId.asFundId();
-    AccountId account = _vault.hostAccount(slot.host, slot.slotIndex);
-    _vault.withdraw(fund, account);
-  }
-
   /**
      * @notice Pays out a host for duration of time that the slot was filled, and
      returns the collateral.
@@ -411,7 +394,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
      out.
    * @param slotId SlotId of the slot to be paid out.
    */
-  function _payoutCancelledSlot(
+  function _payoutSlot(
     RequestId requestId,
     SlotId slotId
   ) private requestIsKnown(requestId) {
