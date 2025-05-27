@@ -364,8 +364,16 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     FundId fund = requestId.asFundId();
     AccountId hostAccount = _vault.hostAccount(slot.host, slot.slotIndex);
     AccountId clientAccount = _vault.clientAccount(request.client);
+
+    // ensure that nothing is flowing into the account anymore by reversing the
+    // incoming flow from the client
     _vault.flow(fund, hostAccount, clientAccount, rate);
+
+    // temporarily transfer repair reward for the slot to the client until a
+    // host repairs the slot
     _vault.transfer(fund, hostAccount, clientAccount, repairReward);
+
+    // burn the rest of the funds in the account
     _vault.burnAccount(fund, hostAccount);
 
     _removeFromMySlots(slot.host, slotId);
