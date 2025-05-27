@@ -650,6 +650,27 @@ describe("Marketplace", function () {
       expect(endBalance - startBalance).to.be.equal(expectedPartialPayout)
     })
 
+    it("pays the host when contract fails and then finishes", async function () {
+      await advanceTime(10)
+      await waitUntilStarted(marketplace, request, proof, token)
+      const filledAt = await currentTime()
+
+      await advanceTime(10)
+      await waitUntilSlotFailed(marketplace, request, slot)
+      const failedAt = await currentTime()
+
+      await advanceTime(10)
+      await waitUntilFinished(marketplace, requestId(request))
+
+      const startBalance = await token.balanceOf(host.address)
+      await marketplace.freeSlot(slotId(slot))
+      const endBalance = await token.balanceOf(host.address)
+
+      const payout = (failedAt - filledAt) * pricePerSlotPerSecond(request)
+      const collateral = collateralPerSlot(request)
+      expect(endBalance - startBalance).to.equal(payout + collateral)
+    })
+
     it("updates the collateral when freeing a finished slot", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
@@ -665,6 +686,14 @@ describe("Marketplace", function () {
       expect(await marketplace.currentCollateral(slotId(slot))).to.equal(0)
     })
 
+    it("updates the collateral when freeing a failed slot", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilSlotFailed(marketplace, request, slot)
+      await waitUntilFinished(marketplace, requestId(request))
+      await marketplace.freeSlot(slotId(slot))
+      expect(await marketplace.currentCollateral(slotId(slot))).to.equal(0)
+    })
+
     it("does not pay when the contract hasn't ended", async function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await marketplace.fillSlot(slot.request, slot.index, proof)
@@ -672,6 +701,14 @@ describe("Marketplace", function () {
       await marketplace.freeSlot(slotId(slot))
       const endBalance = await token.balanceOf(host.address)
       expect(endBalance).to.equal(startBalance)
+    })
+
+    it("does not pay for a failed slot when the contract hasn't ended", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilSlotFailed(marketplace, request, slot)
+      await expect(marketplace.freeSlot(slotId(slot))).to.be.revertedWith(
+        "VaultFundNotUnlocked"
+      )
     })
 
     it("pays only once", async function () {
@@ -793,6 +830,14 @@ describe("Marketplace", function () {
       }
       await waitUntilCancelled(marketplace, request)
       switchAccount(client)
+      await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
+        "VaultFundNotUnlocked"
+      )
+    })
+
+    it("rejects withdraw for failed request before request end", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      await waitUntilFailed(marketplace, request)
       await expect(marketplace.withdrawFunds(slot.request)).to.be.revertedWith(
         "VaultFundNotUnlocked"
       )
@@ -1387,6 +1432,7 @@ describe("Marketplace", function () {
     it("removes slot when failed slot is freed", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilSlotFailed(marketplace, request, slot)
+      await waitUntilFinished(marketplace, requestId(request))
       await marketplace.freeSlot(slotId(slot))
       expect(await marketplace.mySlots()).to.not.contain(slotId(slot))
     })
