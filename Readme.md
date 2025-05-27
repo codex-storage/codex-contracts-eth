@@ -14,10 +14,6 @@ To run the tests, execute the following commands:
     npm install
     npm test
 
-You can also run fuzzing tests (using [Echidna][echidna]) on the contracts:
-
-    npm run fuzz
-
 To start a local Ethereum node with the contracts deployed, execute:
 
     npm start

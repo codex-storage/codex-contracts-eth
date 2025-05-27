@@ -4,7 +4,7 @@ const { payoutForDuration } = require("./price")
 const { collateralPerSlot } = require("./collateral")
 
 async function waitUntilCancelled(contract, request) {
-  const expiry = (await contract.requestExpiry(requestId(request))).toNumber()
+  const expiry = await contract.requestExpiry(requestId(request))
   // We do +1, because the expiry check in contract is done as `>` and not `>=`.
   await advanceTimeTo(expiry + 1)
 }
@@ -13,7 +13,7 @@ async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
   let collateral = collateralPerSlot(request)
   await token.approve(contract.address, collateral * slots.length)
 
-  let requestEnd = (await contract.requestEnd(requestId(request))).toNumber()
+  let requestEnd = await contract.requestEnd(requestId(request))
   const payouts = []
   for (let slotIndex of slots) {
     await contract.reserveSlot(requestId(request), slotIndex)
@@ -40,7 +40,7 @@ async function waitUntilStarted(contract, request, proof, token) {
 }
 
 async function waitUntilFinished(contract, requestId) {
-  const end = (await contract.requestEnd(requestId)).toNumber()
+  const end = await contract.requestEnd(requestId)
   // We do +1, because the end check in contract is done as `>` and not `>=`.
   await advanceTimeTo(end + 1)
 }
@@ -50,7 +50,7 @@ async function waitUntilFailed(contract, request) {
   for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
     slot.index = i
     let id = slotId(slot)
-    await contract.forciblyFreeSlot(id)
+    await contract.freeSlot(id)
   }
 }
 
@@ -59,7 +59,7 @@ async function waitUntilSlotFailed(contract, request, slot) {
   let freed = 0
   while (freed <= request.ask.maxSlotLoss) {
     if (index !== slot.index) {
-      await contract.forciblyFreeSlot(slotId({ ...slot, index }))
+      await contract.freeSlot(slotId({ ...slot, index }))
       freed++
     }
     index++

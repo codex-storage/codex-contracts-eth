@@ -20,7 +20,7 @@ rule allowedRequestStateChanges(env e, method f) {
     // we need to check for `freeSlot(slotId)` here to ensure it's being called with
     // the slotId we're interested in and not any other slotId (that may not pass the
     // required invariants)
-    if (f.selector == sig:freeSlot(Marketplace.SlotId).selector || f.selector == sig:freeSlot(Marketplace.SlotId, address, address).selector) {
+    if (f.selector == sig:freeSlot(Marketplace.SlotId).selector) {
         freeSlot(e, slotId);
     } else {
         f(e, args);
