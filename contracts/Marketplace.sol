@@ -263,11 +263,10 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     SlotState state = slotState(slotId);
     if (
       state == SlotState.Finished ||
-      state == SlotState.Cancelled
+      state == SlotState.Cancelled ||
+      state == SlotState.Failed
     ) {
       _payoutSlot(slot.requestId, slotId);
-    } else if (state == SlotState.Failed) {
-      _removeFromMySlots(msg.sender, slotId);
     } else if (state == SlotState.Filled) {
       // free slot without returning collateral, effectively a 100% slash
       _forciblyFreeSlot(slotId);
