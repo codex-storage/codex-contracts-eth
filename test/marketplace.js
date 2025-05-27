@@ -50,7 +50,7 @@ async function waitUntilFailed(contract, request) {
   for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
     slot.index = i
     let id = slotId(slot)
-    await contract.forciblyFreeSlot(id)
+    await contract.freeSlot(id)
   }
 }
 
@@ -59,7 +59,7 @@ async function waitUntilSlotFailed(contract, request, slot) {
   let freed = 0
   while (freed <= request.ask.maxSlotLoss) {
     if (index !== slot.index) {
-      await contract.forciblyFreeSlot(slotId({ ...slot, index }))
+      await contract.freeSlot(slotId({ ...slot, index }))
       freed++
     }
     index++
