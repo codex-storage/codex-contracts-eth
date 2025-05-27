@@ -63,6 +63,10 @@ library AskHelpers {
     uint96 perSlot = TokensPerSecond.unwrap(ask.pricePerSlotPerSecond());
     return TokensPerSecond.wrap(perSlot * ask.slots);
   }
+
+  function collateralPerSlot(Ask memory ask) internal pure returns (uint128) {
+    return ask.collateralPerByte * ask.slotSize;
+  }
 }
 
 library Requests {
