@@ -14,10 +14,6 @@ contract TestMarketplace is Marketplace {
     IGroth16Verifier verifier
   ) Marketplace(config, vault, verifier) {}
 
-  function forciblyFreeSlot(SlotId slotId) public {
-    _forciblyFreeSlot(slotId);
-  }
-
   function getSlotBalance(SlotId slotId) public view returns (uint256) {
     Slot storage slot = _slots[slotId];
     FundId fund = slot.requestId.asFundId();
