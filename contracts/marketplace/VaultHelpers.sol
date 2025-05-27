@@ -4,8 +4,6 @@ pragma solidity 0.8.28;
 import "../Requests.sol";
 import "../Vault.sol";
 
-import "hardhat/console.sol";
-
 library VaultHelpers {
   enum VaultRole {
     client,
