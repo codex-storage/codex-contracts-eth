@@ -209,7 +209,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     AccountId hostAccount = _vault.hostAccount(slot.host, slotIndex);
     TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
 
-    uint128 collateral = request.collateralPerSlot();
+    uint128 collateral = request.ask.collateralPerSlot();
     uint128 designated = _config.collateral.designatedCollateral(collateral);
 
     if (slotState(slotId) == SlotState.Repair) {
@@ -327,7 +327,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Slot storage slot = _slots[slotId];
     Request storage request = _requests[slot.requestId];
 
-    uint128 collateral = request.collateralPerSlot();
+    uint128 collateral = request.ask.collateralPerSlot();
     uint128 slashedAmount = _config.collateral.slashAmount(collateral);
     uint128 validatorReward = _config.collateral.validatorReward(slashedAmount);
 
@@ -355,7 +355,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     Request storage request = _requests[requestId];
 
     TokensPerSecond rate = request.ask.pricePerSlotPerSecond();
-    uint128 collateral = request.collateralPerSlot();
+    uint128 collateral = request.ask.collateralPerSlot();
     uint128 repairReward = _config.collateral.repairReward(collateral);
 
     FundId fund = requestId.asFundId();

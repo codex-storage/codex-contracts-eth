@@ -25,12 +25,6 @@ library Collateral {
     );
   }
 
-  function collateralPerSlot(
-    Request storage request
-  ) internal view returns (uint128) {
-    return request.ask.collateralPerByte * request.ask.slotSize;
-  }
-
   function slashAmount(
     CollateralConfig storage configuration,
     uint128 collateral
