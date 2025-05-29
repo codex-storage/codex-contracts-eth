@@ -1,5 +1,9 @@
+using ERC20A as Token;
+
 methods {
     function unwrapTimestamp(VaultBase.Timestamp) external returns (uint40) envfree;
+
+    function Token.totalSupply() external returns (uint256) envfree;
 }
 
 // rule sanity(env e, method f) {
@@ -7,6 +11,30 @@ methods {
 //     f(e, args);
 //     satisfy true;
 // }
+
+
+
+
+
+ghost mathint sumOfBalances {
+    init_state axiom sumOfBalances == 0;
+}
+
+hook Sload uint256 balance Token._balances[KEY address addr] {
+    require sumOfBalances >= to_mathint(balance);
+}
+
+hook Sstore Token._balances[KEY address addr] uint256 newValue (uint256 oldValue) {
+    sumOfBalances = sumOfBalances - oldValue + newValue;
+}
+
+invariant totalSupplyIsSumOfBalances()
+    to_mathint(Token.totalSupply()) == sumOfBalances;
+
+
+
+
+
 
 
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint40)) lockExpiryMirror {
@@ -211,6 +239,52 @@ invariant outgoingLEAvailableEasySingle(VaultBase.Controller controller, VaultBa
 
     
 
+invariant supporter()
+    forall VaultBase.Controller controller.
+    forall VaultBase.FundId fundId.
+    forall VaultBase.AccountId accountId.
+        lockMaximumMirror[controller][fundId] == 0 => outgoingMirror[controller][fundId][accountId] == 0;
+
+
+
+
+
+
+
+
+
+ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint128)) valueMirror {
+    init_state axiom 
+        forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+            valueMirror[controller][fundId] == 0;
+}
+
+hook Sload uint128 defaultValue 
+    _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
+{
+    require valueMirror[Controller][FundId] == defaultValue;
+}
+
+hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
+    uint128 defaultValue
+{
+    valueMirror[Controller][FundId] = defaultValue;
+}
+
+
+
+invariant fundCorrelation()
+    
+
+
+
+
+
+
+
+
+
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => VaultBase.TokensPerSecond))) incomingMirror {
     init_state axiom 
         (forall VaultBase.Controller controller. 
@@ -233,6 +307,8 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 {
     incomingMirror[Controller][FundId][AccountId] = defaultValue;
 }
+
+
 
 
 // (∀ controller ∈ Controller, fundId ∈ FundId:
@@ -315,9 +391,3 @@ definition statusCVL(VaultBase.Controller controller, VaultBase.FundId fundId) r
 //                 * (lockMaximumMirror[controller][fundId] 
 //                     - updatedMirror[controller][fundId][accountId])) 
 //         == _funds[controller][fundId].value;    
-
-
-
-
-
-
