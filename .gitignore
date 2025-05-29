@@ -4,3 +4,10 @@ artifacts
 deployment-localhost.json
 crytic-export
 .certora_internal
+coverage
+coverage.json
+
+# Ignore localhost deployments files
+ignition/deployments/chain-31337
+
+ignition/deployments/**/build-info
