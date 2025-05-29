@@ -9,6 +9,10 @@ module.exports = buildModule("Token", (m) => {
   let token
 
   if (process.env.TOKEN_ADDRESS) {
+    console.log(
+      "Using existing TestToken on address: ",
+      process.env.TOKEN_ADDRESS,
+    )
     token = m.contractAt("TestToken", process.env.TOKEN_ADDRESS, {})
   } else {
     token = m.contract("TestToken", [], {
