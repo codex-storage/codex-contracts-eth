@@ -37,6 +37,10 @@ invariant totalSupplyIsSumOfBalances()
 
 
 
+
+
+
+// new ghosts needed in 1
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint40)) lockExpiryMirror {
     init_state axiom 
         forall VaultBase.Controller controller. 
@@ -55,6 +59,7 @@ hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId Fun
 {
     lockExpiryMirror[Controller][FundId] = unwrapTimestamp(defaultValue);
 }
+
 
 
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint40)) lockMaximumMirror {
@@ -76,43 +81,24 @@ hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId Fun
     lockMaximumMirror[Controller][FundId] = unwrapTimestamp(defaultValue);
 }
 
-
-// frozenAtghost mirror
-ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint40)) frozenAtMirror {
-    init_state axiom 
-        forall VaultBase.Controller controller. 
-        forall VaultBase.FundId fundId. 
-            frozenAtMirror[controller][fundId] == 0;
-}
-
-hook Sload VaultBase.Timestamp defaultValue
-    _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
-{
-    require frozenAtMirror[Controller][FundId] == unwrapTimestamp(defaultValue);
-}
-
-hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
-    VaultBase.Timestamp defaultValue
-{
-    frozenAtMirror[Controller][FundId] = unwrapTimestamp(defaultValue);
-}
-
-
+// 1 - verified
 // (∀ controller ∈ Controller, fundId ∈ FundId:
 //   fund.lockExpiry <= fund.lockMaximum
 //   where fund = _funds[controller][fundId])
-// STATUS - verified
 invariant lockExpiryLELockMaximum()
     forall VaultBase.Controller controller.
     forall VaultBase.FundId fundId.
         lockExpiryMirror[controller][fundId] <= lockMaximumMirror[controller][fundId];
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
 
 
 
 
 
-
-
+// new ghosts needed in 2
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => VaultBase.TokensPerSecond))) outgoingMirror {
     init_state axiom 
         (forall VaultBase.Controller controller. 
@@ -138,7 +124,6 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 
 
 
-
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => uint40))) updatedMirror {
     init_state axiom 
         forall VaultBase.Controller controller. 
@@ -161,7 +146,6 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 
 
 
-// now for balance = _accounts[controller][fundId][accountId].balance.available
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => uint128))) availableBalanceMirror {
     init_state axiom 
         forall VaultBase.Controller controller. 
@@ -183,46 +167,14 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 }   
 
 
-// now for balance = _accounts[controller][fundId][accountId].balance.designated
-ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => uint128))) designatedBalanceMirror {
-    init_state axiom 
-        forall VaultBase.Controller controller. 
-        forall VaultBase.FundId fundId. 
-        forall VaultBase.AccountId accountId. 
-            designatedBalanceMirror[controller][fundId][accountId] == 0;
-}
 
-hook Sload uint128 defaultValue
-    _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId][KEY VaultBase.AccountId AccountId].balance.designated
-{
-    require designatedBalanceMirror[Controller][FundId][AccountId] == defaultValue;
-}   
-
-hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId][KEY VaultBase.AccountId AccountId].balance.designated
-    uint128 defaultValue
-{
-    designatedBalanceMirror[Controller][FundId][AccountId] = defaultValue;
-} 
-
-
-
-
-
+// 2 
 // (∀ controller ∈ Controller, fundId ∈ FundId, accountId ∈ AccountId:
 //   flow.outgoing * (fund.lockMaximum - flow.updated) <= balance.available
 //   where fund = _funds[controller][fundId])
 //   and flow = _accounts[controller][fundId][accountId].flow
 //   and balance = _accounts[controller][fundId][accountId].balance
-// invariant outgoingLEAvailable()
-//     forall VaultBase.Controller controller.
-//     forall VaultBase.FundId fundId.
-//     forall VaultBase.AccountId accountId.
-//         (outgoingMirror[controller][fundId][accountId] 
-//             * (lockMaximumMirror[controller][fundId] 
-//                 - updatedMirror[controller][fundId][accountId])) 
-//         <= availableBalanceMirror[controller][fundId][accountId];
-
-invariant outgoingLEAvailableEasy()
+invariant outgoingLEAvailable()
     forall VaultBase.Controller controller.
     forall VaultBase.FundId fundId.
     forall VaultBase.AccountId accountId.
@@ -230,61 +182,16 @@ invariant outgoingLEAvailableEasy()
             * (lockMaximumMirror[controller][fundId] 
                 - updatedMirror[controller][fundId][accountId])) 
         <= availableBalanceMirror[controller][fundId][accountId];
-
-invariant outgoingLEAvailableEasySingle(VaultBase.Controller controller, VaultBase.FundId fundId, VaultBase.AccountId accountId)
-        (outgoingMirror[controller][fundId][accountId] 
-            * (lockMaximumMirror[controller][fundId] 
-                - updatedMirror[controller][fundId][accountId])) 
-        <= availableBalanceMirror[controller][fundId][accountId];
-
-    
-
-invariant supporter()
-    forall VaultBase.Controller controller.
-    forall VaultBase.FundId fundId.
-    forall VaultBase.AccountId accountId.
-        lockMaximumMirror[controller][fundId] == 0 => outgoingMirror[controller][fundId][accountId] == 0;
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
 
 
 
 
 
-
-
-
-
-ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint128)) valueMirror {
-    init_state axiom 
-        forall VaultBase.Controller controller. 
-        forall VaultBase.FundId fundId. 
-            valueMirror[controller][fundId] == 0;
-}
-
-hook Sload uint128 defaultValue 
-    _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
-{
-    require valueMirror[Controller][FundId] == defaultValue;
-}
-
-hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
-    uint128 defaultValue
-{
-    valueMirror[Controller][FundId] = defaultValue;
-}
-
-
-
-invariant fundCorrelation()
-    
-
-
-
-
-
-
-
-
-
+// new ghosts needed in 3
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => VaultBase.TokensPerSecond))) incomingMirror {
     init_state axiom 
         (forall VaultBase.Controller controller. 
@@ -310,43 +217,29 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 
 
 
+ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint40)) frozenAtMirror {
+    init_state axiom 
+        forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+            frozenAtMirror[controller][fundId] == 0;
+}
 
-// (∀ controller ∈ Controller, fundId ∈ FundId:
-//   (∑ accountId ∈ AccountId: accounts[accountId].flow.incoming) =
-//   (∑ accountId ∈ AccountId: accounts[accountId].flow.outgoing)
-//   where accounts = _accounts[controller][fundId])
-invariant incomingEqualsOutgoing(env e)
-    (forall VaultBase.Controller controller.
-     forall VaultBase.FundId fundId.
-    statusCVL(controller, fundId) != VaultBase.FundStatus.Withdrawing
-        => (sum 
-                VaultBase.AccountId accountId. 
-                    outgoingMirror[controller][fundId][accountId]) 
-            == (sum
-                VaultBase.AccountId accountId. 
-                    incomingMirror[controller][fundId][accountId]))
-    {
-        preserved with (env e2) {
-            require e.block.timestamp == e2.block.timestamp;
-        }
-    }
+hook Sload VaultBase.Timestamp defaultValue
+    _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
+{
+    require frozenAtMirror[Controller][FundId] == unwrapTimestamp(defaultValue);
+}
+
+hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
+    VaultBase.Timestamp defaultValue
+{
+    frozenAtMirror[Controller][FundId] = unwrapTimestamp(defaultValue);
+}
 
 
-// copying status implementation from Funds.sol using CVL to use it in quantifier
-/*
-if (Timestamps.currentTime() < fund.lockExpiry) {
-      if (fund.frozenAt != Timestamp.wrap(0)) {
-        return FundStatus.Frozen;
-      }
-      return FundStatus.Locked;
-    }
-    if (fund.lockMaximum == Timestamp.wrap(0)) {
-      return FundStatus.Inactive;
-    }
-    return FundStatus.Withdrawing;
-*/
 
 ghost mathint ghostLastTimestamp;
+
 hook TIMESTAMP uint256 time {
     require to_mathint(time) < max_uint40;              // Timestamp type is uint40 that's why we have this require. uint40 is used in the whole contract
     require to_mathint(time) >= ghostLastTimestamp;
@@ -360,25 +253,55 @@ definition statusCVL(VaultBase.Controller controller, VaultBase.FundId fundId) r
         (frozenAtMirror[controller][fundId] != 0 ? VaultBase.FundStatus.Frozen : VaultBase.FundStatus.Locked) :
             (lockMaximumMirror[controller][fundId] == 0 ? VaultBase.FundStatus.Inactive : VaultBase.FundStatus.Withdrawing);
 
-    // if (ghostLastTimestamp < lockExpiryMirror[controller][fundId]) {
-    //     if (frozenAtMirror[controller][fundId] != 0) {
-    //         return VaultBase.FundStatus.Frozen;
-    //     }
-    //     return VaultBase.FundStatus.Locked;
-    // } 
-
-    // if (lockMaximumMirror[controller][fundId] == 0) {
-    //     return VaultBase.FundStatus.Inactive;
-    // }
-    // return VaultBase.FundStatus.Withdrawing;
 
 
+// 3 - verified
+// (∀ controller ∈ Controller, fundId ∈ FundId:
+//   (∑ accountId ∈ AccountId: accounts[accountId].flow.incoming) =
+//   (∑ accountId ∈ AccountId: accounts[accountId].flow.outgoing)
+//   where accounts = _accounts[controller][fundId])
+invariant incomingEqualsOutgoing(env e)
+    (forall VaultBase.Controller controller.
+     forall VaultBase.FundId fundId.
+    statusCVL(controller, fundId) != VaultBase.FundStatus.Withdrawing
+        => (sum 
+                VaultBase.AccountId accountId. 
+                    outgoingMirror[controller][fundId][accountId]) 
+            == (sum
+                VaultBase.AccountId accountId. 
+                    incomingMirror[controller][fundId][accountId]));
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
 
 
 
 
 
+// new ghosts needed in 4
+ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => uint128))) designatedBalanceMirror {
+    init_state axiom 
+        forall VaultBase.Controller controller. 
+        forall VaultBase.FundId fundId. 
+        forall VaultBase.AccountId accountId. 
+            designatedBalanceMirror[controller][fundId][accountId] == 0;
+}
 
+hook Sload uint128 defaultValue
+    _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId][KEY VaultBase.AccountId AccountId].balance.designated
+{
+    require designatedBalanceMirror[Controller][FundId][AccountId] == defaultValue;
+}   
+
+hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId][KEY VaultBase.AccountId AccountId].balance.designated
+    uint128 defaultValue
+{
+    designatedBalanceMirror[Controller][FundId][AccountId] = defaultValue;
+} 
+
+
+// invariant 4 (Certora's solvency)
 // account.balance.available + account.balance.designated + ((incoming - outgoing) * (fund.flowEnd() - flow.updated)) == fund.value
 // invariant solvency()
 //     forall VaultBase.Controller controller.
@@ -391,3 +314,49 @@ definition statusCVL(VaultBase.Controller controller, VaultBase.FundId fundId) r
 //                 * (lockMaximumMirror[controller][fundId] 
 //                     - updatedMirror[controller][fundId][accountId])) 
 //         == _funds[controller][fundId].value;    
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+
+
+
+
+
+// ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint128)) valueMirror {
+//     init_state axiom 
+//         forall VaultBase.Controller controller. 
+//         forall VaultBase.FundId fundId. 
+//             valueMirror[controller][fundId] == 0;
+// }
+
+// hook Sload uint128 defaultValue 
+//     _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
+// {
+//     require valueMirror[Controller][FundId] == defaultValue;
+// }
+
+// hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
+//     uint128 defaultValue
+// {
+//     valueMirror[Controller][FundId] = defaultValue;
+// }
+
+
+
+
+
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+//------------------------------------------------------------//
+
+
+
+
+invariant supporter()
+    forall VaultBase.Controller controller.
+    forall VaultBase.FundId fundId.
+    forall VaultBase.AccountId accountId.
+        lockMaximumMirror[controller][fundId] == 0 => outgoingMirror[controller][fundId][accountId] == 0;
+
