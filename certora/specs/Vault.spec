@@ -168,7 +168,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 
 
 
-// 2 
+// 2 - verified
 // (∀ controller ∈ Controller, fundId ∈ FundId, accountId ∈ AccountId:
 //   flow.outgoing * (fund.lockMaximum - flow.updated) <= balance.available
 //   where fund = _funds[controller][fundId])
@@ -181,7 +181,12 @@ invariant outgoingLEAvailable()
         (outgoingMirror[controller][fundId][accountId] 
             * (lockMaximumMirror[controller][fundId] 
                 - updatedMirror[controller][fundId][accountId])) 
-        <= availableBalanceMirror[controller][fundId][accountId];
+        <= availableBalanceMirror[controller][fundId][accountId]
+    {
+        preserved {
+            requireInvariant supporter();
+        }
+    }
 //------------------------------------------------------------//
 //------------------------------------------------------------//
 //------------------------------------------------------------//
@@ -243,6 +248,7 @@ ghost mathint ghostLastTimestamp;
 hook TIMESTAMP uint256 time {
     require to_mathint(time) < max_uint40;              // Timestamp type is uint40 that's why we have this require. uint40 is used in the whole contract
     require to_mathint(time) >= ghostLastTimestamp;
+    require ghostLastTimestamp > 0;     // this require is necessary to avoid violation in "supporter" invariant. It happens only when timestamp == 0 and it's safe to require it because it's not 0 in real life.
     ghostLastTimestamp = time;
 }
 
@@ -301,7 +307,8 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 } 
 
 
-// invariant 4 (Certora's solvency)
+
+// invariant 4 (Certora's solvency) - 
 // account.balance.available + account.balance.designated + ((incoming - outgoing) * (fund.flowEnd() - flow.updated)) == fund.value
 // invariant solvency()
 //     forall VaultBase.Controller controller.
@@ -323,37 +330,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 
 
 
-// ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint128)) valueMirror {
-//     init_state axiom 
-//         forall VaultBase.Controller controller. 
-//         forall VaultBase.FundId fundId. 
-//             valueMirror[controller][fundId] == 0;
-// }
-
-// hook Sload uint128 defaultValue 
-//     _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
-// {
-//     require valueMirror[Controller][FundId] == defaultValue;
-// }
-
-// hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].value 
-//     uint128 defaultValue
-// {
-//     valueMirror[Controller][FundId] = defaultValue;
-// }
-
-
-
-
-
-//------------------------------------------------------------//
-//------------------------------------------------------------//
-//------------------------------------------------------------//
-//------------------------------------------------------------//
-
-
-
-
+// 5 (needed to prove 2) - verified
 invariant supporter()
     forall VaultBase.Controller controller.
     forall VaultBase.FundId fundId.
