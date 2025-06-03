@@ -224,6 +224,16 @@ abstract contract Proofs is Periods {
    *    - proof was already marked as missing
    */
   function _markProofAsMissing(SlotId id, Period missedPeriod) internal {
+    _canMarkProofAsMissing(id, missedPeriod);
+
+    _missing[id][missedPeriod] = true;
+    _missed[id] += 1;
+  }
+
+  function _canMarkProofAsMissing(
+    SlotId id,
+    Period missedPeriod
+  ) internal view {
     uint256 end = _periodEnd(missedPeriod);
     if (end >= block.timestamp) revert Proofs_PeriodNotEnded();
     if (block.timestamp >= end + _config.timeout)
@@ -231,9 +241,6 @@ abstract contract Proofs is Periods {
     if (_received[id][missedPeriod]) revert Proofs_ProofNotMissing();
     if (!_isProofRequired(id, missedPeriod)) revert Proofs_ProofNotRequired();
     if (_missing[id][missedPeriod]) revert Proofs_ProofAlreadyMarkedMissing();
-
-    _missing[id][missedPeriod] = true;
-    _missed[id] += 1;
   }
 
   event ProofSubmitted(SlotId id);
