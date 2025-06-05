@@ -544,7 +544,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function getActiveSlot(
     SlotId slotId
-  ) public view slotIsNotFree(slotId) returns (ActiveSlot memory) {
+  ) public view returns (ActiveSlot memory) {
+    // Modifier `slotIsNotFree(slotId)` works here, but using the modifier
+    // causes hardhat to return an error "reverted with an unrecognized custom
+    // error (return data: 0x8b41ec7f)".
+    if (_slots[slotId].state == SlotState.Free) revert Marketplace_SlotIsFree();
     Slot storage slot = _slots[slotId];
     ActiveSlot memory activeSlot;
     activeSlot.request = _requests[slot.requestId];
