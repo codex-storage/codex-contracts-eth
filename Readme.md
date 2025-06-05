@@ -22,40 +22,13 @@ To start a local Ethereum node with the contracts deployed, execute:
 
     npm start
 
-This will create a `deployment-localhost.json` file containing the addresses of
-the deployed contracts.
-
-To deploy the marketplace you can define `HARDHAT_NETWORK` and run the following command:
-
-```bash
-npm run deploy
-# Example
-# HARDHAT_NETWORK=localhost npm run deploy
-```
-
-Or you can you `npx` directly:
-
-```bash
-npx hardhat ignition deploy ignition/modules/marketplace.js --network localhost
-```
-
-To reuse a previously deployed `Token` contract, define the environment variable `TOKEN_ADDRESS`.
-The deployment script will use `contractAt` from Hardhat Ignition to retrieve the existing contract
-instead of deploying a new one.
-
 Deployment
 ----------
 
-To deploy the marketplace you need to define `HARDHAT_NETWORK`:
+To deploy the marketplace, you need to specify the network using `--network MY_NETWORK`:
 
 ```bash
-HARDHAT_NETWORK=localhost npm run deploy
-```
-
-Or you can you `npx` directly:
-
-```bash
-npx hardhat ignition deploy ignition/modules/marketplace.js --network localhost
+npm run deploy -- --network localhost
 ```
 
 Hardhat uses [reconciliation](https://hardhat.org/ignition/docs/advanced/reconciliation) to recover  
@@ -64,21 +37,14 @@ In our case, we will likely redeploy a new contract every time, so we will need 
 [clear the previous deployment](https://hardhat.org/ignition/docs/guides/modifications#clearing-an-existing-deployment-with-reset):
 
 ```bash
-HARDHAT_NETWORK=localhost npm run deploy:reset
-```
-
-Or you can you `npx` directly:
-
-```bash
-npx hardhat ignition deploy ignition/modules/marketplace.js --network localhost --reset
+npm run deploy -- --network testnet --reset
 ```
 
 To reuse a previously deployed `Token` contract, define the environment variable `TOKEN_ADDRESS`.
 The deployment script will use `contractAt` from Hardhat Ignition to retrieve the existing contract
 instead of deploying a new one.
 
-The deployment files are kept under version control [as recommended by Hardhat](https://hardhat.org/ignition/docs/advanced/versioning),  
-except the build files, which are 18 MB.
+The deployment files are kept under version control [as recommended by Hardhat](https://hardhat.org/ignition/docs/advanced/versioning), except the build files, which are 18 MB.
 
 Running the prover
 ------------------
