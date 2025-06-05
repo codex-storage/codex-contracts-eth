@@ -31,10 +31,9 @@ To deploy the marketplace, you need to specify the network using `--network MY_N
 npm run deploy -- --network localhost
 ```
 
-Hardhat uses [reconciliation](https://hardhat.org/ignition/docs/advanced/reconciliation) to recover  
-from errors or resume a previous deployment.
-In our case, we will likely redeploy a new contract every time, so we will need to
-[clear the previous deployment](https://hardhat.org/ignition/docs/guides/modifications#clearing-an-existing-deployment-with-reset):
+Hardhat uses [reconciliation](https://hardhat.org/ignition/docs/advanced/reconciliation) to recover from 
+errors or resume a previous deployment. In our case, we will likely redeploy a new contract every time, 
+so we will need to [clear the previous deployment](https://hardhat.org/ignition/docs/guides/modifications#clearing-an-existing-deployment-with-reset):
 
 ```bash
 npm run deploy -- --network testnet --reset
