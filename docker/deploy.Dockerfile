@@ -23,7 +23,7 @@ RUN if [ $(uname -m) = "aarch64" ] ; then \
 WORKDIR ${APP_HOME}
 COPY --chown=${APP_USER}:${APP_USER} . .
 
-RUN npm install
+RUN npm ci
 
 
 # Create
