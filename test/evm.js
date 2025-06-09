@@ -12,7 +12,11 @@ async function snapshot() {
 async function revert() {
   const { id, time, automine } = snapshots.pop()
   await ethers.provider.send("evm_revert", [id])
-  await ethers.provider.send("evm_setNextBlockTimestamp", [time])
+
+  const current = await currentTime()
+  const nextTime = Math.max(time + 1, current + 1)
+
+  await ethers.provider.send("evm_setNextBlockTimestamp", [nextTime])
   await ethers.provider.send("evm_setAutomine", [automine])
 }
 
