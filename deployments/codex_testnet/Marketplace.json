@@ -1457,7 +1457,7 @@
         "timeout": 30,
         "downtime": 64,
         "downtimeProduct": 67,
-        "zkeyHash": "afc470031923f60982f36932686665a55b88c4ef4ee4b7ae21e6dc6685cfae4b"
+        "zkeyHash": "fd338cf5f846a3385efce8d10db33f262bafd0260b2211e27b5e461a45a8df94"
       },
       "reservations": {
         "maxReservations": 3
