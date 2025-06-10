@@ -1,0 +1,504 @@
+{
+  "address": "0xF119248ffe0a8A07Ff91301F83BFaE7c20456173",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "alpha1",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "beta2",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "gamma2",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "delta2",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point[]",
+              "name": "ic",
+              "type": "tuple[]"
+            }
+          ],
+          "internalType": "struct Groth16Verifier.VerifyingKey",
+          "name": "key",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "a",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "b",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "c",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct Groth16Proof",
+          "name": "proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "input",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "verify",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xceb4c5b94154688ff063f29d011df4cc62210742a94d028712ae3f6cd66523ff",
+  "receipt": {
+    "to": null,
+    "from": "0xC3B5023e9d6522f9A8B0E187EB324C8341E5C9cf",
+    "contractAddress": "0xF119248ffe0a8A07Ff91301F83BFaE7c20456173",
+    "transactionIndex": 1,
+    "gasUsed": "1053013",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xcf347d18b7ebdbc6c15d5deee66cdce11d23bade5cf4e110e766c944146b910f",
+    "transactionHash": "0xceb4c5b94154688ff063f29d011df4cc62210742a94d028712ae3f6cd66523ff",
+    "logs": [],
+    "blockNumber": 2001328,
+    "cumulativeGasUsed": "1074013",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    {
+      "alpha1": {
+        "x": "20491192805390485299153009773594534940189261866228447918068658471970481763042",
+        "y": "9383485363053290200918347156157836566562967994039712273449902621266178545958"
+      },
+      "beta2": {
+        "x": {
+          "real": "6375614351688725206403948262868962793625744043794305715222011528459656738731",
+          "imag": "4252822878758300859123897981450591353533073413197771768651442665752259397132"
+        },
+        "y": {
+          "real": "10505242626370262277552901082094356697409835680220590971873171140371331206856",
+          "imag": "21847035105528745403288232691147584728191162732299865338377159692350059136679"
+        }
+      },
+      "gamma2": {
+        "x": {
+          "real": "10857046999023057135944570762232829481370756359578518086990519993285655852781",
+          "imag": "11559732032986387107991004021392285783925812861821192530917403151452391805634"
+        },
+        "y": {
+          "real": "8495653923123431417604973247489272438418190587263600148770280649306958101930",
+          "imag": "4082367875863433681332203403145435568316851327593401208105741076214120093531"
+        }
+      },
+      "delta2": {
+        "x": {
+          "real": "7791164563743079419589440373723531715660863237515256801832496378744062705692",
+          "imag": "18140015760956658993401314410013399172580752447722106245827704769275144944365"
+        },
+        "y": {
+          "real": "17812654733893615050952431189498139904025668992277104449740946322604310593259",
+          "imag": "17369491537387214087127689025270527340613832203196753088110263926977142197544"
+        }
+      },
+      "ic": [
+        {
+          "x": "11919420103024546168896650006162652130022732573970705849225139177428442519914",
+          "y": "17747753383929265689844293401689552935018333420134132157824903795680624926572"
+        },
+        {
+          "x": "13158415194355348546090070151711085027834066488127676886518524272551654481129",
+          "y": "18831701962118195025265682681702066674741422770850028135520336928884612556978"
+        },
+        {
+          "x": "20882269691461568155321689204947751047717828445545223718893788782534717197527",
+          "y": "11996193054822748526485644723594571195813487505803351159052936325857690315211"
+        },
+        {
+          "x": "18155166643053044822201627105588517913195535693446564472247126736722594445000",
+          "y": "13816319482622393060406816684195314200198627617641073470088058848129378231754"
+        }
+      ]
+    }
+  ],
+  "numDeployments": 3,
+  "solcInputHash": "38bc1dfa6eb605585a1d33e30c68e961",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"alpha1\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"beta2\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"gamma2\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"delta2\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point[]\",\"name\":\"ic\",\"type\":\"tuple[]\"}],\"internalType\":\"struct Groth16Verifier.VerifyingKey\",\"name\":\"key\",\"type\":\"tuple\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"a\",\"type\":\"tuple\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"x\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"real\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"imag\",\"type\":\"uint256\"}],\"internalType\":\"struct Fp2Element\",\"name\":\"y\",\"type\":\"tuple\"}],\"internalType\":\"struct G2Point\",\"name\":\"b\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"}],\"internalType\":\"struct G1Point\",\"name\":\"c\",\"type\":\"tuple\"}],\"internalType\":\"struct Groth16Proof\",\"name\":\"proof\",\"type\":\"tuple\"},{\"internalType\":\"uint256[]\",\"name\":\"input\",\"type\":\"uint256[]\"}],\"name\":\"verify\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/Groth16Verifier.sol\":\"Groth16Verifier\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":1000},\"remappings\":[]},\"sources\":{\"contracts/Groth16.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.28;\\n\\nstruct G1Point {\\n  uint256 x;\\n  uint256 y;\\n}\\n\\n// A field element F_{p^2} encoded as `real + i * imag`.\\n// We chose to not represent this as an array of 2 numbers, because both Circom\\n// and Ethereum EIP-197 encode to an array, but with conflicting encodings.\\nstruct Fp2Element {\\n  uint256 real;\\n  uint256 imag;\\n}\\n\\nstruct G2Point {\\n  Fp2Element x;\\n  Fp2Element y;\\n}\\n\\nstruct Groth16Proof {\\n  G1Point a;\\n  G2Point b;\\n  G1Point c;\\n}\\n\\ninterface IGroth16Verifier {\\n  function verify(\\n    Groth16Proof calldata proof,\\n    uint256[] calldata pubSignals\\n  ) external view returns (bool);\\n}\\n\",\"keccak256\":\"0x3694cd68f518dc4dfeb2f9a9d18f594b5511b110e129018348f21db25de1ed92\",\"license\":\"MIT\"},\"contracts/Groth16Verifier.sol\":{\"content\":\"// Copyright 2017 Christian Reitwiessner\\n// Copyright 2019 OKIMS\\n// Copyright 2024 Codex\\n// Permission is hereby granted, free of charge, to any person obtaining a copy\\n// of this software and associated documentation files (the \\\"Software\\\"), to deal\\n// in the Software without restriction, including without limitation the rights\\n// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\\n// copies of the Software, and to permit persons to whom the Software is\\n// furnished to do so, subject to the following conditions:\\n// The above copyright notice and this permission notice shall be included in\\n// all copies or substantial portions of the Software.\\n// THE SOFTWARE IS PROVIDED \\\"AS IS\\\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\\n// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\\n// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\\n// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\\n// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\\n// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\\n// SOFTWARE.\\n// SPDX-License-Identifier: MIT\\npragma solidity 0.8.28;\\nimport \\\"./Groth16.sol\\\";\\n\\ncontract Groth16Verifier is IGroth16Verifier {\\n  uint256 private constant _P =\\n    21888242871839275222246405745257275088696311157297823662689037894645226208583;\\n  uint256 private constant _R =\\n    21888242871839275222246405745257275088548364400416034343698204186575808495617;\\n\\n  VerifyingKey private _verifyingKey;\\n\\n  struct VerifyingKey {\\n    G1Point alpha1;\\n    G2Point beta2;\\n    G2Point gamma2;\\n    G2Point delta2;\\n    G1Point[] ic;\\n  }\\n\\n  constructor(VerifyingKey memory key) {\\n    _verifyingKey.alpha1 = key.alpha1;\\n    _verifyingKey.beta2 = key.beta2;\\n    _verifyingKey.gamma2 = key.gamma2;\\n    _verifyingKey.delta2 = key.delta2;\\n    for (uint i = 0; i < key.ic.length; i++) {\\n      _verifyingKey.ic.push(key.ic[i]);\\n    }\\n  }\\n\\n  function _negate(G1Point memory point) private pure returns (G1Point memory) {\\n    return G1Point(point.x, (_P - point.y) % _P);\\n  }\\n\\n  function _add(\\n    G1Point memory point1,\\n    G1Point memory point2\\n  ) private view returns (bool success, G1Point memory sum) {\\n    // Call the precompiled contract for addition on the alt_bn128 curve.\\n    // The call will fail if the points are not valid group elements:\\n    // https://eips.ethereum.org/EIPS/eip-196#exact-semantics\\n\\n    uint256[4] memory input;\\n    input[0] = point1.x;\\n    input[1] = point1.y;\\n    input[2] = point2.x;\\n    input[3] = point2.y;\\n    // solhint-disable-next-line no-inline-assembly\\n    assembly {\\n      success := staticcall(gas(), 6, input, 128, sum, 64)\\n    }\\n  }\\n\\n  function _multiply(\\n    G1Point memory point,\\n    uint256 scalar\\n  ) private view returns (bool success, G1Point memory product) {\\n    // Call the precompiled contract for scalar multiplication on the alt_bn128\\n    // curve. The call will fail if the points are not valid group elements:\\n    // https://eips.ethereum.org/EIPS/eip-196#exact-semantics\\n\\n    uint256[3] memory input;\\n    input[0] = point.x;\\n    input[1] = point.y;\\n    input[2] = scalar;\\n    // solhint-disable-next-line no-inline-assembly\\n    assembly {\\n      success := staticcall(gas(), 7, input, 96, product, 64)\\n    }\\n  }\\n\\n  function _checkPairing(\\n    G1Point memory a1,\\n    G2Point memory a2,\\n    G1Point memory b1,\\n    G2Point memory b2,\\n    G1Point memory c1,\\n    G2Point memory c2,\\n    G1Point memory d1,\\n    G2Point memory d2\\n  ) private view returns (bool success, uint256 outcome) {\\n    // Call the precompiled contract for pairing check on the alt_bn128 curve.\\n    // The call will fail if the points are not valid group elements:\\n    // https://eips.ethereum.org/EIPS/eip-197#specification\\n\\n    uint256[24] memory input; // 4 pairs of G1 and G2 points\\n    uint256[1] memory output;\\n\\n    input[0] = a1.x;\\n    input[1] = a1.y;\\n    input[2] = a2.x.imag;\\n    input[3] = a2.x.real;\\n    input[4] = a2.y.imag;\\n    input[5] = a2.y.real;\\n\\n    input[6] = b1.x;\\n    input[7] = b1.y;\\n    input[8] = b2.x.imag;\\n    input[9] = b2.x.real;\\n    input[10] = b2.y.imag;\\n    input[11] = b2.y.real;\\n\\n    input[12] = c1.x;\\n    input[13] = c1.y;\\n    input[14] = c2.x.imag;\\n    input[15] = c2.x.real;\\n    input[16] = c2.y.imag;\\n    input[17] = c2.y.real;\\n\\n    input[18] = d1.x;\\n    input[19] = d1.y;\\n    input[20] = d2.x.imag;\\n    input[21] = d2.x.real;\\n    input[22] = d2.y.imag;\\n    input[23] = d2.y.real;\\n\\n    // solhint-disable-next-line no-inline-assembly\\n    assembly {\\n      success := staticcall(gas(), 8, input, 768, output, 32)\\n    }\\n    return (success, output[0]);\\n  }\\n\\n  function verify(\\n    Groth16Proof calldata proof,\\n    uint256[] memory input\\n  ) public view returns (bool success) {\\n    // Check amount of public inputs\\n    if (input.length + 1 != _verifyingKey.ic.length) {\\n      return false;\\n    }\\n    // Check that public inputs are field elements\\n    for (uint i = 0; i < input.length; i++) {\\n      if (input[i] >= _R) {\\n        return false;\\n      }\\n    }\\n    // Compute the linear combination\\n    G1Point memory combination = _verifyingKey.ic[0];\\n    for (uint i = 0; i < input.length; i++) {\\n      G1Point memory product;\\n      (success, product) = _multiply(_verifyingKey.ic[i + 1], input[i]);\\n      if (!success) {\\n        return false;\\n      }\\n      (success, combination) = _add(combination, product);\\n      if (!success) {\\n        return false;\\n      }\\n    }\\n    // Check the pairing\\n    uint256 outcome;\\n    (success, outcome) = _checkPairing(\\n      _negate(proof.a),\\n      proof.b,\\n      _verifyingKey.alpha1,\\n      _verifyingKey.beta2,\\n      combination,\\n      _verifyingKey.gamma2,\\n      proof.c,\\n      _verifyingKey.delta2\\n    );\\n    if (!success) {\\n      return false;\\n    }\\n    return outcome == 1;\\n  }\\n}\\n\",\"keccak256\":\"0x9e2288fb822e47b5bd24c7d1b4bffb8e8210761bf85759d1845df5b8fc060901\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50604051610bbd380380610bbd83398101604081905261002f91610208565b805180516000908155602091820151600155818301518051805160025583015160035582015180516004558201516005556040830151805180516006558301516007558201518051600855820151600955606083015180518051600a55830151600b558201518051600c5590910151600d555b816080015151811015610100576000600e01826080015182815181106100ca576100ca610343565b602090810291909101810151825460018181018555600094855293839020825160029092020190815591015190820155016100a2565b5050610359565b634e487b7160e01b600052604160045260246000fd5b604080519081016001600160401b038111828210171561013f5761013f610107565b60405290565b60405160a081016001600160401b038111828210171561013f5761013f610107565b604051601f8201601f191681016001600160401b038111828210171561018f5761018f610107565b604052919050565b6000604082840312156101a957600080fd5b6101b161011d565b825181526020928301519281019290925250919050565b6000608082840312156101da57600080fd5b6101e261011d565b90506101ee8383610197565b81526101fd8360408401610197565b602082015292915050565b60006020828403121561021a57600080fd5b81516001600160401b0381111561023057600080fd5b82016101e0818503121561024357600080fd5b61024b610145565b6102558583610197565b815261026485604084016101c8565b60208201526102768560c084016101c8565b60408201526102898561014084016101c8565b60608201526101c08201516001600160401b038111156102a857600080fd5b80830192505084601f8301126102bd57600080fd5b81516001600160401b038111156102d6576102d6610107565b6102e560208260051b01610167565b8082825260208201915060208360061b86010192508783111561030757600080fd5b6020850194505b82851015610333576103208886610197565b825260208201915060408501945061030e565b6080840152509095945050505050565b634e487b7160e01b600052603260045260246000fd5b610855806103686000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c806394c8919d14610030575b600080fd5b61004361003e366004610647565b610057565b604051901515815260200160405180910390f35b600e5481516000919061006b90600161072c565b146100785750600061030c565b60005b82518110156100d6577f30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f00000018382815181106100b7576100b761073f565b6020026020010151106100ce57600091505061030c565b60010161007b565b50600080600e016000815481106100ef576100ef61073f565b600091825260208083206040805180820190915260029093020180548352600101549082015291505b83518110156101e05760408051808201909152600080825260208201526101a1600e61014584600161072c565b815481106101555761015561073f565b9060005260206000209060020201604051806040016040529081600082015481526020016001820154815250508684815181106101945761019461073f565b6020026020010151610312565b9094509050836101b7576000935050505061030c565b6101c18382610361565b9094509250836101d7576000935050505061030c565b50600101610118565b5060006102f06101fd6101f836889003880188610786565b6103bc565b61020f368890038801604089016107a9565b604080518082018252600054815260015460208083019190915282516080808201855260025482860190815260035460608085019190915290835285518087018752600454815260055481860152838501528551918201865260065482870190815260075491830191909152815284518086019095526008548552600954858401529182019390935290919087906102af368d90038d0160c08e01610786565b60408051608081018252600a54818301908152600b54606083015281528151808301909252600c548252600d54602083810191909152810191909152610448565b9093509050826103055760009250505061030c565b6001149150505b92915050565b6000610331604051806040016040528060008152602001600081525090565b61033961055e565b845181526020808601519082015260408082018590528260608360075afa9250509250929050565b6000610380604051806040016040528060008152602001600081525090565b61038861057c565b845181526020808601518183015284516040808401919091529085015160608301528260808360065afa9250509250929050565b60408051808201909152600080825260208201526040518060400160405280836000015181526020017f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4784602001517f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4761043691906107ea565b61044091906107fd565b905292915050565b60008061045361059a565b61045b6105b9565b8b5182526020808d0151818401528b5181015160408401528b515160608401528b810180518201516080850152515160a08401528a5160c08401528a81015160e08401528951810151610100840152895151610120840152898101805182015161014085015251516101608401528851610180840152888101516101a084015287518101516101c08401528751516101e08401528781018051820151610200850152515161022084015286516102408401528681015161026084015285518101516102808401528551516102a084015285810180518201516102c085015251516102e0840152816103008460085afa9051909c909b509950505050505050505050565b60405180606001604052806003906020820280368337509192915050565b60405180608001604052806004906020820280368337509192915050565b6040518061030001604052806018906020820280368337509192915050565b60405180602001604052806001906020820280368337509192915050565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff81118282101715610610576106106105d7565b60405290565b604051601f8201601f1916810167ffffffffffffffff8111828210171561063f5761063f6105d7565b604052919050565b60008082840361012081121561065c57600080fd5b61010081121561066b57600080fd5b5082915061010083013567ffffffffffffffff81111561068a57600080fd5b8301601f8101851361069b57600080fd5b803567ffffffffffffffff8111156106b5576106b56105d7565b8060051b6106c560208201610616565b918252602081840181019290810190888411156106e157600080fd5b6020850194505b83851015610707578435808352602095860195909350909101906106e8565b80955050505050509250929050565b634e487b7160e01b600052601160045260246000fd5b8082018082111561030c5761030c610716565b634e487b7160e01b600052603260045260246000fd5b60006040828403121561076757600080fd5b61076f6105ed565b823581526020928301359281019290925250919050565b60006040828403121561079857600080fd5b6107a28383610755565b9392505050565b600060808284031280156107bc57600080fd5b506107c56105ed565b6107cf8484610755565b81526107de8460408501610755565b60208201529392505050565b8181038181111561030c5761030c610716565b60008261081a57634e487b7160e01b600052601260045260246000fd5b50069056fea2646970667358221220e999442315398e0b48870ac7727735b77e41ded2e66e2cdcccc8c4255b3b7dfb64736f6c634300081c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c806394c8919d14610030575b600080fd5b61004361003e366004610647565b610057565b604051901515815260200160405180910390f35b600e5481516000919061006b90600161072c565b146100785750600061030c565b60005b82518110156100d6577f30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f00000018382815181106100b7576100b761073f565b6020026020010151106100ce57600091505061030c565b60010161007b565b50600080600e016000815481106100ef576100ef61073f565b600091825260208083206040805180820190915260029093020180548352600101549082015291505b83518110156101e05760408051808201909152600080825260208201526101a1600e61014584600161072c565b815481106101555761015561073f565b9060005260206000209060020201604051806040016040529081600082015481526020016001820154815250508684815181106101945761019461073f565b6020026020010151610312565b9094509050836101b7576000935050505061030c565b6101c18382610361565b9094509250836101d7576000935050505061030c565b50600101610118565b5060006102f06101fd6101f836889003880188610786565b6103bc565b61020f368890038801604089016107a9565b604080518082018252600054815260015460208083019190915282516080808201855260025482860190815260035460608085019190915290835285518087018752600454815260055481860152838501528551918201865260065482870190815260075491830191909152815284518086019095526008548552600954858401529182019390935290919087906102af368d90038d0160c08e01610786565b60408051608081018252600a54818301908152600b54606083015281528151808301909252600c548252600d54602083810191909152810191909152610448565b9093509050826103055760009250505061030c565b6001149150505b92915050565b6000610331604051806040016040528060008152602001600081525090565b61033961055e565b845181526020808601519082015260408082018590528260608360075afa9250509250929050565b6000610380604051806040016040528060008152602001600081525090565b61038861057c565b845181526020808601518183015284516040808401919091529085015160608301528260808360065afa9250509250929050565b60408051808201909152600080825260208201526040518060400160405280836000015181526020017f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4784602001517f30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4761043691906107ea565b61044091906107fd565b905292915050565b60008061045361059a565b61045b6105b9565b8b5182526020808d0151818401528b5181015160408401528b515160608401528b810180518201516080850152515160a08401528a5160c08401528a81015160e08401528951810151610100840152895151610120840152898101805182015161014085015251516101608401528851610180840152888101516101a084015287518101516101c08401528751516101e08401528781018051820151610200850152515161022084015286516102408401528681015161026084015285518101516102808401528551516102a084015285810180518201516102c085015251516102e0840152816103008460085afa9051909c909b509950505050505050505050565b60405180606001604052806003906020820280368337509192915050565b60405180608001604052806004906020820280368337509192915050565b6040518061030001604052806018906020820280368337509192915050565b60405180602001604052806001906020820280368337509192915050565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff81118282101715610610576106106105d7565b60405290565b604051601f8201601f1916810167ffffffffffffffff8111828210171561063f5761063f6105d7565b604052919050565b60008082840361012081121561065c57600080fd5b61010081121561066b57600080fd5b5082915061010083013567ffffffffffffffff81111561068a57600080fd5b8301601f8101851361069b57600080fd5b803567ffffffffffffffff8111156106b5576106b56105d7565b8060051b6106c560208201610616565b918252602081840181019290810190888411156106e157600080fd5b6020850194505b83851015610707578435808352602095860195909350909101906106e8565b80955050505050509250929050565b634e487b7160e01b600052601160045260246000fd5b8082018082111561030c5761030c610716565b634e487b7160e01b600052603260045260246000fd5b60006040828403121561076757600080fd5b61076f6105ed565b823581526020928301359281019290925250919050565b60006040828403121561079857600080fd5b6107a28383610755565b9392505050565b600060808284031280156107bc57600080fd5b506107c56105ed565b6107cf8484610755565b81526107de8460408501610755565b60208201529392505050565b8181038181111561030c5761030c610716565b60008261081a57634e487b7160e01b600052601260045260246000fd5b50069056fea2646970667358221220e999442315398e0b48870ac7727735b77e41ded2e66e2cdcccc8c4255b3b7dfb64736f6c634300081c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 2435,
+        "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+        "label": "_verifyingKey",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_struct(VerifyingKey)2452_storage"
+      }
+    ],
+    "types": {
+      "t_array(t_struct(G1Point)2387_storage)dyn_storage": {
+        "base": "t_struct(G1Point)2387_storage",
+        "encoding": "dynamic_array",
+        "label": "struct G1Point[]",
+        "numberOfBytes": "32"
+      },
+      "t_struct(Fp2Element)2392_storage": {
+        "encoding": "inplace",
+        "label": "struct Fp2Element",
+        "members": [
+          {
+            "astId": 2389,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "real",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2391,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "imag",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(G1Point)2387_storage": {
+        "encoding": "inplace",
+        "label": "struct G1Point",
+        "members": [
+          {
+            "astId": 2384,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "x",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 2386,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "y",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "64"
+      },
+      "t_struct(G2Point)2399_storage": {
+        "encoding": "inplace",
+        "label": "struct G2Point",
+        "members": [
+          {
+            "astId": 2395,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "x",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(Fp2Element)2392_storage"
+          },
+          {
+            "astId": 2398,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "y",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_struct(Fp2Element)2392_storage"
+          }
+        ],
+        "numberOfBytes": "128"
+      },
+      "t_struct(VerifyingKey)2452_storage": {
+        "encoding": "inplace",
+        "label": "struct Groth16Verifier.VerifyingKey",
+        "members": [
+          {
+            "astId": 2438,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "alpha1",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(G1Point)2387_storage"
+          },
+          {
+            "astId": 2441,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "beta2",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_struct(G2Point)2399_storage"
+          },
+          {
+            "astId": 2444,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "gamma2",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_struct(G2Point)2399_storage"
+          },
+          {
+            "astId": 2447,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "delta2",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_struct(G2Point)2399_storage"
+          },
+          {
+            "astId": 2451,
+            "contract": "contracts/Groth16Verifier.sol:Groth16Verifier",
+            "label": "ic",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_array(t_struct(G1Point)2387_storage)dyn_storage"
+          }
+        ],
+        "numberOfBytes": "480"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
