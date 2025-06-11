@@ -24,6 +24,7 @@ module.exports = {
   networks: {
     hardhat: {
       tags: ["local"],
+      timeout: 20000,
       allowBlocksWithSameTimestamp: true
     },
     codexdisttestnetwork: {
