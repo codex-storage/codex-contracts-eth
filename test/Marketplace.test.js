@@ -711,6 +711,18 @@ describe("Marketplace", function () {
       )
     })
 
+    it("does not pay host that made the request fail", async function () {
+      await waitUntilStarted(marketplace, request, proof, token)
+      for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
+        slot.index = i
+        await marketplace.freeSlot(slotId(slot))
+      }
+      await waitUntilFinished(marketplace, requestId(request))
+      await expect(marketplace.freeSlot(slotId(slot))).to.be.revertedWith(
+        "Marketplace_InvalidSlotHost"
+      )
+    })
+
     it("pays only once", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
