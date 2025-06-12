@@ -6,12 +6,6 @@ methods {
     function Token.totalSupply() external returns (uint256) envfree;
 }
 
-// rule sanity(env e, method f) {
-//     calldataarg args;
-//     f(e, args);
-//     satisfy true;
-// }
-
 
 
 
