@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import "./Timestamps.sol";
+import "./Tokens.sol";
+
 type RequestId is bytes32;
 type SlotId is bytes32;
 
@@ -8,17 +11,17 @@ struct Request {
   address client;
   Ask ask;
   Content content;
-  uint64 expiry; // amount of seconds since start of the request at which this request expires
+  Duration expiry; // amount of seconds since start of the request at which this request expires
   bytes32 nonce; // random nonce to differentiate between similar requests
 }
 
 struct Ask {
   uint256 proofProbability; // how often storage proofs are required
-  uint256 pricePerBytePerSecond; // amount of tokens paid per second per byte to hosts
-  uint256 collateralPerByte; // amount of tokens per byte required to be deposited by the hosts in order to fill the slot
+  TokensPerSecond pricePerBytePerSecond; // amount of tokens paid per second per byte to hosts
+  uint128 collateralPerByte; // amount of tokens per byte required to be deposited by the hosts in order to fill the slot
   uint64 slots; // the number of requested slots
   uint64 slotSize; // amount of storage per slot (in number of bytes)
-  uint64 duration; // how long content should be stored (in seconds)
+  Duration duration; // how long content should be stored (in seconds)
   uint64 maxSlotLoss; // Max slots that can be lost without data considered to be lost
 }
 
@@ -40,20 +43,29 @@ enum SlotState {
   Filled, // host has filled slot
   Finished, // successfully completed
   Failed, // the request has failed
-  Paid, // host has been paid
   Cancelled, // when request was cancelled then slot is cancelled as well
   Repair // when slot slot was forcible freed (host was kicked out from hosting the slot because of too many missed proofs) and needs to be repaired
 }
 
 library AskHelpers {
-  function collateralPerSlot(Ask memory ask) internal pure returns (uint256) {
-    return ask.collateralPerByte * ask.slotSize;
-  }
+  using AskHelpers for Ask;
 
   function pricePerSlotPerSecond(
     Ask memory ask
-  ) internal pure returns (uint256) {
-    return ask.pricePerBytePerSecond * ask.slotSize;
+  ) internal pure returns (TokensPerSecond) {
+    uint96 perByte = TokensPerSecond.unwrap(ask.pricePerBytePerSecond);
+    return TokensPerSecond.wrap(perByte * ask.slotSize);
+  }
+
+  function pricePerSecond(
+    Ask memory ask
+  ) internal pure returns (TokensPerSecond) {
+    uint96 perSlot = TokensPerSecond.unwrap(ask.pricePerSlotPerSecond());
+    return TokensPerSecond.wrap(perSlot * ask.slots);
+  }
+
+  function collateralPerSlot(Ask memory ask) internal pure returns (uint128) {
+    return ask.collateralPerByte * ask.slotSize;
   }
 }
 
@@ -87,12 +99,5 @@ library Requests {
     assembly {
       result := ids
     }
-  }
-
-  function maxPrice(Request memory request) internal pure returns (uint256) {
-    return
-      request.ask.slots *
-      request.ask.duration *
-      request.ask.pricePerSlotPerSecond();
   }
 }
