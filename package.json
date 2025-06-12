@@ -11,7 +11,8 @@
     "deploy": "hardhat deploy",
     "verify": "npm run verify:marketplace && npm run verify:state_changes",
     "verify:marketplace": "certoraRun certora/confs/Marketplace.conf",
-    "verify:state_changes": "certoraRun certora/confs/StateChanges.conf"
+    "verify:state_changes": "certoraRun certora/confs/StateChanges.conf",
+    "verify:vault": "certoraRun certora/confs/Vault.conf"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",

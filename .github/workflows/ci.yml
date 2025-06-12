@@ -83,4 +83,5 @@ jobs:
         rule:
           - verify:marketplace
           - verify:state_changes
+          - verify:vault
 
