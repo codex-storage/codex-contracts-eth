@@ -822,11 +822,14 @@ describe("Marketplace", function () {
     it("withdraws nothing when wrong account used", async function () {
       await waitUntilCancelled(marketplace, request)
 
-      const startBalance = await token.balanceOf(host.address)
+      const startBalanceHost = await token.balanceOf(host.address)
+      const startBalanceClient = await token.balanceOf(client.address)
       await marketplace.withdrawFunds(slot.request)
-      const endBalance = await token.balanceOf(host.address)
+      const endBalanceHost = await token.balanceOf(host.address)
+      const endBalanceClient = await token.balanceOf(client.address)
 
-      expect(endBalance - startBalance).to.equal(0)
+      expect(endBalanceHost - startBalanceHost).to.equal(0)
+      expect(endBalanceClient - startBalanceClient).to.equal(0)
     })
 
     it("rejects withdraw when in wrong state", async function () {
