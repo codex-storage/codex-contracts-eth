@@ -9,23 +9,27 @@ async function waitUntilCancelled(contract, request) {
   await advanceTimeTo(expiry + 1)
 }
 
-async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
+async function waitUntilSlotFilled(contract, request, proof, token, slotIndex) {
   let collateral = collateralPerSlot(request)
-  await token.approve(contract.address, collateral * slots.length)
+  await token.approve(contract.address, collateral)
+  await contract.reserveSlot(requestId(request), slotIndex)
+  await contract.fillSlot(requestId(request), slotIndex, proof)
+  const start = await currentTime()
+  const end = await contract.requestEnd(requestId(request))
+  return payoutForDuration(request, start, end)
+}
 
-  let requestEnd = await contract.requestEnd(requestId(request))
+async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
   const payouts = []
   for (let slotIndex of slots) {
-    await contract.reserveSlot(requestId(request), slotIndex)
-    await contract.fillSlot(requestId(request), slotIndex, proof)
-
-    payouts[slotIndex] = payoutForDuration(
+    payouts[slotIndex] = await waitUntilSlotFilled(
+      contract,
       request,
-      await currentTime(),
-      requestEnd
+      proof,
+      token,
+      slotIndex
     )
   }
-
   return payouts
 }
 
@@ -99,6 +103,7 @@ function patchOverloads(contract) {
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
+  waitUntilSlotFilled,
   waitUntilSlotsFilled,
   waitUntilFinished,
   waitUntilFailed,
