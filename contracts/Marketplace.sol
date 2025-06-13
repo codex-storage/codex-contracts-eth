@@ -360,7 +360,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
 
-    if (!_token.transfer(msg.sender, validatorRewardAmount)) {
+    if (!_token.trySafeTransfer(msg.sender, validatorRewardAmount)) {
       revert Marketplace_TransferFailed();
     }
 
@@ -428,11 +428,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+    if (!_token.trySafeTransfer(rewardRecipient, payoutAmount)) {
       revert Marketplace_TransferFailed();
     }
 
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+    if (!_token.trySafeTransfer(collateralRecipient, collateralAmount)) {
       revert Marketplace_TransferFailed();
     }
   }
@@ -463,11 +463,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+    if (!_token.trySafeTransfer(rewardRecipient, payoutAmount)) {
       revert Marketplace_TransferFailed();
     }
 
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+    if (!_token.trySafeTransfer(collateralRecipient, collateralAmount)) {
       revert Marketplace_TransferFailed();
     }
   }
@@ -536,7 +536,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    if (!_token.transfer(withdrawRecipient, amount)) {
+    if (!_token.trySafeTransfer(withdrawRecipient, amount)) {
       revert Marketplace_TransferFailed();
     }
 
