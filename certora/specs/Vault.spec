@@ -83,7 +83,7 @@ hook Sload VaultBase.Timestamp defaultValue
                                                                 + designatedBalanceMirror[Controller][FundId][AccountId]
                                                                 + ((incomingMirror[Controller][FundId][AccountId] 
                                                                     - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                    * (lockMaximumMirror[Controller][FundId] 
+                                                                    * (flowEndGhost[Controller][FundId] 
                                                                         - updatedMirror[Controller][FundId][AccountId]));
 }
 
@@ -102,15 +102,16 @@ hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId Fun
                             VaultBase.AccountId AccountId. 
                                 expectedFunds[controller][fundId][AccountId];
 
-    havoc expectedFunds assuming forall 
-                                    VaultBase.AccountId AccountId. 
-                                        expectedFunds[Controller][FundId][AccountId] 
-                                            == availableBalanceMirror[Controller][FundId][AccountId]
-                                                + designatedBalanceMirror[Controller][FundId][AccountId]
-                                                + ((incomingMirror[Controller][FundId][AccountId] 
-                                                    - outgoingMirror[Controller][FundId][AccountId]) 
-                                                    * (lockMaximumMirror[Controller][FundId] 
-                                                        - updatedMirror[Controller][FundId][AccountId]));
+    havoc expectedFunds assuming forall VaultBase.Controller controller. 
+                                 forall VaultBase.FundId fundId. 
+                                 forall VaultBase.AccountId AccountId. 
+                                        expectedFunds@new[controller][fundId][AccountId] 
+                                            == availableBalanceMirror[controller][fundId][AccountId]
+                                                + designatedBalanceMirror[controller][fundId][AccountId]
+                                                + ((incomingMirror[controller][fundId][AccountId] 
+                                                    - outgoingMirror[controller][fundId][AccountId]) 
+                                                    * (flowEndGhost[Controller][FundId] 
+                                                        - updatedMirror[controller][fundId][AccountId]));
 
     require (usum VaultBase.Controller controller, 
                             VaultBase.FundId fundId, 
@@ -155,7 +156,7 @@ hook Sload VaultBase.TokensPerSecond defaultValue
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - defaultValue) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }
 
@@ -167,7 +168,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - defaultValue) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }
 
@@ -189,7 +190,7 @@ hook Sload VaultBase.Timestamp defaultValue
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - unwrapTimestamp(defaultValue)));
 }       
 
@@ -201,7 +202,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - unwrapTimestamp(defaultValue)));
 }   
 
@@ -223,7 +224,7 @@ hook Sload uint128 defaultValue
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }   
 
@@ -235,7 +236,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }   
 
@@ -289,7 +290,7 @@ hook Sload VaultBase.TokensPerSecond defaultValue
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((defaultValue 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }
 
@@ -301,7 +302,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
                                                             + designatedBalanceMirror[Controller][FundId][AccountId]
                                                             + ((defaultValue 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }
 
@@ -318,12 +319,17 @@ hook Sload VaultBase.Timestamp defaultValue
     _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
 {
     require frozenAtMirror[Controller][FundId] == unwrapTimestamp(defaultValue);
+
+    require frozenAtMirror[Controller][FundId] != 0 => flowEndGhost[Controller][FundId] == frozenAtMirror[Controller][FundId];
+    require frozenAtMirror[Controller][FundId] == 0 => flowEndGhost[Controller][FundId] == lockExpiryMirror[Controller][FundId];
 }
 
 hook Sstore _funds[KEY VaultBase.Controller Controller][KEY VaultBase.FundId FundId].frozenAt
     VaultBase.Timestamp defaultValue
 {
     frozenAtMirror[Controller][FundId] = unwrapTimestamp(defaultValue);
+
+    flowEndGhost[Controller][FundId] = frozenAtMirror[Controller][FundId] != 0 ? frozenAtMirror[Controller][FundId] : lockExpiryMirror[Controller][FundId];
 }
 
 
@@ -387,7 +393,7 @@ hook Sload uint128 defaultValue
                                                             + defaultValue
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 }   
 
@@ -399,7 +405,7 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
                                                             + defaultValue
                                                             + ((incomingMirror[Controller][FundId][AccountId] 
                                                                 - outgoingMirror[Controller][FundId][AccountId]) 
-                                                                * (lockMaximumMirror[Controller][FundId] 
+                                                                * (flowEndGhost[Controller][FundId] 
                                                                     - updatedMirror[Controller][FundId][AccountId]));
 } 
 
@@ -408,13 +414,22 @@ hook Sstore _accounts[KEY VaultBase.Controller Controller][KEY VaultBase.FundId 
 ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => mapping(VaultBase.AccountId => mathint))) expectedFunds {
     init_state axiom 
         (forall VaultBase.Controller Controller. 
-        forall VaultBase.FundId FundId. 
-        forall VaultBase.AccountId AccountId. 
+         forall VaultBase.FundId FundId. 
+         forall VaultBase.AccountId AccountId. 
             expectedFunds[Controller][FundId][AccountId] == 0) && 
         (usum VaultBase.AccountId AccountId, 
                 VaultBase.Controller Controller, 
                 VaultBase.FundId FundId. 
                     expectedFunds[Controller][FundId][AccountId]) == 0;
+}
+
+
+
+ghost mapping(VaultBase.Controller => mapping(VaultBase.FundId => uint256)) flowEndGhost {
+    init_state axiom
+        (forall VaultBase.Controller Controller.
+         forall VaultBase.FundId FundId.
+            flowEndGhost[Controller][FundId] == 0);
 }
 
 
