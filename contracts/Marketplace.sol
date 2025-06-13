@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
@@ -45,6 +46,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.AddressSet;
   using Requests for Request;
   using AskHelpers for Ask;
+  using SafeERC20 for IERC20;
 
   IERC20 private immutable _token;
   MarketplaceConfig private _config;
@@ -358,7 +360,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
       _config.collateral.validatorRewardPercentage) / 100;
     _marketplaceTotals.sent += validatorRewardAmount;
 
-    if (!_token.transfer(msg.sender, validatorRewardAmount)) {
+    if (!_token.trySafeTransfer(msg.sender, validatorRewardAmount)) {
       revert Marketplace_TransferFailed();
     }
 
@@ -426,11 +428,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+    if (!_token.trySafeTransfer(rewardRecipient, payoutAmount)) {
       revert Marketplace_TransferFailed();
     }
 
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+    if (!_token.trySafeTransfer(collateralRecipient, collateralAmount)) {
       revert Marketplace_TransferFailed();
     }
   }
@@ -461,11 +463,11 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 collateralAmount = slot.currentCollateral;
     _marketplaceTotals.sent += (payoutAmount + collateralAmount);
     slot.state = SlotState.Paid;
-    if (!_token.transfer(rewardRecipient, payoutAmount)) {
+    if (!_token.trySafeTransfer(rewardRecipient, payoutAmount)) {
       revert Marketplace_TransferFailed();
     }
 
-    if (!_token.transfer(collateralRecipient, collateralAmount)) {
+    if (!_token.trySafeTransfer(collateralRecipient, collateralAmount)) {
       revert Marketplace_TransferFailed();
     }
   }
@@ -534,7 +536,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint256 amount = context.fundsToReturnToClient;
     _marketplaceTotals.sent += amount;
 
-    if (!_token.transfer(withdrawRecipient, amount)) {
+    if (!_token.trySafeTransfer(withdrawRecipient, amount)) {
       revert Marketplace_TransferFailed();
     }
 
@@ -687,7 +689,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    if (!_token.transferFrom(sender, receiver, amount))
+    if (!_token.trySafeTransferFrom(sender, receiver, amount))
       revert Marketplace_TransferFailed();
   }
 
