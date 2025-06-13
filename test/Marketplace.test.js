@@ -215,7 +215,7 @@ describe("Marketplace", function () {
       let insufficient = maxPrice(request) - 1
       await token.approve(marketplace.address, insufficient)
       await expect(marketplace.requestStorage(request)).to.be.revertedWith(
-        "ERC20InsufficientAllowance"
+        "Marketplace_TransferFailed"
       )
     })
 
@@ -456,7 +456,7 @@ describe("Marketplace", function () {
       await marketplace.reserveSlot(slot.request, slot.index)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof)
-      ).to.be.revertedWith("ERC20InsufficientAllowance")
+      ).to.be.revertedWith("Marketplace_TransferFailed")
     })
 
     it("collects only requested collateral and not more", async function () {

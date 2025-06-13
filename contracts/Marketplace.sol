@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
@@ -45,6 +46,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using EnumerableSet for EnumerableSet.AddressSet;
   using Requests for Request;
   using AskHelpers for Ask;
+  using SafeERC20 for IERC20;
 
   IERC20 private immutable _token;
   MarketplaceConfig private _config;
@@ -687,7 +689,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
 
   function _transferFrom(address sender, uint256 amount) internal {
     address receiver = address(this);
-    if (!_token.transferFrom(sender, receiver, amount))
+    if (!_token.trySafeTransferFrom(sender, receiver, amount))
       revert Marketplace_TransferFailed();
   }
 
