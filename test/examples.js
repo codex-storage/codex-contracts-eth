@@ -21,7 +21,7 @@ const exampleConfiguration = () => ({
   requestDurationLimit: 60 * 60 * 24 * 30, // 30 days
 })
 
-const exampleRequest = async () => {
+const exampleRequest = () => {
   return {
     client: hexlify(randomBytes(20)),
     ask: {
