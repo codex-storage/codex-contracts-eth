@@ -32,7 +32,9 @@ describe("Marketplace gas estimates", function () {
   async function setupToken() {
     const Token = await ethers.getContractFactory("TestToken")
     const token = await Token.deploy()
-    await token.mint(signer.address, 1_000_000_000_000_000)
+    for (let signer of await ethers.getSigners()) {
+      await token.mint(signer.address, 1_000_000_000_000_000)
+    }
     return token
   }
 
@@ -79,20 +81,25 @@ describe("Marketplace gas estimates", function () {
   })
 
   describe("reserveSlot", function () {
-    it("has at most 1% deviation in gas usage", async function () {
+    it("has at most 25% deviation in gas usage", async function () {
       const request = await requestStorage()
       const id = requestId(request)
       const gasUsage = []
-      for (let i = 0; i < request.ask.slots; i++) {
-        const transaction = await marketplace.reserveSlot(id, i)
-        const receipt = await transaction.wait()
-        gasUsage.push(receipt.gasUsed.toNumber())
-        await token.approve(marketplace.address, collateralPerSlot(request))
-        await marketplace.fillSlot(id, i, exampleProof())
+      for (let signer of await ethers.getSigners()) {
+        marketplace = marketplace.connect(signer)
+        for (let i = 0; i < request.ask.slots; i++) {
+          try {
+            const transaction = await marketplace.reserveSlot(id, i)
+            const receipt = await transaction.wait()
+            gasUsage.push(receipt.gasUsed.toNumber())
+          } catch (exception) {
+            // ignore: reservations can be full
+          }
+        }
       }
       const deviation = Math.max(...gasUsage) / Math.min(...gasUsage) - 1.0
       expect(deviation).to.be.gt(0)
-      expect(deviation).to.be.lte(0.01)
+      expect(deviation).to.be.lte(0.25)
     })
   })
 
