@@ -8,9 +8,11 @@ contract TestSlotReservations is SlotReservations {
 
   mapping(SlotId => SlotState) private _states;
 
-  // solhint-disable-next-line no-empty-blocks
-  constructor(SlotReservationsConfig memory config) SlotReservations(config) {}
-
+  function initialize (
+    SlotReservationsConfig memory config
+  ) public initializer {
+    _initializeSlotReservations(config);
+  }
   function contains(SlotId slotId, address host) public view returns (bool) {
     return _reservations[slotId].contains(host);
   }

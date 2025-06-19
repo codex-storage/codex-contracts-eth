@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 import "./Requests.sol";
 import "./Configuration.sol";
 
-abstract contract SlotReservations {
+abstract contract SlotReservations is Initializable {
   using EnumerableSet for EnumerableSet.AddressSet;
   error SlotReservations_ReservationNotAllowed();
 
   mapping(SlotId => EnumerableSet.AddressSet) internal _reservations;
   SlotReservationsConfig private _config;
 
-  constructor(SlotReservationsConfig memory config) {
+  function _initializeSlotReservations(SlotReservationsConfig memory config) internal onlyInitializing {
     _config = config;
   }
 
