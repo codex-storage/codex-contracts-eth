@@ -43,6 +43,9 @@ To reuse a previously deployed `Token` contract, define the environment variable
 The deployment script will use `contractAt` from Hardhat Ignition to retrieve the existing contract
 instead of deploying a new one.
 
+When deploying to other network then Hardhat localhost's, you have to specify the Proxy's owner address
+using the env. variable `PROXY_ADMIN_ADDRESS`. This account then can perform upgrades to the contract.
+
 The deployment files are kept under version control [as recommended by Hardhat](https://hardhat.org/ignition/docs/advanced/versioning), except the build files, which are 18 MB.
 
 Running the prover
