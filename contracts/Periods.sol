@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-contract Periods {
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
+
+contract Periods is Initializable {
   error Periods_InvalidSecondsPerPeriod();
 
   type Period is uint64;
 
-  uint64 internal immutable _secondsPerPeriod;
+  uint64 internal _secondsPerPeriod;
 
-  constructor(uint64 secondsPerPeriod) {
+  function _initializePeriods(uint64 secondsPerPeriod) internal onlyInitializing {
+    //console.log("Block period: ", secondsPerPeriod);
     if (secondsPerPeriod == 0) {
       revert Periods_InvalidSecondsPerPeriod();
     }

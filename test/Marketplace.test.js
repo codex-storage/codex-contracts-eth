@@ -62,7 +62,7 @@ describe("Marketplace constructor", function () {
 
       const promise = ignition.deploy(MarketplaceModule, {
         parameters: {
-          Marketplace: {
+          TestProxy: {
             configuration: config,
           },
         },
@@ -90,7 +90,7 @@ describe("Marketplace constructor", function () {
 
     const promise = ignition.deploy(MarketplaceModule, {
       parameters: {
-        Marketplace: {
+        TestProxy: {
           configuration: config,
         },
       },
@@ -143,7 +143,7 @@ describe("Marketplace", function () {
       MarketplaceModule,
       {
         parameters: {
-          Marketplace: {
+          TestProxy: {
             configuration: config,
           },
         },

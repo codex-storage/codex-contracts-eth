@@ -50,6 +50,7 @@ async function currentTime() {
 async function advanceTime(seconds) {
   await time.increase(seconds)
   await mine()
+  await mine()
 }
 
 async function advanceTimeTo(timestamp) {
