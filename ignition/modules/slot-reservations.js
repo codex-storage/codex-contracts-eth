@@ -7,11 +7,13 @@ module.exports = buildModule("SlotReservations", (m) => {
 
   const testSlotReservations = m.contract(
     "TestSlotReservations",
-    [configuration],
+    [],
     {
       from: deployer,
     }
   )
+
+  m.call(testSlotReservations, "initialize", [configuration]);
 
   return { testSlotReservations }
 })
