@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import "./Configuration.sol";
 import "./Requests.sol";
+import "./Timestamps.sol";
 import "./Periods.sol";
 import "./Groth16.sol";
 
@@ -11,6 +12,8 @@ import "./Groth16.sol";
  * @notice Abstract contract that handles proofs tracking, validation and reporting functionality
  */
 abstract contract Proofs is Periods {
+  using Timestamps for Timestamp;
+
   error Proofs_InsufficientBlockHeight();
   error Proofs_InvalidProof();
   error Proofs_ProofAlreadySubmitted();
@@ -39,7 +42,7 @@ abstract contract Proofs is Periods {
     _verifier = verifier;
   }
 
-  mapping(SlotId => uint64) private _slotStarts;
+  mapping(SlotId => Timestamp) private _slotStarts;
   mapping(SlotId => uint64) private _missed;
   mapping(SlotId => mapping(Period => bool)) private _received;
   mapping(SlotId => mapping(Period => bool)) private _missing;
@@ -73,7 +76,7 @@ abstract contract Proofs is Periods {
    *     and saves the required probability.
    */
   function _startRequiringProofs(SlotId id) internal {
-    _slotStarts[id] = uint64(block.timestamp);
+    _slotStarts[id] = Timestamps.currentTime();
   }
 
   /**
@@ -234,10 +237,10 @@ abstract contract Proofs is Periods {
     SlotId id,
     Period missedPeriod
   ) internal view {
-    uint256 end = _periodEnd(missedPeriod);
-    if (end >= block.timestamp) revert Proofs_PeriodNotEnded();
-    if (block.timestamp >= end + _config.timeout)
-      revert Proofs_ValidationTimedOut();
+    Timestamp end = _periodEnd(missedPeriod);
+    Timestamp current = Timestamps.currentTime();
+    if (current <= end) revert Proofs_PeriodNotEnded();
+    if (end.add(_config.timeout) <= current) revert Proofs_ValidationTimedOut();
     if (_received[id][missedPeriod]) revert Proofs_ProofNotMissing();
     if (!_isProofRequired(id, missedPeriod)) revert Proofs_ProofNotRequired();
     if (_missing[id][missedPeriod]) revert Proofs_ProofAlreadyMarkedMissing();
