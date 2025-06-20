@@ -1,16 +1,32 @@
 const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const PeriodsModule = require("../ignition/modules/periods")
+const { assertDeploymentRejectedWithCustomError } = require("./helpers")
 
 describe("Periods", function () {
   it("should revert when secondsPerPeriod is 0", async function () {
-    const PeriodsContract = await ethers.getContractFactory("Periods")
-    await expect(PeriodsContract.deploy(0)).to.be.revertedWith(
-      "Periods_InvalidSecondsPerPeriod"
+    const promise = ignition.deploy(PeriodsModule, {
+      parameters: {
+        Periods: {
+          secondsPerPeriod: 0,
+        },
+      },
+    })
+
+    assertDeploymentRejectedWithCustomError(
+      "Periods_InvalidSecondsPerPeriod",
+      promise,
     )
   })
 
   it("should not revert when secondsPerPeriod more than 0", async function () {
-    const PeriodsContract = await ethers.getContractFactory("Periods")
-    await expect(PeriodsContract.deploy(10)).not.to.be.reverted
+    const promise = ignition.deploy(PeriodsModule, {
+      parameters: {
+        Periods: {
+          secondsPerPeriod: 10,
+        },
+      },
+    })
+
+    await expect(promise).not.to.be.rejected
   })
 })

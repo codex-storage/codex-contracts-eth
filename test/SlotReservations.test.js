@@ -3,6 +3,7 @@ const { ethers } = require("hardhat")
 const { exampleRequest, exampleConfiguration } = require("./examples")
 const { requestId, slotId } = require("./ids")
 const { SlotState } = require("./requests")
+const SlotReservationsModule = require("../ignition/modules/slot-reservations")
 
 describe("SlotReservations", function () {
   let reservations
@@ -15,10 +16,18 @@ describe("SlotReservations", function () {
   const config = exampleConfiguration()
 
   beforeEach(async function () {
-    let SlotReservations = await ethers.getContractFactory(
-      "TestSlotReservations"
+    const { testSlotReservations } = await ignition.deploy(
+      SlotReservationsModule,
+      {
+        parameters: {
+          SlotReservations: {
+            configuration: config.reservations,
+          },
+        },
+      },
     )
-    reservations = await SlotReservations.deploy(config.reservations)
+
+    reservations = testSlotReservations
     ;[provider, address1, address2, address3] = await ethers.getSigners()
 
     request = await exampleRequest()
@@ -76,8 +85,11 @@ describe("SlotReservations", function () {
 
   it("cannot reserve a slot more than once", async function () {
     await reservations.reserveSlot(reqId, slotIndex)
-    await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "SlotReservations_ReservationNotAllowed"
+    await expect(
+      reservations.reserveSlot(reqId, slotIndex),
+    ).to.be.revertedWithCustomError(
+      reservations,
+      "SlotReservations_ReservationNotAllowed",
     )
     expect(await reservations.length(id)).to.equal(1)
   })
@@ -95,8 +107,11 @@ describe("SlotReservations", function () {
     switchAccount(address3)
     await reservations.reserveSlot(reqId, slotIndex)
     switchAccount(provider)
-    await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "SlotReservations_ReservationNotAllowed"
+    await expect(
+      reservations.reserveSlot(reqId, slotIndex),
+    ).to.be.revertedWithCustomError(
+      reservations,
+      "SlotReservations_ReservationNotAllowed",
     )
     expect(await reservations.length(id)).to.equal(3)
     expect(await reservations.contains(id, provider.address)).to.be.false
@@ -115,8 +130,11 @@ describe("SlotReservations", function () {
 
   it("cannot reserve a slot if not free or not in repair", async function () {
     await reservations.setSlotState(id, SlotState.Filled)
-    await expect(reservations.reserveSlot(reqId, slotIndex)).to.be.revertedWith(
-      "SlotReservations_ReservationNotAllowed"
+    await expect(
+      reservations.reserveSlot(reqId, slotIndex),
+    ).to.be.revertedWithCustomError(
+      reservations,
+      "SlotReservations_ReservationNotAllowed",
     )
     expect(await reservations.length(id)).to.equal(0)
   })
@@ -139,7 +157,7 @@ describe("SlotReservations", function () {
   it("should not emit an event when reservations are not full", async function () {
     await expect(reservations.reserveSlot(reqId, slotIndex)).to.not.emit(
       reservations,
-      "SlotReservationsFull"
+      "SlotReservationsFull",
     )
   })
 })
