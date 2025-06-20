@@ -30,4 +30,4 @@ Here is the list of previous commits containing the ABI contracts that were depl
 
 - [Taiko](https://github.com/codex-storage/codex-contracts-eth/commit/1854dfba9991a25532de5f6a53cf50e66afb3c8b)
 - [Testnet](https://github.com/codex-storage/codex-contracts-eth/commit/449d64ffc0dc1478d0690d36f037358084a17b09)
-- [Linea](https://github.com/codex-storage/codex-contracts-eth/pull/226/commits/18253f8a8734900e67abd2410b65a3c369abe326)
+- [Linea](https://github.com/codex-storage/codex-contracts-eth/pull/226/commits/2dddc260152b6e9c24ae372397f9b9b2d27ce8e4)
