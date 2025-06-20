@@ -4,8 +4,6 @@ const MAX_ACCOUNTS = 20
 const MINTED_TOKENS = 1_000_000_000_000_000n
 
 module.exports = buildModule("Token", (m) => {
-  const deployer = m.getAccount(0)
-
   let token
 
   if (process.env.TOKEN_ADDRESS) {
@@ -15,9 +13,7 @@ module.exports = buildModule("Token", (m) => {
     )
     token = m.contractAt("TestToken", process.env.TOKEN_ADDRESS, {})
   } else {
-    token = m.contract("TestToken", [], {
-      from: deployer,
-    })
+    token = m.contract("TestToken", [], {})
   }
 
   const config = hre.network.config
@@ -26,7 +22,6 @@ module.exports = buildModule("Token", (m) => {
     for (let i = 0; i < MAX_ACCOUNTS; i++) {
       const account = m.getAccount(i)
       m.call(token, "mint", [account, MINTED_TOKENS], {
-        from: deployer,
         id: `SendingTestTokens_${i}`,
       })
     }

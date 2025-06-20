@@ -12,8 +12,6 @@ function getDefaultConfig() {
 }
 
 module.exports = buildModule("Marketplace", (m) => {
-  const deployer = m.getAccount(0)
-
   const { token } = m.useModule(TokenModule)
   const { verifier } = m.useModule(VerifierModule)
   const configuration = m.getParameter("configuration", getDefaultConfig())
@@ -21,9 +19,7 @@ module.exports = buildModule("Marketplace", (m) => {
   const marketplace = m.contract(
     "Marketplace",
     [configuration, token, verifier],
-    {
-      from: deployer,
-    },
+    {},
   )
 
   let testMarketplace
@@ -35,9 +31,7 @@ module.exports = buildModule("Marketplace", (m) => {
     testMarketplace = m.contract(
       "TestMarketplace",
       [configuration, token, testVerifier],
-      {
-        from: deployer,
-      },
+      {},
     )
   }
 
