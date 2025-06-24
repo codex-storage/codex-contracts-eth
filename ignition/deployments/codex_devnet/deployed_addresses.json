@@ -1,0 +1,6 @@
+{
+  "Token#TestToken": "0xccbb4947f53f7ddf05f0E4A686E6927D17e13e66",
+  "Verifier#Groth16Verifier": "0x9837660dAAA1Ae9BbD45A8AeE28442618B914653",
+  "Verifier#TestVerifier": "0xE6f3B9a0200637B39C327c06f78986fe3e6D86fF",
+  "Marketplace#Marketplace": "0xAB35d6870a2C7234802c070bbb69D921E5d7b7cf"
+}
