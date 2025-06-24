@@ -33,7 +33,13 @@ module.exports = {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
     codex_devnet: {
-      url: `${process.env.CODEX_DEVNET_URL}`,
+      url: process.env.CODEX_DEVNET_URL
+        ? `${process.env.CODEX_DEVNET_URL}`
+        : `https://public.sepolia.rpc.status.network`,
+      chainId: 1660990954,
+      accounts: process.env.CODEX_DEVNET_PRIVATE_KEY
+        ? [process.env.CODEX_DEVNET_PRIVATE_KEY]
+        : [],
     },
     codex_testnet: {
       url: `${process.env.CODEX_TESTNET_URL}`,
