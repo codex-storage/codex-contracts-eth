@@ -30,7 +30,7 @@ describe("SlotReservations", function () {
     reservations = testSlotReservations
     ;[provider, address1, address2, address3] = await ethers.getSigners()
 
-    request = await exampleRequest()
+    request = exampleRequest()
     reqId = requestId(request)
     slotIndex = request.ask.slots / 2
     slot = {
