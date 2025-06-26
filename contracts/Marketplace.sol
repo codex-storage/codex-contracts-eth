@@ -97,6 +97,13 @@ contract Marketplace is Initializable, SlotReservations, Proofs, StateRetrieval,
     uint64 slotIndex;
   }
 
+  constructor() {
+    // In case that the contract would get deployed without initialization
+    // this prevents attackers to call the initializations themselves with
+    // potentially malicious initialization values.
+    _disableInitializers();
+  }
+
   function initialize (
     MarketplaceConfig memory config,
     IERC20 token_,

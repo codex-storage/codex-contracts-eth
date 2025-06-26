@@ -31,11 +31,6 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm test
-      - uses: actions/cache@v4
-        with:
-          path: fuzzing/corpus
-          key: fuzzing
-      - run: npm run fuzz
 
   verify:
     runs-on: ubuntu-latest

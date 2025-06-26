@@ -1,15 +1,8 @@
 const { buildModule } = require('@nomicfoundation/hardhat-ignition/modules')
-const { loadZkeyHash } = require("../../verifier/verifier.js")
-const { loadConfiguration } = require("../../configuration/configuration.js")
+const { getDefaultConfig } = require("../../configuration/configuration.js")
 const TokenModule = require("./token.js")
 const VerifierModule = require("./verifier.js")
 
-function getDefaultConfig() {
-  const zkeyHash = loadZkeyHash(hre.network.name)
-  const config = loadConfiguration(hre.network.name)
-  config.proofs.zkeyHash = zkeyHash
-  return config
-}
 
 /**
  * Module that deploy the Marketplace logic
@@ -59,7 +52,7 @@ const proxyModule = buildModule('Proxy', (m) => {
   const { marketplace } = m.useModule(marketplaceLogicModule)
   const { token } = m.useModule(TokenModule)
   const { verifier } = m.useModule(VerifierModule)
-  const configuration = m.getParameter("configuration", getDefaultConfig())
+  const configuration = m.getParameter("configuration", getDefaultConfig(hre.network.name))
   const encodedMarketplaceInitializerCall = m.encodeFunctionCall(
     marketplace,
     "initialize",
@@ -110,7 +103,7 @@ const testProxyModule = buildModule('TestProxy', (m) => {
   const { testMarketplace } = m.useModule(marketplaceLogicModule)
   const { token } = m.useModule(TokenModule)
   const { testVerifier } = m.useModule(VerifierModule)
-  const configuration = m.getParameter("configuration", getDefaultConfig())
+  const configuration = m.getParameter("configuration", getDefaultConfig(hre.network.name))
   const encodedMarketplaceInitializerCall = m.encodeFunctionCall(
     testMarketplace,
     "initialize",
