@@ -10,10 +10,6 @@ import {RequestId, SlotId} from "../../contracts/Requests.sol";
 import {Requests} from "../../contracts/Requests.sol";
 
 contract MarketplaceHarness is Marketplace {
-    constructor(MarketplaceConfig memory config, IERC20 token, IGroth16Verifier verifier)
-        Marketplace(config, token, verifier)
-    {}
-
     function publicPeriodEnd(Period period) public view returns (uint64) {
         return _periodEnd(period);
     }

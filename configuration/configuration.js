@@ -1,4 +1,5 @@
 const fs = require("fs")
+const { loadZkeyHash } = require("../verifier/verifier.js")
 
 const BASE_PATH = __dirname + "/networks"
 
@@ -23,6 +24,17 @@ const DEFAULT_CONFIGURATION = {
   requestDurationLimit: 60*60*24*30 // 30 days
 }
 
+function getDefaultConfig(networkName) {
+  if (networkName === undefined) {
+    throw new TypeError("Network name needs to be specified!")
+  }
+
+  const zkeyHash = loadZkeyHash(networkName)
+  const config = loadConfiguration(networkName)
+  config.proofs.zkeyHash = zkeyHash
+  return config
+}
+
 function loadConfiguration(name) {
   const path = `${BASE_PATH}/${name}/configuration.js`
   if (fs.existsSync(path)) {
@@ -32,4 +44,4 @@ function loadConfiguration(name) {
   }
 }
 
-module.exports = { loadConfiguration }
+module.exports = { loadConfiguration, getDefaultConfig }
