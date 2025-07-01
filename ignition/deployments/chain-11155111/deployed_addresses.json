@@ -1,0 +1,10 @@
+{
+  "MarketplaceLogic#Marketplace": "0x61cb8E9b84B6Efd0e15ECeDb66fb5d337865C0AD",
+  "Token#TestToken": "0x201be5B4c6AE34D428A7c4405DAB0da0A348C1DB",
+  "Verifier#Groth16Verifier": "0x6435351Ba26d6Fe0B0b5E4E4a2943Fe14283F07A",
+  "Verifier#TestVerifier": "0x4e9371edcC916Fb54Cc638eBC7De3eD9f73a9023",
+  "Proxy#TransparentUpgradeableProxy": "0x904cd89A4783DcDaa4577e5812645aEDf3653cC8",
+  "Proxy#ProxyAdmin": "0x85e50D2dC1337F7f217C57929fcDD2D7B70a28C6",
+  "Marketplace#Marketplace": "0x904cd89A4783DcDaa4577e5812645aEDf3653cC8",
+  "UpgradeProxyImplementation#TestMarketplaceUpgraded": "0x1F40F019D4e82dd2C40CfCFc4eADA1d01ebc4288"
+}
