@@ -20,6 +20,9 @@ module.exports = {
   namedAccounts: {
     deployer: { default: 0 },
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
   networks: {
     hardhat: {
       tags: ["local"],
@@ -49,6 +52,13 @@ module.exports = {
       accounts: [
         // "<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"
       ],
+    },
+    sepolia: {
+      url: `https://ethereum-sepolia-rpc.publicnode.com`,
+      chainId: 11155111,
+      accounts: process.env.SEPOLIA_PRIVATE_KEY
+        ? [process.env.SEPOLIA_PRIVATE_KEY]
+        : [],
     },
     linea_testnet: {
       url: `https://public.sepolia.rpc.status.network`,
