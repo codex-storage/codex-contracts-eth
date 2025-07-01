@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 import "./Configuration.sol";
 import "./Requests.sol";
 import "./Periods.sol";
@@ -26,15 +28,17 @@ abstract contract Proofs is Periods {
   /**
    * Creation of the contract requires at least 256 mined blocks!
    * @param config Proving configuration
+   * @param verifier Proof verifier
    */
-  constructor(
+  function _initializeProofs(
     ProofConfig memory config,
     IGroth16Verifier verifier
-  ) Periods(config.period) {
+  ) internal onlyInitializing {
     if (block.number <= 256) {
       revert Proofs_InsufficientBlockHeight();
     }
 
+    _initializePeriods(config.period);
     _config = config;
     _verifier = verifier;
   }

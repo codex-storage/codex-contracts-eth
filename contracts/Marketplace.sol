@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Configuration.sol";
@@ -12,7 +13,7 @@ import "./StateRetrieval.sol";
 import "./Endian.sol";
 import "./Groth16.sol";
 
-contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
+contract Marketplace is Initializable, SlotReservations, Proofs, StateRetrieval, Endian {
   error Marketplace_RepairRewardPercentageTooHigh();
   error Marketplace_SlashPercentageTooHigh();
   error Marketplace_MaximumSlashingTooHigh();
@@ -46,7 +47,7 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
   using Requests for Request;
   using AskHelpers for Ask;
 
-  IERC20 private immutable _token;
+  IERC20 private _token;
   MarketplaceConfig private _config;
 
   mapping(RequestId => Request) private _requests;
@@ -96,11 +97,20 @@ contract Marketplace is SlotReservations, Proofs, StateRetrieval, Endian {
     uint64 slotIndex;
   }
 
-  constructor(
+  constructor() {
+    // In case that the contract would get deployed without initialization
+    // this prevents attackers to call the initializations themselves with
+    // potentially malicious initialization values.
+    _disableInitializers();
+  }
+
+  function initialize (
     MarketplaceConfig memory config,
     IERC20 token_,
     IGroth16Verifier verifier
-  ) SlotReservations(config.reservations) Proofs(config.proofs, verifier) {
+  ) public initializer {
+    _initializeSlotReservations(config.reservations);
+    _initializeProofs(config.proofs, verifier);
     _token = token_;
 
     if (config.collateral.repairRewardPercentage > 100)

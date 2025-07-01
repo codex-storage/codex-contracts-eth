@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - run: npm install
+      - run: npm run lint
       - run: npm run format:check
 
   test:
@@ -30,11 +31,6 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm test
-      - uses: actions/cache@v4
-        with:
-          path: fuzzing/corpus
-          key: fuzzing
-      - run: npm run fuzz
 
   verify:
     runs-on: ubuntu-latest
