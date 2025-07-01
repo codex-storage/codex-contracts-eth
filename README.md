@@ -62,6 +62,16 @@ The deployment files are kept under version
 control [as recommended by Hardhat](https://hardhat.org/ignition/docs/advanced/versioning), except the build files,
 which are 18 MB.
 
+### Etherscan verification
+
+When deploying to network supported by Etherscan, it is **strongly** recommended to submit also verification files
+to Etherscan, which then makes the contract "readable" on Etherscan. Eq. users can understand what the smart contract
+does and also potentially submit transactions and call through Etherscan UI. 
+
+You can enable Etherscan verification by specifying Etherscan API key with `ETHERSCAN_API_KEY` and then either submitting
+the verification after deployment with `hardhat ignition verify` or already during the deployment by adding the 
+`--verify` flag (eq. `hardhat ignition deploy <module> --verify`).
+
 ## Smart contracts overview
 
 This contract suite deploys two smart contracts:
