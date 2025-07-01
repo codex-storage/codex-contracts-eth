@@ -104,6 +104,17 @@ Once the new feature upgrade is planned, the first step when drafting this new v
 the upgrade's changes (if there were any) back into the `Marketplace` contract and any modified subcontract
 on the new feature branch.
 
+#### Safe Multisig Upgrade
+
+When the `Proxy`'s owner is set to Safe's Multisig Wallet, the upgrade process needs to be modified. The upgrade
+deployment module cannot create the `upgradeAndCall` call directly; hence, the deploy module needs only to deploy the
+upgraded implementation logic.
+
+Then, the `upgradeAndCall` call needs to be created through the Safe Wallet UI using the "Transaction Builder," where it
+is recommended to input the `ProxyAdmin` ABI, which helps to easily create the `upgradeAndCall` call. The `proxy`
+parameter is the Marketplace's Proxy address, the `implementation` parameter is the address of the new upgraded
+implementation, and the `data` can be left empty (`0x`).
+
 ## Marketplace overview
 
 The Codex storage network depends on hosts offering storage to clients of the
