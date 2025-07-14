@@ -19,5 +19,4 @@ contract VaultHarness is Vault {
         return Timestamp.unwrap(timestamp);
     }
 
-    
 }
