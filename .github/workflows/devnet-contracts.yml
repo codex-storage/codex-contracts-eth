@@ -1,0 +1,94 @@
+name: Devnet - Contracts deployment
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: Network deploy on
+        required: true
+        default: codex_devnet
+        options:
+          - codex_devnet
+        type: choice
+      token_address:
+        description: Already deployed token address
+        required: false
+        default: "0xAB35d6870a2C7234802c070bbb69D921E5d7b7cf"
+        type: string
+      rpc_endpoint:
+        description: RPC endpoint
+        required: false
+        default: https://public.sepolia.rpc.status.network
+        type: string
+
+
+env:
+  NETWORK: ${{ inputs.network }}
+  ADDRESS_TYPE: latest
+  MARKETPLACE_ADDRESS_URL: https://marketplace.codex.storage
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy
+        run: |
+            npm run deploy -- --network "${{ inputs.network }}" --deployment-id "${{ inputs.network }}" --reset
+        env:
+          TOKEN_ADDRESS: ${{ inputs.token_address }}
+          CODEX_DEVNET_URL: ${{ inputs.rpc_endpoint }}
+          CODEX_DEVNET_PRIVATE_KEY: ${{ secrets.CODEX_DEVNET_PRIVATE_KEY }}
+          HARDHAT_IGNITION_CONFIRM_RESET: false
+          HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
+
+      - name: Update marketplace address
+        run: |
+          # Variables
+          network_path="${NETWORK//_/-}"
+          marketplace_address=$(jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ inputs.network }}/deployed_addresses.json")
+          echo "${marketplace_address}" > "${{ env.ADDRESS_TYPE }}"
+
+          # Debug
+          cat "${{ env.ADDRESS_TYPE }}"
+          ls -la "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
+          cat "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
+          jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
+
+          # Primary bucket
+          aws s3 cp \
+            --acl public-read \
+            --content-type "text/plain" \
+            ${{ env.ADDRESS_TYPE }} s3://${{ secrets.S3_PRIMARY_BUCKET }}/${network_path}/${{ env.ADDRESS_TYPE }}
+
+          # Secondary bucket
+          aws s3 cp \
+            --acl public-read \
+            --content-type "text/plain" \
+            ${{ env.ADDRESS_TYPE }} s3://${{ secrets.S3_SECONDARY_BUCKET }}/${network_path}/${{ env.ADDRESS_TYPE}}
+
+          # Flush cache
+          invalidation_id=$(aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/${network_path}/${{ env.ADDRESS_TYPE }}" | jq -r '.Invalidation.Id')
+          aws cloudfront wait invalidation-completed --distribution-id ${{ secrets.DISTRIBUTION_ID }} --id "${invalidation_id}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Show marketplace address
+        run: |
+          network_path="${NETWORK//_/-}"
+          echo "Marketplace address endpoint: ${{ env.MARKETPLACE_ADDRESS_URL }}/${network_path}/${{ env.ADDRESS_TYPE }}"
+          curl -s ${{ env.MARKETPLACE_ADDRESS_URL }}/${network_path}/${{ env.ADDRESS_TYPE }}
