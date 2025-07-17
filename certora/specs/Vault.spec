@@ -38,7 +38,7 @@ hook TIMESTAMP uint256 time {
 // We recompute expectedFunds in the store hooks whenever one of the dependencies changes.
 // To avoid negative values, we cap the expectedFunds to 0.  It can only temporarily go negative and will
 // either revert (e.g. when setting outflow too high), or be corrected by another updated to a different variable.
-// We never check that explicitly, but it follows from the invariant outgoingLEAvailable() that we prove.
+// We check that explicitly in the invariant expectedFundsMirror().
 
 definition max(mathint a, mathint b) returns mathint = a >= b ? a : b;
 
@@ -472,8 +472,8 @@ invariant updatedLETimestampAndFlowEnd()
 }
 
 // 7 - verified except for timeout in flow
-// expectedFundsMirror is always equal to the expectedFundsDef calculation.
-// This invariant is needed to prove solvency.
+// The expectedFunds ghost variable is always equal to the expectedFundsHelper calculation.
+// This invariant is needed to prove solvency and included in the store hooks for available/designated balances.
 // The expectedFunds for a single account is calculated as:
 //    availableBalance + designatedBalance + ((incoming - outgoing) * (flowEnd - updated))
 invariant expectedFundsMirror(VaultBase.Controller controller, VaultBase.FundId fundId, VaultBase.AccountId accountId)
