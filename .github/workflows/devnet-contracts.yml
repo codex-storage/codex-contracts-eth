@@ -21,6 +21,11 @@ on:
         required: false
         default: https://public.sepolia.rpc.status.network
         type: string
+      contracts_ref:
+        description: "Contracts ref: blank = current branch"
+        required: false
+        type: string
+        default: ''
 
 
 env:
@@ -35,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ inputs.contracts_ref }}
 
       - uses: actions/setup-node@v4
         with:
