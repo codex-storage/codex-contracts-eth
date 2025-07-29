@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Accounts.sol b/contracts/vault/Accounts.sol
+index 3066e7d..c93554d 100644
+--- a/contracts/vault/Accounts.sol
++++ b/contracts/vault/Accounts.sol
+@@ -81,7 +81,7 @@ library Accounts {
+     Timestamp timestamp
+   ) internal pure {
+     Duration duration = account.flow.updated.until(timestamp);
+-    account.balance.available -= account.flow.outgoing.accumulate(duration);
++    account.balance.available -= account.flow.outgoing.accumulate(duration) + 1;
+     account.balance.designated += account.flow.incoming.accumulate(duration);
+     account.flow.updated = timestamp;
+   }
