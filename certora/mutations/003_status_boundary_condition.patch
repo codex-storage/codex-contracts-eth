@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Funds.sol b/contracts/vault/Funds.sol
+index 471c2d9..1b0e7b9 100644
+--- a/contracts/vault/Funds.sol
++++ b/contracts/vault/Funds.sol
+@@ -37,7 +37,7 @@ enum FundStatus {
+ 
+ library Funds {
+   function status(Fund memory fund) internal view returns (FundStatus) {
+-    if (Timestamps.currentTime() < fund.lockExpiry) {
++    if (Timestamps.currentTime() <= fund.lockExpiry) {
+       if (fund.frozenAt != Timestamp.wrap(0)) {
+         return FundStatus.Frozen;
+       }

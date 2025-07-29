@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Accounts.sol b/contracts/vault/Accounts.sol
+index 3066e7d..7ddae11 100644
+--- a/contracts/vault/Accounts.sol
++++ b/contracts/vault/Accounts.sol
+@@ -102,7 +102,7 @@ library Accounts {
+     if (rate <= account.flow.incoming) {
+       account.flow.incoming = account.flow.incoming - rate;
+     } else {
+-      account.flow.outgoing = account.flow.outgoing + rate;
++      account.flow.outgoing = account.flow.outgoing + rate + TokensPerSecond.wrap(1);
+       account.flow.outgoing = account.flow.outgoing - account.flow.incoming;
+       account.flow.incoming = TokensPerSecond.wrap(0);
+     }

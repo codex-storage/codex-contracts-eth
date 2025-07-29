@@ -1,0 +1,40 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..5efdc8e 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -134,7 +134,7 @@ abstract contract VaultBase {
+ 
+     account.balance.available += amount;
+ 
+-    _token.safeTransferFrom(
++    _token.transferFrom(
+       Controller.unwrap(controller),
+       address(this),
+       amount
+@@ -215,7 +215,7 @@ abstract contract VaultBase {
+ 
+     account.balance.designated -= amount;
+ 
+-    _token.safeTransfer(address(0xdead), amount);
++    _token.transfer(address(0xdead), amount);
+   }
+ 
+   function _burnAccount(
+@@ -232,7 +232,7 @@ abstract contract VaultBase {
+ 
+     delete _accounts[controller][fundId][accountId];
+ 
+-    _token.safeTransfer(address(0xdead), amount);
++    _token.transfer(address(0xdead), amount);
+   }
+ 
+   function _freezeFund(Controller controller, FundId fundId) internal {
+@@ -257,7 +257,7 @@ abstract contract VaultBase {
+     delete _accounts[controller][fundId][accountId];
+ 
+     (address owner, ) = Accounts.decodeId(accountId);
+-    _token.safeTransfer(owner, amount);
++    _token.transfer(owner, amount);
+   }
+ 
+   function _checkLockInvariant(Fund memory fund) private pure {

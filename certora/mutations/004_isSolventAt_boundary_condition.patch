@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Accounts.sol b/contracts/vault/Accounts.sol
+index 3066e7d..c4db427 100644
+--- a/contracts/vault/Accounts.sol
++++ b/contracts/vault/Accounts.sol
+@@ -69,7 +69,7 @@ library Accounts {
+   ) internal pure returns (bool) {
+     Duration duration = account.flow.updated.until(timestamp);
+     uint128 outgoing = account.flow.outgoing.accumulate(duration);
+-    return outgoing <= account.balance.available;
++    return outgoing < account.balance.available;
+   }
+ 
+   /// Updates the available and designated balances by accumulating the

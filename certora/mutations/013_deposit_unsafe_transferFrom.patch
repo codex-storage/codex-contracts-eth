@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..30c52fd 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -134,7 +134,7 @@ abstract contract VaultBase {
+ 
+     account.balance.available += amount;
+ 
+-    _token.safeTransferFrom(
++    _token.transferFrom(
+       Controller.unwrap(controller),
+       address(this),
+       amount

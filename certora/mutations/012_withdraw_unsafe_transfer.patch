@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..f3eef7d 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -257,7 +257,7 @@ abstract contract VaultBase {
+     delete _accounts[controller][fundId][accountId];
+ 
+     (address owner, ) = Accounts.decodeId(accountId);
+-    _token.safeTransfer(owner, amount);
++    _token.transfer(owner, amount);
+   }
+ 
+   function _checkLockInvariant(Fund memory fund) private pure {

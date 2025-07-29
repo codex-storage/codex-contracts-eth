@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..94fca9a 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -171,7 +171,7 @@ abstract contract VaultBase {
+     require(fund.status() == FundStatus.Locked, VaultFundNotLocked());
+ 
+     Account memory sender = _accounts[controller][fundId][from];
+-    require(amount <= sender.balance.available, VaultInsufficientBalance());
++    // require(amount <= sender.balance.available, VaultInsufficientBalance());
+ 
+     sender.balance.available -= amount;
+     _checkAccountInvariant(sender, fund);
