@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..c98627e 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -240,7 +240,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+     _withdraw(controller, fund, accountId);
+   }
+ 
+-  function pause() public onlyOwner {
++  function pause() public {
+     _pause();
+   }
+ 

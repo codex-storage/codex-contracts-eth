@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..0d76718 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -234,7 +234,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+     Controller controller,
+     FundId fund,
+     AccountId accountId
+-  ) public {
++  ) public whenNotPaused {
+     (address holder, ) = Accounts.decodeId(accountId);
+     require(msg.sender == holder, VaultOnlyAccountHolder());
+     _withdraw(controller, fund, accountId);

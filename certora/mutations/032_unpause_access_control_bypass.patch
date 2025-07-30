@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..6b80271 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -244,7 +244,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+     _pause();
+   }
+ 
+-  function unpause() public onlyOwner {
++  function unpause() public {
+     _unpause();
+   }
+ 

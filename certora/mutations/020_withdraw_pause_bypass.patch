@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..8397373 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -221,7 +221,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+   /// ⚠️ The account holder can also withdraw itself, so when designing a smart
+   /// contract that controls funds in the vault, don't assume that only this
+   /// smart contract can initiate a withdrawal ⚠️
+-  function withdraw(FundId fund, AccountId accountId) public whenNotPaused {
++  function withdraw(FundId fund, AccountId accountId) public {
+     Controller controller = Controller.wrap(msg.sender);
+     _withdraw(controller, fund, accountId);
+   }

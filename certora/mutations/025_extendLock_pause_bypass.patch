@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..f8fcddf 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -125,7 +125,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+   /// the existing expiry, but no later than the maximum timestamp that was
+   /// provided when locking the fund.
+   /// Only allowed when the lock has not unlocked yet.
+-  function extendLock(FundId fundId, Timestamp expiry) public whenNotPaused {
++  function extendLock(FundId fundId, Timestamp expiry) public {
+     Controller controller = Controller.wrap(msg.sender);
+     _extendLock(controller, fundId, expiry);
+   }
