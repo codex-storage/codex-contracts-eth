@@ -1,0 +1,13 @@
+diff --git a/contracts/Periods.sol b/contracts/Periods.sol
+index 189fb02..817d09c 100644
+--- a/contracts/Periods.sol
++++ b/contracts/Periods.sol
+@@ -29,7 +29,7 @@ contract Periods {
+   }
+ 
+   function _nextPeriod(Period period) internal pure returns (Period) {
+-    return Period.wrap(Period.unwrap(period) + 1);
++    return Period.wrap(Period.unwrap(period));
+   }
+ 
+   function _periodStart(Period period) internal view returns (Timestamp) {
