@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..29725dc 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -213,7 +213,7 @@ abstract contract VaultBase {
+     Account storage account = _accounts[controller][fundId][accountId];
+     require(account.balance.designated >= amount, VaultInsufficientBalance());
+ 
+-    account.balance.designated -= amount;
++    // account.balance.designated -= amount;
+ 
+     _token.safeTransfer(address(0xdead), amount);
+   }

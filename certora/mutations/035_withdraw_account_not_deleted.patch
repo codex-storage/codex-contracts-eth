@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..ed1fb5f 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -254,8 +254,6 @@ abstract contract VaultBase {
+     account.accumulateFlows(fund.flowEnd());
+     uint128 amount = account.balance.available + account.balance.designated;
+ 
+-    delete _accounts[controller][fundId][accountId];
+-
+     (address owner, ) = Accounts.decodeId(accountId);
+     _token.safeTransfer(owner, amount);
+   }

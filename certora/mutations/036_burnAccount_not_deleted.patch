@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..eb679d1 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -230,8 +230,6 @@ abstract contract VaultBase {
+     require(account.flow.incoming == account.flow.outgoing, VaultFlowNotZero());
+     uint128 amount = account.balance.available + account.balance.designated;
+ 
+-    delete _accounts[controller][fundId][accountId];
+-
+     _token.safeTransfer(address(0xdead), amount);
+   }
+ 
