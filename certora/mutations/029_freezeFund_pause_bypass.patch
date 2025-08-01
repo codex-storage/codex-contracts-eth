@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..4037209 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -210,7 +210,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+   /// Freezes a fund. Stops all tokens flows and disallows any operations on the
+   /// fund until it unlocks.
+   /// Only allowed when the fund is locked.
+-  function freezeFund(FundId fundId) public whenNotPaused {
++  function freezeFund(FundId fundId) public {
+     Controller controller = Controller.wrap(msg.sender);
+     _freezeFund(controller, fundId);
+   }

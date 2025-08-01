@@ -1,0 +1,12 @@
+diff --git a/contracts/Timestamps.sol b/contracts/Timestamps.sol
+index 945eced..3132942 100644
+--- a/contracts/Timestamps.sol
++++ b/contracts/Timestamps.sol
+@@ -65,6 +65,6 @@ library Timestamps {
+     Timestamp start,
+     Timestamp end
+   ) internal pure returns (Duration) {
+-    return Duration.wrap(Timestamp.unwrap(end) - Timestamp.unwrap(start));
++    return Duration.wrap(Timestamp.unwrap(start) - Timestamp.unwrap(end));
+   }
+ }

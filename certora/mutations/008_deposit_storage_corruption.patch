@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..9e22028 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -130,7 +130,7 @@ abstract contract VaultBase {
+     Fund storage fund = _funds[controller][fundId];
+     require(fund.status() == FundStatus.Locked, VaultFundNotLocked());
+ 
+-    Account storage account = _accounts[controller][fundId][accountId];
++    Account memory account = _accounts[controller][fundId][accountId];
+ 
+     account.balance.available += amount;
+ 

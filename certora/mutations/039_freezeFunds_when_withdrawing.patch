@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..04e914f 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -237,7 +237,7 @@ abstract contract VaultBase {
+ 
+   function _freezeFund(Controller controller, FundId fundId) internal {
+     Fund storage fund = _funds[controller][fundId];
+-    require(fund.status() == FundStatus.Locked, VaultFundNotLocked());
++    require(fund.status() == FundStatus.Locked || fund.status() == FundStatus.Withdrawing, VaultFundNotLocked());
+ 
+     fund.frozenAt = Timestamps.currentTime();
+   }

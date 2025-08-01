@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Accounts.sol b/contracts/vault/Accounts.sol
+index 3066e7d..ae138ae 100644
+--- a/contracts/vault/Accounts.sol
++++ b/contracts/vault/Accounts.sol
+@@ -50,7 +50,7 @@ library Accounts {
+   ) internal pure returns (AccountId) {
+     bytes32 left = bytes32(bytes20(holder));
+     bytes32 right = bytes32(uint256(uint96(discriminator)));
+-    return AccountId.wrap(left | right);
++    return AccountId.wrap(left & right);
+   }
+ 
+   /// Extracts the account holder and the discriminator from the the account id

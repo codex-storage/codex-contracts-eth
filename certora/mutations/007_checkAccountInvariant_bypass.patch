@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..c90a675 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -268,7 +268,7 @@ abstract contract VaultBase {
+     Account memory account,
+     Fund memory fund
+   ) private pure {
+-    require(account.isSolventAt(fund.lockMaximum), VaultInsufficientBalance());
++    // require(account.isSolventAt(fund.lockMaximum), VaultInsufficientBalance());
+   }
+ 
+   error VaultInsufficientBalance();

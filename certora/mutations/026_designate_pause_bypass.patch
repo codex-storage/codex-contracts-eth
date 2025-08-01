@@ -1,0 +1,13 @@
+diff --git a/contracts/Vault.sol b/contracts/Vault.sol
+index 8433a08..15af8af 100644
+--- a/contracts/Vault.sol
++++ b/contracts/Vault.sol
+@@ -151,7 +151,7 @@ contract Vault is VaultBase, Pausable, Ownable {
+     FundId fundId,
+     AccountId accountId,
+     uint128 amount
+-  ) public whenNotPaused {
++  ) public {
+     Controller controller = Controller.wrap(msg.sender);
+     _designate(controller, fundId, accountId, amount);
+   }

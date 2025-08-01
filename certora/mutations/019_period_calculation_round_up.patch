@@ -1,0 +1,13 @@
+diff --git a/contracts/Periods.sol b/contracts/Periods.sol
+index 189fb02..a54c439 100644
+--- a/contracts/Periods.sol
++++ b/contracts/Periods.sol
+@@ -20,7 +20,7 @@ contract Periods {
+   function _periodOf(Timestamp timestamp) internal view returns (Period) {
+     return
+       Period.wrap(
+-        Timestamp.unwrap(timestamp) / Duration.unwrap(_secondsPerPeriod)
++        (Timestamp.unwrap(timestamp) + Duration.unwrap(_secondsPerPeriod) - 1) / Duration.unwrap(_secondsPerPeriod)
+       );
+   }
+ 

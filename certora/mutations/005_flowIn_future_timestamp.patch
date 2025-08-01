@@ -1,0 +1,13 @@
+diff --git a/contracts/vault/Accounts.sol b/contracts/vault/Accounts.sol
+index 3066e7d..1d2ff07 100644
+--- a/contracts/vault/Accounts.sol
++++ b/contracts/vault/Accounts.sol
+@@ -89,7 +89,7 @@ library Accounts {
+   /// Starts an incoming flow of tokens at the specified rate. If there already
+   /// is a flow of incoming tokens, then its rate is increased accordingly.
+   function flowIn(Account memory account, TokensPerSecond rate) internal view {
+-    account.accumulateFlows(Timestamps.currentTime());
++    account.accumulateFlows(Timestamps.currentTime().add(Duration.wrap(1)));
+     account.flow.incoming = account.flow.incoming + rate;
+   }
+ 
