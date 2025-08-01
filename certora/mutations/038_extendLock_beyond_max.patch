@@ -1,0 +1,12 @@
+diff --git a/contracts/vault/VaultBase.sol b/contracts/vault/VaultBase.sol
+index be21481..e461233 100644
+--- a/contracts/vault/VaultBase.sol
++++ b/contracts/vault/VaultBase.sol
+@@ -117,7 +117,6 @@ abstract contract VaultBase {
+     require(fund.status() == FundStatus.Locked, VaultFundNotLocked());
+     require(fund.lockExpiry <= expiry, VaultInvalidExpiry());
+     fund.lockExpiry = expiry;
+-    _checkLockInvariant(fund);
+     _funds[controller][fundId] = fund;
+   }
+ 
