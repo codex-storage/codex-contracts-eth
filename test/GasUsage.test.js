@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat")
+const { ethers, ignition } = require("hardhat")
 const {
   exampleRequest,
   exampleProof,
@@ -18,6 +18,7 @@ const { expect } = require("chai")
 const { patchOverloads } = require("./marketplace")
 const { periodic } = require("./time")
 const { RequestState } = require("./requests")
+const MarketplaceModule = require("../ignition/modules/marketplace")
 
 // Ensures that the actual gas costs can never deviate from the gas estimate by
 // more than a certain percentage.
@@ -29,33 +30,10 @@ describe("Marketplace gas estimates", function () {
   let token
   let signer
 
-  async function setupToken() {
-    const Token = await ethers.getContractFactory("TestToken")
-    const token = await Token.deploy()
-    for (let signer of await ethers.getSigners()) {
-      await token.mint(signer.address, 1_000_000_000_000_000)
-    }
-    return token
-  }
-
-  async function setupMarketplace() {
-    const Marketplace = await ethers.getContractFactory("Marketplace")
-    const Verifier = await ethers.getContractFactory("TestVerifier")
-    const verifier = await Verifier.deploy()
-    await ensureMinimumBlockHeight(256)
-    const marketplace = await Marketplace.deploy(
-      exampleConfiguration(),
-      token.address,
-      verifier.address
-    )
-    patchOverloads(marketplace)
-    return marketplace
-  }
-
   async function requestStorage() {
     const request = exampleRequest()
     request.client = signer.address
-    await token.approve(marketplace.address, maxPrice(request))
+    await token.approve(await marketplace.getAddress(), maxPrice(request))
     await marketplace.requestStorage(request)
     return request
   }
@@ -64,16 +42,38 @@ describe("Marketplace gas estimates", function () {
     const id = requestId(request)
     for (let i = 0; i < request.ask.slots; i++) {
       await marketplace.reserveSlot(id, i)
-      await token.approve(marketplace.address, collateralPerSlot(request))
+      await token.approve(
+        await marketplace.getAddress(),
+        collateralPerSlot(request),
+      )
       await marketplace.fillSlot(id, i, exampleProof())
     }
   }
 
   beforeEach(async function () {
     await snapshot()
+    await ensureMinimumBlockHeight(256)
+
     signer = (await ethers.getSigners())[0]
-    token = await setupToken()
-    marketplace = await setupMarketplace()
+
+    const { testMarketplace, token: _token } = await ignition.deploy(
+      MarketplaceModule,
+      {
+        parameters: {
+          Marketplace: {
+            configuration: exampleConfiguration(),
+          },
+        },
+      },
+    )
+
+    marketplace = testMarketplace
+    patchOverloads(marketplace)
+
+    token = _token
+    for (let account of await ethers.getSigners()) {
+      await token.mint(account.address, 1_000_000_000_000_000n)
+    }
   })
 
   afterEach(async function () {
@@ -91,7 +91,7 @@ describe("Marketplace gas estimates", function () {
           try {
             const transaction = await marketplace.reserveSlot(id, i)
             const receipt = await transaction.wait()
-            gasUsage.push(receipt.gasUsed.toNumber())
+            gasUsage.push(Number(receipt.gasUsed))
           } catch (exception) {
             // ignore: reservations can be full
           }
@@ -110,10 +110,13 @@ describe("Marketplace gas estimates", function () {
       const gasUsage = []
       for (let i = 0; i < request.ask.slots; i++) {
         await marketplace.reserveSlot(id, i)
-        await token.approve(marketplace.address, collateralPerSlot(request))
+        await token.approve(
+          await marketplace.getAddress(),
+          collateralPerSlot(request),
+        )
         const transaction = await marketplace.fillSlot(id, i, exampleProof())
         const receipt = await transaction.wait()
-        gasUsage.push(receipt.gasUsed.toNumber())
+        gasUsage.push(Number(receipt.gasUsed))
       }
       const deviation = Math.max(...gasUsage) / Math.min(...gasUsage) - 1.0
       expect(deviation).to.be.gt(0)
@@ -131,7 +134,7 @@ describe("Marketplace gas estimates", function () {
         const slot = { request: id, index: i }
         const transaction = await marketplace.freeSlot(slotId(slot))
         const receipt = await transaction.wait()
-        gasUsage.push(receipt.gasUsed.toNumber())
+        gasUsage.push(Number(receipt.gasUsed))
       }
       const deviation = Math.max(...gasUsage) / Math.min(...gasUsage) - 1.0
       expect(deviation).to.be.gt(0)
@@ -144,7 +147,7 @@ describe("Marketplace gas estimates", function () {
 
     beforeEach(async function () {
       const configuration = await marketplace.configuration()
-      period = configuration.proofs.period
+      period = Number(configuration.proofs.period)
       ;({ periodOf, periodEnd } = periodic(period))
     })
 
@@ -161,10 +164,10 @@ describe("Marketplace gas estimates", function () {
             const slot = { request: id, index: i }
             const transaction = await marketplace.markProofAsMissing(
               slotId(slot),
-              missingPeriod
+              missingPeriod,
             )
             const receipt = await transaction.wait()
-            gasUsage.push(receipt.gasUsed.toNumber())
+            gasUsage.push(Number(receipt.gasUsed))
           } catch (exception) {
             // ignore: proof might not be missing
           }
