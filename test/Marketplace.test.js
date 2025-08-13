@@ -168,7 +168,7 @@ describe("Marketplace", function () {
 
     patchOverloads(marketplace)
 
-    request = await exampleRequest()
+    request = exampleRequest()
     request.client = client.address
 
     slot = {
@@ -426,7 +426,7 @@ describe("Marketplace", function () {
     })
 
     it("is rejected when request is unknown", async function () {
-      let unknown = await exampleRequest()
+      let unknown = exampleRequest()
       await expect(
         marketplace.fillSlot(requestId(unknown), 0, proof),
       ).to.be.revertedWithCustomError(marketplace, "Marketplace_UnknownRequest")
