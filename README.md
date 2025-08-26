@@ -1,0 +1,206 @@
+# Codex Marketplace Contracts
+
+An implementation of the smart contracts that underlay the Codex
+storage network. Its goal is to facilitate storage marketplace
+for the Codex's persistance layer.
+
+## Running
+
+To run the tests, execute the following commands:
+
+    npm install
+    npm test
+
+You can also run fuzzing tests (using [Echidna][echidna]) on the contracts:
+
+    npm run fuzz
+
+To start a local Ethereum node with the contracts deployed, execute:
+
+    npm start
+
+### Running the prover
+
+To run the formal verification rules using Certora, first, make sure you have Java (JDK >= 11.0) installed on your
+machine, and then install the Certora CLI
+
+```
+$ pip install certora-cli
+```
+
+Once that is done the `certoraRun` command can be used to send CVL specs to the prover.
+
+You can run Certora's specs with the provided `npm` script:
+
+    npm run verify
+
+## Deployment
+
+To deploy the marketplace, you need to specify the network using `--network MY_NETWORK`:
+
+```bash
+npm run deploy -- --network localhost
+```
+
+Hardhat uses [reconciliation](https://hardhat.org/ignition/docs/advanced/reconciliation) to recover from
+errors or resume a previous deployment. In our case, we will likely redeploy a new contract every time,
+so we will need
+to [clear the previous deployment](https://hardhat.org/ignition/docs/guides/modifications#clearing-an-existing-deployment-with-reset):
+
+```bash
+npm run deploy -- --network testnet --reset
+```
+
+To reuse a previously deployed `Token` contract, define the environment variable `TOKEN_ADDRESS`.
+The deployment script will use `contractAt` from Hardhat Ignition to retrieve the existing contract
+instead of deploying a new one.
+
+When deploying to other network then Hardhat localhost's, you have to specify the Proxy's owner address
+using the env. variable `PROXY_ADMIN_ADDRESS`. This account then can perform upgrades to the contract.
+
+The deployment files are kept under version
+control [as recommended by Hardhat](https://hardhat.org/ignition/docs/advanced/versioning), except the build files,
+which are 18 MB.
+
+## Smart contracts overview
+
+This contract suite deploys two smart contracts:
+
+1. `Marketplace` smart contract
+2. `Vault` smart contract
+
+The `Marketplace` smart contract implements the storage marketplace logic. Its internal logic is divided into
+multiple abstract subcontracts that focus on specific pieces like `Periods`, `Proofs`, `SlotReservations`, and so on,
+which are all bundled at the top level of the `Marketplace` contract itself.
+
+The `Vault` smart contract is a specialized contract designed to safely keep users' funds. It is utilized by the
+`Marketplace` contract to delegate all funds' safe-keeping to it. There are several mechanisms in the `Vault` contract
+that should prevent a complete "grab & run" of all the funds in case an exploit is found in the `Marketplace` smart
+contract.
+
+### Upgradability
+
+The `Marketplace` contract employs the contract's upgradability pattern using [
+`TransparentUpgradeableProxy`](https://docs.openzeppelin.com/contracts/5.x/api/proxy#TransparentUpgradeableProxy), which
+allows replacing the underlying implementation while preserving the contract address and its storage. The upgrade can be
+performed only by the account that is specified during the initial deployment through the `PROXY_ADMIN_ADDRESS`
+environment variable. This capability is dedicated to emergency upgrades, as described in
+our [Codex Contract Deployment, Upgrades and Security](https://github.com/codex-storage/codex-research/blob/master/design/contract-deployment.md)
+document.
+
+The steps to perform an emergency upgrade are:
+
+1. Create a new `Marketplace` contract that will incorporate the changes. Name it, for example, `MarketplaceV2`.
+    - The original `Marketplace` and its abstract subcontracts should not be edited once deployed.
+    - If you need to make changes in one of the abstract subcontracts, also create a new version copy like `PeriodsV2`.
+    - **Do not modify any storage variables in the contract!** The upgrade mechanism is not designed for this.
+2. Create a new Ignition deployment script that will perform the upgrade.
+    - Take inspiration from the `marketplace-test-upgrade` module, which performs the upgrade in our test suite.
+    - The upgrading transaction needs to originate from the account that was specified as `PROXY_ADMIN_ADDRESS` in the
+      initial deployment.
+3. Deploy the upgrade with `hardhat ignition deploy <new module> --network <deployment network>`.
+
+Once the new feature upgrade is planned, the first step when drafting this new version is to reconcile all
+the upgrade's changes (if there were any) back into the `Marketplace` contract and any modified subcontract
+on the new feature branch.
+
+#### Safe Multisig Upgrade
+
+When the `Proxy`'s owner is set to Safe's Multisig Wallet, the upgrade process needs to be modified. The upgrade
+deployment module cannot create the `upgradeAndCall` call directly; hence, the deploy module needs only to deploy the
+upgraded implementation logic.
+
+Then, the `upgradeAndCall` call needs to be created through the Safe Wallet UI using the "Transaction Builder," where it
+is recommended to input the `ProxyAdmin` ABI, which helps to easily create the `upgradeAndCall` call. The `proxy`
+parameter is the Marketplace's Proxy address, the `implementation` parameter is the address of the new upgraded
+implementation, and the `data` can be left empty (`0x`).
+
+## Marketplace overview
+
+The Codex storage network depends on hosts offering storage to clients of the
+network. The smart contracts in this repository handle interactions between
+client and hosts as they negotiate and fulfill a contract to store data for a
+certain amount of time.
+
+When all goes well, the client and hosts perform the following steps:
+
+    Client                 Host          Marketplace Contract
+      |                     |                      |
+      |                                            |
+      | --------------- request (1) -------------> |
+      |                                            |
+      | ----- data (2) ---> |                      |
+      |                     |                      |
+                            | ----- fill (3) ----> |
+                            |                      |
+                            | ---- proof (4) ----> |
+                            |                      |
+                            | ---- proof (4) ----> |
+                            |                      |
+                            | ---- proof (4) ----> |
+                            |                      |
+                            | <-- payment (5) ---- |
+
+1. Client submits a request for storage, containing the size of the data that
+   it wants to store and the length of time it wants to store it
+2. Client makes the data available to hosts
+3. Hosts submit storage proofs to fill slots in the contract
+4. While the storage contract is active, host prove that they are still
+   storing the data by responding to frequent random challenges
+5. At the end of the contract the hosts are paid
+
+For full overview
+see [Codex Marketplace specification](https://github.com/codex-storage/codex-spec/blob/master/specs/marketplace.md).
+
+### Storage Contracts
+
+A storage contract contains of a number of slots. Each of these slots represents
+an agreement with a storage host to store a part of the data. Hosts that want to
+offer storage can fill a slot in the contract.
+
+A contract can be negotiated through requests. A request contains the size of
+the data, the length of time during which it needs to be stored, and a number of
+slots. It also contains the reward that a client is willing to pay and proof
+requirements such as how often a proof will need to be submitted by hosts. A
+random nonce is included to ensure uniqueness among similar requests.
+
+When a new storage contract is created the client immediately pays the entire
+price of the contract. The payment is only released to the host upon successful
+completion of the contract.
+
+### Collateral
+
+To motivate a host to remain honest, it must put up some collateral before it is
+allowed to participate in storage contracts. The collateral may not be withdrawn
+as long as a host is participating in an active storage contract.
+
+Should a host be misbehaving, then its collateral may be reduced by a certain
+percentage (slashed).
+
+### Proofs
+
+Hosts are required to submit frequent proofs while a contract is active. These
+proofs ensure with a high probability that hosts are still holding on to the
+data that they were entrusted with.
+
+To ensure that hosts are not able to predict and precalculate proofs, these
+proofs are based on a random challenge. Currently we use ethereum block hashes
+to determine two things: 1) whether or not a proof is required at this point in
+time, and 2) the random challenge for the proof. Although hosts will not be able
+to predict the exact times at which proofs are required, the frequency of proofs
+averages out to a value that was set by the client in the request for storage.
+
+Hosts have a small period of time in which they are expected to submit a proof.
+When that time has expired without seeing a proof, validators are able to point
+out the lack of proof. If a host misses too many proofs, it results into a
+slashing of its collateral.
+
+## References
+
+* [A marketplace for storage
+  durability](https://github.com/codex-storage/codex-research/blob/master/design/marketplace.md)
+  (design document)
+* [Timing of Storage
+  Proofs](https://github.com/codex-storage/codex-research/blob/master/design/storage-proof-timing.md)
+  (design document)
+* [Codex Marketplace spec](https://github.com/codex-storage/codex-spec/blob/master/specs/marketplace.md)

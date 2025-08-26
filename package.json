@@ -2,7 +2,7 @@
   "name": "codex-contracts-eth",
   "license": "MIT",
   "scripts": {
-    "test": "npm run lint && hardhat test",
+    "test": "hardhat test",
     "fuzz": "hardhat compile && fuzzing/fuzz.sh",
     "start": "concurrently --names \"hardhat,deployment\"  --prefix \"[{time} {name}]\" \"hardhat node\" \"sleep 2 && npm run mine && npm run deploy -- --network localhost\"",
     "compile": "hardhat compile",
@@ -18,10 +18,10 @@
     "gas:report": "REPORT_GAS=true hardhat test"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^5.3.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
-    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.11",
+    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.12",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.3.0",
     "@stdlib/stats-binomial-test": "^0.2.2",
     "chai": "^4.5.0",
     "ethers": "6.14.4",

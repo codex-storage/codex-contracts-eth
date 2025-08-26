@@ -41,6 +41,7 @@ const {
 } = require("./evm")
 const { getBytes } = require("ethers")
 const MarketplaceModule = require("../ignition/modules/marketplace")
+const MarketplaceUpgradeModule = require("../ignition/modules/marketplace-test-upgrade")
 const { assertDeploymentRejectedWithCustomError } = require("./helpers")
 
 const ACCOUNT_STARTING_BALANCE = 1_000_000_000_000_000n
@@ -62,7 +63,7 @@ describe("Marketplace constructor", function () {
 
       const promise = ignition.deploy(MarketplaceModule, {
         parameters: {
-          Marketplace: {
+          TestProxy: {
             configuration: config,
           },
         },
@@ -86,11 +87,9 @@ describe("Marketplace constructor", function () {
     config.collateral.slashPercentage = 1
     config.collateral.maxNumberOfSlashes = 101
 
-    const expectedError = "Marketplace_MaximumSlashingTooHigh"
-
     const promise = ignition.deploy(MarketplaceModule, {
       parameters: {
-        Marketplace: {
+        TestProxy: {
           configuration: config,
         },
       },
@@ -100,6 +99,108 @@ describe("Marketplace constructor", function () {
       "Marketplace_MaximumSlashingTooHigh",
       promise,
     )
+  })
+})
+
+// Currently, Hardhat Ignition does not track deployments in the Hardhat network,
+// so when Hardhat runs tests on its network, Ignition will deploy new contracts
+// every time it is deploying something. This prevents proper testing of the upgradability
+// because a new Proxy will be deployed on the "upgrade deployment," and it won't reuse the
+// original one.
+// This can be tested manually by running `hardhat node` and then `hardhat test --network localhost`.
+// But even then, the test "should share the same storage" is having issues, which I suspect
+// are related to different network usage.
+// Blocked until this issue is resolved: https://github.com/NomicFoundation/hardhat/issues/6927
+describe.skip("Marketplace upgrades", function () {
+  const config = exampleConfiguration()
+  let originalMarketplace, proxy, token, request, client
+  enableRequestAssertions()
+
+  beforeEach(async function () {
+    await snapshot()
+    await ensureMinimumBlockHeight(256)
+    const {
+      marketplace,
+      proxy: deployedProxy,
+      token: token_,
+    } = await ignition.deploy(MarketplaceModule, {
+      deploymentId: "test",
+      parameters: {
+        TestProxy: {
+          configuration: config,
+        },
+      },
+    })
+
+    proxy = deployedProxy
+    originalMarketplace = marketplace
+    token = token_
+
+    await ensureMinimumBlockHeight(256)
+    ;[client] = await ethers.getSigners()
+
+    request = await exampleRequest()
+    request.client = client.address
+
+    token = token.connect(client)
+    originalMarketplace = marketplace.connect(client)
+  })
+
+  afterEach(async function () {
+    await revert()
+  })
+
+  it("should get upgraded", async () => {
+    expect(() => originalMarketplace.newShinyMethod()).to.throw(TypeError)
+
+    const { marketplace: upgradedMarketplace, proxy: upgradedProxy } =
+      await ignition.deploy(MarketplaceUpgradeModule, {
+        deploymentId: "test",
+        parameters: {
+          TestProxy: {
+            configuration: config,
+          },
+        },
+      })
+    expect(await upgradedMarketplace.newShinyMethod()).to.equal(42)
+    expect(await originalMarketplace.getAddress()).to.equal(
+      await upgradedMarketplace.getAddress(),
+    )
+    expect(await originalMarketplace.configuration()).to.deep.equal(
+      await upgradedMarketplace.configuration(),
+    )
+  })
+
+  it("should share the same storage", async () => {
+    // Old implementation not supporting the shiny method
+    expect(() => originalMarketplace.newShinyMethod()).to.throw(TypeError)
+
+    // We create a Request on the old implementation
+    await token.approve(
+      await originalMarketplace.getAddress(),
+      maxPrice(request),
+    )
+    const now = await currentTime()
+    await setNextBlockTimestamp(now)
+    const expectedExpiry = now + request.expiry
+    await expect(originalMarketplace.requestStorage(request))
+      .to.emit(originalMarketplace, "StorageRequested")
+      .withArgs(requestId(request), askToArray(request.ask), expectedExpiry)
+
+    // Assert that the data is there
+    expect(
+      await originalMarketplace.getRequest(requestId(request)),
+    ).to.be.request(request)
+
+    // Upgrade Marketplace
+    const { marketplace: upgradedMarketplace, token: _token } =
+      await ignition.deploy(MarketplaceUpgradeModule)
+    expect(await upgradedMarketplace.newShinyMethod()).to.equal(42)
+
+    // Assert that the data is there
+    expect(
+      await upgradedMarketplace.getRequest(requestId(request)),
+    ).to.be.request(request)
   })
 })
 
@@ -143,7 +244,8 @@ describe("Marketplace", function () {
       MarketplaceModule,
       {
         parameters: {
-          Marketplace: {
+          TestProxy: {
+            // TestMarketplace initialization is done in the TestProxy module
             configuration: config,
           },
         },

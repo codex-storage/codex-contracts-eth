@@ -13,11 +13,12 @@ contract TestProofs is Proofs {
   // private to internal, which may cause problems in the Marketplace contract.
   ProofConfig private _proofConfig;
 
-  constructor(
+  function initialize (
     ProofConfig memory config,
     IGroth16Verifier verifier
-  ) Proofs(config, verifier) {
+  ) public initializer {
     _proofConfig = config;
+    _initializeProofs(config, verifier);
   }
 
   function slotState(SlotId slotId) public view override returns (SlotState) {
